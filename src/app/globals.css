@@ -1,26 +1,41 @@
 @import "tailwindcss";
 
+/* ─── Brand Tokens ─── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-dark-green: #2D5016;
+  --color-gold: #C4941A;
+  --color-cream: #f0ebe2;
+  --color-warm-gray: #e8e3db;
+  --color-near-black: #1a1a1a;
+  --color-white: #ffffff;
+
+  --background: var(--color-cream);
+  --foreground: var(--color-near-black);
 }
 
+/* ─── Tailwind Theme ─── */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-dark-green: var(--color-dark-green);
+  --color-gold: var(--color-gold);
+  --color-cream: var(--color-cream);
+  --color-warm-gray: var(--color-warm-gray);
+  --color-near-black: var(--color-near-black);
+
+  --font-heading: var(--font-barlow-condensed);
+  --font-body: var(--font-inter);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ─── Base Styles ─── */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading), system-ui, sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
 }
