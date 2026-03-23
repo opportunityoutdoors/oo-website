@@ -22,6 +22,7 @@ export default function EventsPage() {
       <PageHero
         title="Events"
         subtitle="Get in the field. Find a camp, community event, or workshop near you."
+        backgroundImage="/images/hero/events-hero.webp"
       />
 
       {/* Events Grid with Filter Tabs */}

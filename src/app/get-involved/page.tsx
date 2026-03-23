@@ -72,6 +72,10 @@ export default function GetInvolvedPage() {
     <>
       {/* Hero with Dual Paths */}
       <section className="relative flex min-h-[500px] items-end overflow-hidden bg-dark-green">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/images/hero/get-involved-hero.jpg')" }}
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/10" />
         <div className="relative z-10 mx-auto w-full max-w-[1200px] px-6 pb-16 pt-32 md:px-10">
           <LabelTag variant="white">Get Involved</LabelTag>

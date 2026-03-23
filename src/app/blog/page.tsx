@@ -18,7 +18,7 @@ export default function BlogPage() {
 
   return (
     <>
-      <PageHero title="Blog" />
+      <PageHero title="Blog" backgroundImage="/images/hero/blog-hero.webp" />
 
       <section className="bg-cream py-20">
         <SectionContainer>

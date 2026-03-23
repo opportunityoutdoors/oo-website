@@ -1,23 +1,25 @@
+import Image from "next/image";
 import Link from "next/link";
 import LabelTag from "@/components/ui/LabelTag";
 import SectionContainer from "@/components/ui/SectionContainer";
 import NewsletterSection from "@/components/ui/NewsletterSection";
+import PartnerLogos from "@/components/ui/PartnerLogos";
 
 const whatWeDo = [
   {
     title: "Immersive Camps",
     desc: "Multi-day turkey, fishing, dove, and deer camps. Hands-on mentorship from scouting to harvest.",
-    image: "/images/placeholder-camps.jpg",
+    image: "/images/hero/about-hero.webp",
   },
   {
     title: "Community & Connection",
     desc: "Cookouts, range days, video calls and meetups. Low-barrier ways to connect before you ever step in the field.",
-    image: "/images/placeholder-community.jpg",
+    image: "/images/hero/podcast-hero.webp",
   },
   {
     title: "Conservation First",
     desc: "Stewardship is the cost of entry. We develop people who care about the land as much as the hunt.",
-    image: "/images/placeholder-conservation.jpg",
+    image: "/images/hero/faq-hero.jpg",
   },
 ];
 
@@ -54,9 +56,12 @@ export default function Home() {
     <>
       {/* ══════ HERO ══════ */}
       <section className="relative flex min-h-screen max-h-[900px] items-end overflow-hidden bg-dark-green">
-        <div
-          className="absolute inset-0 bg-cover bg-[center_30%]"
-          style={{ backgroundImage: "url('/images/hero-placeholder.jpg')" }}
+        <Image
+          src="/images/hero/homepage-hero.webp"
+          alt="Mountain vista at sunrise"
+          fill
+          className="object-cover object-[center_30%]"
+          priority
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/10 to-black/65" />
         <div className="relative z-10 mx-auto w-full max-w-[1200px] px-6 pb-20 md:px-10">
@@ -106,9 +111,11 @@ export default function Home() {
               key={item.title}
               className="group relative h-[400px] overflow-hidden bg-dark-green"
             >
-              <div
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-400 group-hover:scale-105"
-                style={{ backgroundImage: `url('${item.image}')` }}
+              <Image
+                src={item.image}
+                alt={item.title}
+                fill
+                className="object-cover transition-transform duration-400 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 z-10 p-8">
@@ -173,9 +180,14 @@ export default function Home() {
             </Link>
           </div>
           <div className="grid gap-6 md:grid-cols-2">
-            {/* Event Card 1 — Placeholder */}
+            {/* Event Card 1 */}
             <div className="group relative h-[350px] overflow-hidden rounded-lg bg-dark-green">
-              <div className="absolute inset-0 bg-cover bg-center transition-transform duration-400 group-hover:scale-105" />
+              <Image
+                src="/images/hero/origin-story.jpg"
+                alt="Turkey Camp 2026"
+                fill
+                className="object-cover transition-transform duration-400 group-hover:scale-105"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               <div className="absolute top-6 left-6 z-10 text-center">
                 <span className="block text-xs font-bold uppercase tracking-wider text-white/60">
@@ -197,9 +209,14 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            {/* Event Card 2 — Placeholder */}
+            {/* Event Card 2 */}
             <div className="group relative h-[350px] overflow-hidden rounded-lg bg-dark-green">
-              <div className="absolute inset-0 bg-cover bg-center transition-transform duration-400 group-hover:scale-105" />
+              <Image
+                src="/images/hero/donate-hero.webp"
+                alt="Fishing Camp 2026"
+                fill
+                className="object-cover transition-transform duration-400 group-hover:scale-105"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
               <div className="absolute top-6 left-6 z-10 text-center">
                 <span className="block text-xs font-bold uppercase tracking-wider text-white/60">
@@ -233,9 +250,11 @@ export default function Home() {
 
       {/* ══════ QUOTE ══════ */}
       <section className="relative flex min-h-[400px] items-center justify-center overflow-hidden bg-dark-green">
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-30"
-          style={{ backgroundImage: "url('/images/hero-placeholder.jpg')" }}
+        <Image
+          src="/images/hero/testimonial-bg.jpg"
+          alt=""
+          fill
+          className="object-cover opacity-30"
         />
         <div className="absolute inset-0 bg-black/40" />
         <div className="relative z-10 px-6 text-center">
@@ -264,11 +283,11 @@ export default function Home() {
           <div className="grid gap-6 md:grid-cols-2">
             {/* Mentee Card */}
             <div className="group relative h-[450px] overflow-hidden rounded-lg bg-dark-green">
-              <div
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-400 group-hover:scale-105"
-                style={{
-                  backgroundImage: "url('/images/placeholder-community.jpg')",
-                }}
+              <Image
+                src="/images/hero/shooting-range.webp"
+                alt="Mentee learning at the range"
+                fill
+                className="object-cover transition-transform duration-400 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 z-10 p-10">
@@ -291,12 +310,11 @@ export default function Home() {
             </div>
             {/* Mentor Card */}
             <div className="group relative h-[450px] overflow-hidden rounded-lg bg-dark-green">
-              <div
-                className="absolute inset-0 bg-cover bg-center transition-transform duration-400 group-hover:scale-105"
-                style={{
-                  backgroundImage:
-                    "url('/images/placeholder-conservation.jpg')",
-                }}
+              <Image
+                src="/images/hero/archery-mentoring.webp"
+                alt="Mentor teaching archery"
+                fill
+                className="object-cover transition-transform duration-400 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 z-10 p-10">
@@ -362,27 +380,7 @@ export default function Home() {
       <NewsletterSection />
 
       {/* ══════ PARTNERS ══════ */}
-      <section className="bg-cream py-16">
-        <div className="text-center">
-          <LabelTag>Our Partners</LabelTag>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-12 px-6">
-            {[
-              "NC Wildlife Resources Commission",
-              "Backcountry Hunters & Anglers",
-              "New Hill / Hunters Making Hunters",
-              "onX Hunt",
-              "Raleigh Founded",
-            ].map((name) => (
-              <div
-                key={name}
-                className="flex h-14 items-center justify-center rounded bg-warm-gray px-6 text-xs text-near-black/40"
-              >
-                {name}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <PartnerLogos />
     </>
   );
 }

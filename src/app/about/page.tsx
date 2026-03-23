@@ -85,7 +85,7 @@ export default function AboutPage() {
   return (
     <>
       {/* Hero */}
-      <PageHero title="About Us" subtitle="Conservation through mentorship." />
+      <PageHero title="About Us" subtitle="Conservation through mentorship." backgroundImage="/images/hero/about-hero.webp" />
 
       {/* Mission */}
       <section className="bg-cream py-24">

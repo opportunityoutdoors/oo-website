@@ -41,6 +41,7 @@ export default function SignUpPage() {
       <PageHero
         title="Join the Adventure"
         subtitle="Whether you're here to learn or here to lead — this is where it starts."
+        backgroundImage="/images/hero/get-involved-hero.jpg"
       />
 
       {/* Path Selection + Forms */}

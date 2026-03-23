@@ -92,8 +92,13 @@ export default function PodcastPage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-near-black py-24">
-        <SectionContainer>
+      <section className="relative overflow-hidden bg-near-black py-24">
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-15"
+          style={{ backgroundImage: "url('/images/hero/podcast-hero.webp')" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-near-black via-near-black/80 to-near-black/40" />
+        <SectionContainer className="relative z-10">
           <div className="flex flex-col items-center gap-12 md:flex-row">
             <div className="aspect-square w-full max-w-[300px] shrink-0 overflow-hidden rounded-lg bg-near-black/50">
               <div className="flex h-full items-center justify-center text-sm text-white/30">

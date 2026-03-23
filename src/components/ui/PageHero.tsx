@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 interface PageHeroProps {
   title: string;
   subtitle?: string;
@@ -13,9 +15,12 @@ export default function PageHero({
     <section className="relative flex min-h-[400px] items-end overflow-hidden bg-dark-green">
       {backgroundImage && (
         <>
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${backgroundImage})` }}
+          <Image
+            src={backgroundImage}
+            alt=""
+            fill
+            className="object-cover"
+            priority
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/15" />
         </>
