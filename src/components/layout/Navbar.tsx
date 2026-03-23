@@ -39,13 +39,13 @@ export default function Navbar() {
         }`}
       >
         {/* Logo — full color over hero, white on solid scroll */}
-        <Link href="/" className="relative shrink-0 h-12 w-[180px]">
+        <Link href="/" className="relative shrink-0 h-16 w-[240px]">
           <Image
             src="/images/OO_Logo_Full_Color.svg"
             alt="Opportunity Outdoors"
-            width={180}
-            height={48}
-            className={`absolute inset-0 h-12 w-auto transition-opacity duration-300 ${
+            width={240}
+            height={64}
+            className={`absolute inset-0 h-16 w-auto transition-opacity duration-300 ${
               scrolled ? "opacity-0" : "opacity-100"
             }`}
             priority
@@ -53,9 +53,9 @@ export default function Navbar() {
           <Image
             src="/images/OO_Header.svg"
             alt="Opportunity Outdoors"
-            width={180}
-            height={48}
-            className={`absolute inset-0 h-12 w-auto transition-opacity duration-300 ${
+            width={240}
+            height={64}
+            className={`absolute inset-0 h-16 w-auto transition-opacity duration-300 ${
               scrolled ? "opacity-100" : "opacity-0"
             }`}
             priority

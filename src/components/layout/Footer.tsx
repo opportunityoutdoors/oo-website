@@ -36,10 +36,7 @@ export default function Footer() {
               height={60}
               className="mb-1 h-auto w-[300px]"
             />
-            <p className="mb-5 text-xs font-bold uppercase tracking-[2px] text-gold">
-              Conservation Through Mentorship
-            </p>
-            <p className="max-w-[300px] text-sm leading-7">
+            <p className="mt-4 max-w-[300px] text-sm leading-7">
               A North Carolina 501(c)(3) nonprofit building the next generation
               of ethical, conservation-minded hunters and anglers — one mentor,
               one mentee, one campfire at a time.
