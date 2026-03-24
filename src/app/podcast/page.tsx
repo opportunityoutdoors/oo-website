@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import PageHero from "@/components/ui/PageHero";
 import SectionContainer from "@/components/ui/SectionContainer";
 import LabelTag from "@/components/ui/LabelTag";
 import CTABanner from "@/components/ui/CTABanner";
@@ -93,36 +94,31 @@ export default function PodcastPage() {
   return (
     <>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-near-black py-24">
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-15"
-          style={{ backgroundImage: "url('/images/hero/podcast-hero.webp')" }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-near-black via-near-black/80 to-near-black/40" />
-        <SectionContainer className="relative z-10">
-          <div className="flex flex-col items-center gap-12 md:flex-row">
-            <div className="aspect-square w-full max-w-[300px] shrink-0 overflow-hidden rounded-lg bg-near-black/50">
+      <PageHero
+        title="Hunt. Fish. Mentor."
+        label="Podcast"
+        subtitle="NC-centered hunting and fishing conversations. Experienced mentors share tips, stories, and the conservation ethic behind everything we do."
+        backgroundImage="/images/hero/podcast-hero.webp"
+      />
+
+      {/* Podcast Info Bar */}
+      <section className="bg-near-black py-12">
+        <SectionContainer>
+          <div className="flex flex-col items-center gap-8 md:flex-row">
+            <div className="aspect-square w-full max-w-[200px] shrink-0 overflow-hidden rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
               <Image
                 src="/images/podcast-art.jpg"
                 alt="Hunt. Fish. Mentor. podcast artwork"
-                width={600}
-                height={600}
+                width={400}
+                height={400}
                 className="h-full w-full object-cover"
               />
             </div>
             <div>
-              <LabelTag variant="white">Podcast</LabelTag>
-              <h1 className="mt-4 text-[clamp(3rem,6vw,64px)] font-black leading-none text-white">
-                Hunt. Fish.
-                <br />
-                Mentor.
-              </h1>
-              <p className="mt-4 max-w-md text-base leading-relaxed text-white/60">
-                NC-centered hunting and fishing conversations. Experienced
-                mentors share tips, stories, and the conservation ethic behind
-                everything we do.
+              <p className="max-w-md text-base leading-relaxed text-white/60">
+                Listen on your favorite platform. New episodes drop every other week.
               </p>
-              <div className="mt-6 flex flex-wrap gap-3">
+              <div className="mt-4 flex flex-wrap gap-3">
                 {["Apple Podcasts", "Spotify", "YouTube"].map((platform) => (
                   <a
                     key={platform}
