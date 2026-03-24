@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import PageHero from "@/components/ui/PageHero";
 import SectionContainer from "@/components/ui/SectionContainer";
@@ -70,24 +71,12 @@ const otherWays = [
 export default function GetInvolvedPage() {
   return (
     <>
-      {/* Hero with Dual Paths */}
-      <section className="relative flex min-h-[500px] items-end overflow-hidden bg-dark-green">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('/images/hero/get-involved-hero.jpg')" }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/10" />
-        <div className="relative z-10 mx-auto w-full max-w-[1200px] px-6 pb-16 pt-32 md:px-10">
-          <LabelTag variant="white">Get Involved</LabelTag>
-          <h1 className="mt-5 max-w-[700px] text-5xl leading-tight tracking-tight text-white md:text-7xl">
-            Find Your Path
-          </h1>
-          <p className="mt-4 max-w-xl text-lg leading-relaxed text-white/80">
-            Whether you&apos;re brand new to the outdoors or a lifelong
-            sportsman ready to give back, there&apos;s a place for you here.
-          </p>
-        </div>
-      </section>
+      <PageHero
+        title="Find Your Path"
+        label="Get Involved"
+        subtitle="Whether you're brand new to the outdoors or a lifelong sportsman ready to give back, there's a place for you here."
+        backgroundImage="/images/hero/get-involved-hero.jpg"
+      />
 
       {/* Mentee Path */}
       <section className="bg-cream py-20">
@@ -129,10 +118,14 @@ export default function GetInvolvedPage() {
                 </Link>
               </div>
             </div>
-            <div className="aspect-[4/3] overflow-hidden rounded-lg bg-warm-gray">
-              <div className="flex h-full items-center justify-center text-sm text-near-black/30">
-                Mentee Photo
-              </div>
+            <div className="aspect-[4/3] overflow-hidden rounded-lg">
+              <Image
+                src="/images/hero/shooting-range.webp"
+                alt="Mentor teaching a new shooter at the range"
+                width={600}
+                height={450}
+                className="h-full w-full object-cover"
+              />
             </div>
           </div>
         </SectionContainer>
@@ -142,10 +135,14 @@ export default function GetInvolvedPage() {
       <section className="bg-white py-20">
         <SectionContainer>
           <div className="grid items-center gap-12 lg:grid-cols-2">
-            <div className="order-2 lg:order-1 aspect-[4/3] overflow-hidden rounded-lg bg-warm-gray">
-              <div className="flex h-full items-center justify-center text-sm text-near-black/30">
-                Mentor Photo
-              </div>
+            <div className="order-2 lg:order-1 aspect-[4/3] overflow-hidden rounded-lg">
+              <Image
+                src="/images/hero/archery-mentoring.webp"
+                alt="Mentor teaching archery"
+                width={600}
+                height={450}
+                className="h-full w-full object-cover"
+              />
             </div>
             <div className="order-1 lg:order-2">
               <LabelTag>Mentor Path</LabelTag>

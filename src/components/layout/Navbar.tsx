@@ -9,6 +9,8 @@ const navLinks = [
   { href: "/about", label: "About" },
   { href: "/get-involved", label: "Get Involved" },
   { href: "/events", label: "Events" },
+  { href: "/podcast", label: "Podcast" },
+  { href: "/blog", label: "Blog" },
   { href: "/donate", label: "Donate" },
 ];
 
@@ -30,7 +32,9 @@ export default function Navbar() {
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 px-6 transition-colors duration-300 md:px-10 ${
-        scrolled ? "bg-near-black/95 backdrop-blur-sm shadow-lg" : "bg-transparent"
+        scrolled
+          ? "bg-near-black/95 backdrop-blur-sm shadow-lg"
+          : "bg-transparent"
       }`}
     >
       <div
@@ -39,13 +43,13 @@ export default function Navbar() {
         }`}
       >
         {/* Logo — full color over hero, white on solid scroll */}
-        <Link href="/" className="relative shrink-0 h-16 w-[240px]">
+        <Link href="/" className="relative shrink-0 h-12 w-[180px]">
           <Image
             src="/images/OO_Logo_Full_Color.svg"
             alt="Opportunity Outdoors"
-            width={240}
-            height={64}
-            className={`absolute inset-0 h-16 w-auto transition-opacity duration-300 ${
+            width={180}
+            height={48}
+            className={`absolute inset-0 h-12 w-auto transition-opacity duration-300 ${
               scrolled ? "opacity-0" : "opacity-100"
             }`}
             priority
@@ -53,9 +57,9 @@ export default function Navbar() {
           <Image
             src="/images/OO_Header.svg"
             alt="Opportunity Outdoors"
-            width={240}
-            height={64}
-            className={`absolute inset-0 h-16 w-auto transition-opacity duration-300 ${
+            width={180}
+            height={48}
+            className={`absolute inset-0 h-12 w-auto transition-opacity duration-300 ${
               scrolled ? "opacity-100" : "opacity-0"
             }`}
             priority
@@ -70,7 +74,7 @@ export default function Navbar() {
                 href={link.href}
                 className={`text-[13px] font-semibold uppercase tracking-[1px] transition-colors hover:text-white ${
                   isActive(link.href)
-                    ? "text-gold"
+                    ? "text-gold border-b-2 border-gold pb-1"
                     : "text-white/80"
                 }`}
               >
@@ -81,7 +85,7 @@ export default function Navbar() {
           <li>
             <Link
               href="/signup"
-              className="rounded bg-gold px-5 py-2.5 text-[13px] font-bold uppercase tracking-[1px] text-near-black transition-colors hover:bg-gold/90"
+              className="rounded bg-gold px-[22px] py-2.5 text-[13px] font-bold uppercase tracking-[1px] text-near-black transition-colors hover:bg-gold/90"
             >
               Join Us
             </Link>

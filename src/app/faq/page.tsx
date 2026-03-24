@@ -100,6 +100,7 @@ export default function FaqPage() {
       />
       <PageHero
         title="FAQ & Gear Lists"
+        label="Resources"
         subtitle="Everything you need to know before your first event."
         backgroundImage="/images/hero/faq-hero.jpg"
       />

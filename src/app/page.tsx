@@ -65,7 +65,7 @@ export default function Home() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-black/10 to-black/65" />
         <div className="relative z-10 mx-auto w-full max-w-[1200px] px-6 pb-20 md:px-10">
-          <h1 className="max-w-[700px] text-[clamp(3rem,8vw,86px)] leading-[0.95] tracking-tight text-white">
+          <h1 className="max-w-[700px] text-[clamp(3rem,8vw,86px)] leading-[0.95] tracking-[-0.01em] text-white">
             From First Hunt to Lifelong Steward
           </h1>
           <p className="mt-5 max-w-[520px] text-lg leading-relaxed text-white/85">
@@ -147,7 +147,7 @@ export default function Home() {
                   i > 0 ? "border-t border-white/15 md:border-l md:border-t-0" : ""
                 }`}
               >
-                <span className="text-[64px] font-black leading-none text-white/10">
+                <span className="text-[80px] font-black leading-none text-white/[0.08]">
                   {step.num}
                 </span>
                 <h4 className="mb-2 mt-3 text-2xl font-extrabold text-white">
@@ -212,7 +212,7 @@ export default function Home() {
             {/* Event Card 2 */}
             <div className="group relative h-[350px] overflow-hidden rounded-lg bg-dark-green">
               <Image
-                src="/images/hero/donate-hero.webp"
+                src="/images/hero/donate-hero.jpg"
                 alt="Fishing Camp 2026"
                 fill
                 className="object-cover transition-transform duration-400 group-hover:scale-105"
@@ -343,11 +343,14 @@ export default function Home() {
       <section className="bg-near-black py-24">
         <SectionContainer>
           <div className="flex flex-col items-center gap-12 md:flex-row">
-            <div className="aspect-square w-full max-w-[280px] shrink-0 overflow-hidden rounded-lg bg-near-black/50">
-              {/* Podcast artwork placeholder */}
-              <div className="flex h-full items-center justify-center text-sm text-white/30">
-                Podcast Art
-              </div>
+            <div className="aspect-square w-full max-w-[220px] shrink-0 overflow-hidden rounded-2xl bg-near-black/50 shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
+              <Image
+                src="/images/podcast-art.jpg"
+                alt="Hunt. Fish. Mentor. podcast artwork"
+                width={440}
+                height={440}
+                className="h-full w-full object-cover"
+              />
             </div>
             <div>
               <LabelTag variant="white">Podcast</LabelTag>

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import PageHero from "@/components/ui/PageHero";
 import SectionContainer from "@/components/ui/SectionContainer";
 import LabelTag from "@/components/ui/LabelTag";
+import PartnerLogos from "@/components/ui/PartnerLogos";
 
 export const metadata: Metadata = {
   title: "About",
@@ -85,7 +87,12 @@ export default function AboutPage() {
   return (
     <>
       {/* Hero */}
-      <PageHero title="About Us" subtitle="Conservation through mentorship." backgroundImage="/images/hero/about-hero.webp" />
+      <PageHero
+        title="About Us"
+        label="Our Story"
+        subtitle="Conservation through mentorship."
+        backgroundImage="/images/hero/about-hero.webp"
+      />
 
       {/* Mission */}
       <section className="bg-cream py-24">
@@ -93,7 +100,7 @@ export default function AboutPage() {
           <div className="grid items-center gap-16 lg:grid-cols-2">
             <div>
               <LabelTag>Our Mission</LabelTag>
-              <h2 className="mb-6 mt-5 text-[48px] leading-none text-near-black">
+              <h2 className="mb-6 mt-5 text-[56px] leading-none text-near-black">
                 Mentorship Is the Mission
               </h2>
               <p className="mb-5 text-lg font-medium leading-relaxed text-near-black/70">
@@ -116,20 +123,29 @@ export default function AboutPage() {
                 has someone to invest in.
               </p>
             </div>
-            <div className="aspect-[4/3] overflow-hidden rounded-lg bg-warm-gray">
-              {/* Placeholder for mission image — will come from Sanity */}
-              <div className="flex h-full items-center justify-center text-sm text-near-black/30">
-                Mission image
-              </div>
+            <div className="aspect-[4/3] overflow-hidden rounded-lg">
+              <Image
+                src="/images/hero/events-hero.webp"
+                alt="OO community gathering at camp"
+                width={600}
+                height={450}
+                className="h-full w-full object-cover"
+              />
             </div>
           </div>
         </SectionContainer>
       </section>
 
       {/* Origin Story */}
-      <section className="bg-dark-green py-24">
-        <SectionContainer>
-          <div className="mx-auto max-w-[700px] text-center">
+      <section className="relative overflow-hidden bg-dark-green py-24">
+        <Image
+          src="/images/hero/origin-story.jpg"
+          alt=""
+          fill
+          className="object-cover opacity-15"
+        />
+        <SectionContainer className="relative z-10">
+          <div className="max-w-[700px]">
             <LabelTag variant="white">Our Story</LabelTag>
             <h2 className="mb-8 mt-5 text-[48px] leading-none text-white">
               Started Around a Campfire
@@ -169,20 +185,17 @@ export default function AboutPage() {
         <SectionContainer>
           <div className="mb-16 text-center">
             <LabelTag>What We Stand For</LabelTag>
-            <h2 className="mt-5 text-[48px] leading-none text-near-black">
+            <h2 className="mt-5 text-[56px] leading-none text-near-black">
               Our Values
             </h2>
           </div>
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {values.map((v) => (
-              <div
-                key={v.num}
-                className="rounded-lg bg-white p-8 shadow-sm"
-              >
-                <span className="text-[48px] font-black leading-none text-near-black/10">
+              <div key={v.num} className="p-8">
+                <span className="text-[64px] font-black leading-none text-gold">
                   {v.num}
                 </span>
-                <h3 className="mb-3 mt-2 whitespace-pre-line text-2xl font-extrabold leading-tight text-near-black">
+                <h3 className="mb-3 mt-2 whitespace-pre-line text-2xl leading-tight text-near-black">
                   {v.title}
                 </h3>
                 <p className="text-sm leading-relaxed text-near-black/50">
@@ -199,7 +212,7 @@ export default function AboutPage() {
         <SectionContainer>
           <div className="mb-16 text-center">
             <LabelTag>Leadership</LabelTag>
-            <h2 className="mt-5 text-[48px] leading-none text-near-black">
+            <h2 className="mt-5 text-[56px] leading-none text-near-black">
               The Board
             </h2>
           </div>
@@ -207,13 +220,12 @@ export default function AboutPage() {
           <div className="mb-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {teamMembers.slice(0, 4).map((member) => (
               <div key={member.name} className="text-center">
-                <div className="mx-auto mb-4 h-48 w-48 overflow-hidden rounded-full bg-cream">
-                  {/* Placeholder for team photo — will come from Sanity */}
+                <div className="mx-auto mb-4 aspect-square w-48 overflow-hidden rounded-lg bg-cream">
                   <div className="flex h-full items-center justify-center text-xs text-near-black/30">
                     Photo
                   </div>
                 </div>
-                <h3 className="text-lg font-extrabold text-near-black">
+                <h3 className="text-lg text-near-black">
                   {member.name}
                 </h3>
                 <p className="mb-2 text-xs font-bold uppercase tracking-[2px] text-gold">
@@ -229,12 +241,12 @@ export default function AboutPage() {
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {teamMembers.slice(4).map((member) => (
               <div key={member.name} className="text-center">
-                <div className="mx-auto mb-4 h-48 w-48 overflow-hidden rounded-full bg-cream">
+                <div className="mx-auto mb-4 aspect-square w-48 overflow-hidden rounded-lg bg-cream">
                   <div className="flex h-full items-center justify-center text-xs text-near-black/30">
                     Photo
                   </div>
                 </div>
-                <h3 className="text-lg font-extrabold text-near-black">
+                <h3 className="text-lg text-near-black">
                   {member.name}
                 </h3>
                 <p className="mb-2 text-xs font-bold uppercase tracking-[2px] text-gold">
@@ -250,33 +262,10 @@ export default function AboutPage() {
       </section>
 
       {/* Partners */}
-      <section className="bg-cream py-20">
-        <SectionContainer>
-          <div className="text-center">
-            <LabelTag>Our Partners</LabelTag>
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-12">
-              {/* Partner logos — will come from Sanity */}
-              {[
-                "NC Wildlife Resources Commission",
-                "Backcountry Hunters & Anglers",
-                "New Hill / Hunters Making Hunters",
-                "onX Hunt",
-                "Raleigh Founded",
-              ].map((name) => (
-                <div
-                  key={name}
-                  className="flex h-16 items-center justify-center rounded bg-warm-gray px-6 text-xs text-near-black/40"
-                >
-                  {name}
-                </div>
-              ))}
-            </div>
-          </div>
-        </SectionContainer>
-      </section>
+      <PartnerLogos />
 
       {/* CTA */}
-      <section className="bg-dark-green px-6 py-24 text-center">
+      <section className="bg-dark-green px-10 py-24 text-center">
         <h2 className="mb-4 text-[48px] leading-none text-white">
           Ready to Get Started?
         </h2>

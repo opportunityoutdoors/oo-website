@@ -18,7 +18,7 @@ export default function BlogPage() {
 
   return (
     <>
-      <PageHero title="Blog" backgroundImage="/images/hero/blog-hero.webp" />
+      <PageHero title="From the Field" label="Blog" subtitle="Stories, tips, camp recaps, and conservation insights from the OO community." backgroundImage="/images/hero/blog-hero.webp" />
 
       <section className="bg-cream py-20">
         <SectionContainer>

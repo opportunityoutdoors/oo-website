@@ -39,8 +39,9 @@ export default function SignUpPage() {
   return (
     <>
       <PageHero
-        title="Join the Adventure"
-        subtitle="Whether you're here to learn or here to lead — this is where it starts."
+        title="Take the First Step"
+        label="Join Us"
+        subtitle="Whether you're new to the outdoors or ready to give back — start here."
         backgroundImage="/images/hero/get-involved-hero.jpg"
       />
 

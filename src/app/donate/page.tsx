@@ -63,8 +63,9 @@ export default function DonatePage() {
     <>
       <PageHero
         title="Support the Mission"
+        label="Donate"
         subtitle="Every dollar goes toward putting new hunters and anglers in the field with experienced mentors."
-        backgroundImage="/images/hero/donate-hero.webp"
+        backgroundImage="/images/hero/donate-hero.jpg"
       />
 
       {/* Intro */}

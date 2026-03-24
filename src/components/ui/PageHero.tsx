@@ -1,18 +1,21 @@
 import Image from "next/image";
+import LabelTag from "@/components/ui/LabelTag";
 
 interface PageHeroProps {
   title: string;
   subtitle?: string;
+  label?: string;
   backgroundImage?: string;
 }
 
 export default function PageHero({
   title,
   subtitle,
+  label,
   backgroundImage,
 }: PageHeroProps) {
   return (
-    <section className="relative flex min-h-[400px] items-end overflow-hidden bg-dark-green">
+    <section className="relative flex h-[60vh] min-h-[480px] max-h-[600px] items-end overflow-hidden bg-dark-green">
       {backgroundImage && (
         <>
           <Image
@@ -22,15 +25,16 @@ export default function PageHero({
             className="object-cover"
             priority
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/15" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/70" />
         </>
       )}
-      <div className="relative z-10 mx-auto w-full max-w-[1200px] px-6 pb-16 pt-32 md:px-10">
-        <h1 className="text-5xl leading-tight tracking-tight text-white md:text-7xl">
+      <div className="relative z-10 mx-auto w-full max-w-[1200px] px-10 pb-[60px] pt-32">
+        {label && <LabelTag variant="white">{label}</LabelTag>}
+        <h1 className="mt-5 text-[72px] leading-[0.95] tracking-[-1px] text-white">
           {title}
         </h1>
         {subtitle && (
-          <p className="mt-4 max-w-xl text-lg leading-relaxed text-white/85">
+          <p className="mt-4 max-w-[540px] text-lg leading-[1.7] text-white/85">
             {subtitle}
           </p>
         )}

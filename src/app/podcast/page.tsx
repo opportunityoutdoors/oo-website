@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import SectionContainer from "@/components/ui/SectionContainer";
 import LabelTag from "@/components/ui/LabelTag";
 import CTABanner from "@/components/ui/CTABanner";
@@ -101,9 +102,13 @@ export default function PodcastPage() {
         <SectionContainer className="relative z-10">
           <div className="flex flex-col items-center gap-12 md:flex-row">
             <div className="aspect-square w-full max-w-[300px] shrink-0 overflow-hidden rounded-lg bg-near-black/50">
-              <div className="flex h-full items-center justify-center text-sm text-white/30">
-                Podcast Art
-              </div>
+              <Image
+                src="/images/podcast-art.jpg"
+                alt="Hunt. Fish. Mentor. podcast artwork"
+                width={600}
+                height={600}
+                className="h-full w-full object-cover"
+              />
             </div>
             <div>
               <LabelTag variant="white">Podcast</LabelTag>
