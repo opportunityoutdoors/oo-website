@@ -129,6 +129,31 @@ export default async function BlogPostPage({ params }: PageProps) {
                 <p className="italic text-near-black/50">No content yet.</p>
               )}
             </div>
+
+            {/* Photo Gallery */}
+            {post.gallery && post.gallery.length > 0 && (
+              <div className="mt-12">
+                <h2 className="mb-6 text-2xl font-extrabold text-near-black">Photos</h2>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {post.gallery.map((img, i) => (
+                    <figure key={i} className="overflow-hidden rounded-lg">
+                      <Image
+                        src={urlFor(img).width(720).quality(80).url()}
+                        alt={img.alt || `Photo ${i + 1}`}
+                        width={720}
+                        height={480}
+                        className="h-auto w-full"
+                      />
+                      {img.caption && (
+                        <figcaption className="mt-2 text-sm text-near-black/50">
+                          {img.caption}
+                        </figcaption>
+                      )}
+                    </figure>
+                  ))}
+                </div>
+              </div>
+            )}
           </article>
         </SectionContainer>
       </section>

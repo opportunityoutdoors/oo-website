@@ -22,6 +22,7 @@ export interface SanityImage {
     _type: "reference";
   };
   alt?: string;
+  caption?: string;
 }
 
 export interface Event {
@@ -90,6 +91,7 @@ export interface BlogPost {
   publishedAt: string;
   category: string;
   image?: SanityImage;
+  gallery?: SanityImage[];
   body: unknown[];
 }
 

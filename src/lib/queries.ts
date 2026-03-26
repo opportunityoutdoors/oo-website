@@ -91,6 +91,7 @@ export const blogPostBySlugQuery = `*[_type == "blogPost" && slug.current == $sl
   publishedAt,
   category,
   image,
+  gallery,
   body
 }`;
 
