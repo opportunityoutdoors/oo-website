@@ -34,7 +34,7 @@ export default function MentorshipLadder() {
     <section className="relative overflow-hidden bg-dark-green py-24">
       <div className="absolute top-0 left-0 right-0 h-1.5 bg-gold" />
       <SectionContainer>
-        <LabelTag variant="white">The Mentorship Ladder</LabelTag>
+        <LabelTag variant="warm-gold">The Mentorship Ladder</LabelTag>
         <h2 className="mb-16 mt-5 text-[clamp(2.5rem,5vw,56px)] leading-none text-white">
           Your Path Forward
         </h2>

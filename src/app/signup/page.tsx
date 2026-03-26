@@ -16,7 +16,7 @@ const faqItems = [
   {
     question: "How long does the application take?",
     answer:
-      "About 5 minutes. We'll review your application and a board member will reach out within 48 hours to discuss next steps.",
+      "About 5 minutes. Once submitted, we'll keep your info on file and a board member will reach out ahead of our next event to see where you fit.",
   },
   {
     question: "Is there an age requirement?",
@@ -64,7 +64,7 @@ export default function SignUpPage() {
               {
                 num: "1",
                 title: "Application Review",
-                desc: "A board member reviews your info and reaches out within 48 hours.",
+                desc: "A board member reviews your info. We'll keep you on file and reach out ahead of our next event.",
               },
               {
                 num: "2",

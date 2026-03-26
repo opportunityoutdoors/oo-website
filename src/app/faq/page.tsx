@@ -24,7 +24,7 @@ const generalFaq = [
   {
     question: "What does it cost?",
     answer:
-      "Community events are free. Camps have a small registration fee ($50–$100) to cover meals, lodging, and supplies.",
+      "Community events are free. Camps have a small registration fee ($75–$100).",
   },
   {
     question: "Where are events held?",
@@ -34,12 +34,12 @@ const generalFaq = [
   {
     question: "How do I sign up?",
     answer:
-      "Head to our Get Involved page and fill out the mentee or mentor form. You can also reach us directly at info@opportunityoutdoors.org with any questions.",
+      'Head to our <a href="/get-involved" class="font-semibold text-dark-green underline">Get Involved</a> page and fill out the mentee or mentor form. You can also reach us directly at <a href="mailto:info@opportunityoutdoors.org" class="font-semibold text-dark-green underline">info@opportunityoutdoors.org</a> with any questions.',
   },
   {
     question: "Do I need my own gear?",
     answer:
-      "Not always. Let us know what you have and we'll help. See the gear lists below for activity-specific requirements and recommendations. We often have loaners available.",
+      "It depends on the event. See the gear lists below for activity-specific requirements and recommendations. If you're missing anything or need help, reach out and we can help guide you in the right direction.",
   },
   {
     question: "Can I bring my kids?",
@@ -56,28 +56,80 @@ const generalFaq = [
 const gearLists = [
   {
     question: "Turkey Hunting",
-    answer:
-      "Valid NC hunting license with turkey privileges • Shotgun (12 or 20 gauge) • Turkey loads (#4–#6 shot) • Full camo (head to toe including face mask and gloves) • Blaze orange for travel • Turkey calls (optional — we'll have loaners) • Decoys (optional) • Headlamp, water bottle, daypack, bug spray, camp chair, rain gear",
+    answer: `<ul class="list-disc pl-5 space-y-1">
+<li>Valid NC hunting license with turkey privileges</li>
+<li>Shotgun or bow</li>
+<li>Turkey loads (#4–#6 shot) if using shotgun</li>
+<li>Full camo (head to toe including face mask and gloves)</li>
+<li>Blaze orange (optional but recommended for travel)</li>
+<li>Turkey calls (bring your own if you have them)</li>
+<li>Decoys (optional)</li>
+<li>Boots (broken in)</li>
+<li>Headlamp, knife, water bottle, daypack, bug spray, rain gear</li>
+<li>Camping gear (see below)</li>
+</ul>`,
   },
   {
     question: "Deer Hunting",
-    answer:
-      "Valid NC hunting license • Rifle or bow with appropriate ammo • Blaze orange vest and hat • Warm layered clothing (scent-free if possible) • Waterproof boots (broken in) • Headlamp, knife, water bottle, daypack, tree stand safety harness (if applicable), rain gear",
+    answer: `<ul class="list-disc pl-5 space-y-1">
+<li>Valid NC hunting license</li>
+<li>Rifle or bow with appropriate ammo</li>
+<li>Blaze orange vest and hat (required during any open firearm season, regardless of your method of take)</li>
+<li>Warm layered clothing</li>
+<li>Boots (broken in)</li>
+<li>Headlamp, knife, water bottle, daypack</li>
+<li>Tree stand safety harness (if applicable)</li>
+<li>Rain gear</li>
+<li>Camping gear (see below)</li>
+</ul>`,
   },
   {
     question: "Fishing (Freshwater)",
-    answer:
-      "Valid NC fishing license • Rod and reel (medium-action spinning combo is fine) • Basic tackle (lures/hooks/weights) • Pliers/line cutters • Polarized sunglasses, hat, sunscreen, water bottle, cooler for catch, rain jacket",
+    answer: `<ul class="list-disc pl-5 space-y-1">
+<li>Valid NC fishing license</li>
+<li>Rod and reel (medium-action spinning combo is fine)</li>
+<li>Basic tackle (lures/hooks/weights)</li>
+<li>Pliers/line cutters</li>
+<li>Polarized sunglasses, hat, sunscreen</li>
+<li>Water bottle, cooler for catch, rain jacket</li>
+</ul>`,
   },
   {
     question: "Dove Hunting",
-    answer:
-      "Valid NC hunting license with HIP registration • Shotgun (12 or 20 gauge) • Dove loads (#7.5–#8 shot) • Blaze orange (check regs) • Camp chair, water/cooler, bucket or game bag, hat, sunscreen, bug spray",
+    answer: `<ul class="list-disc pl-5 space-y-1">
+<li>Valid NC hunting license with HIP registration</li>
+<li>Shotgun (12 or 20 gauge)</li>
+<li>Dove loads (#7.5–#8 shot)</li>
+<li>Blaze orange (check regs)</li>
+<li>Camp chair, water/cooler, bucket or game bag</li>
+<li>Hat, sunscreen, bug spray</li>
+</ul>`,
+  },
+  {
+    question: "Camping Gear",
+    answer: `<ul class="list-disc pl-5 space-y-1">
+<li>Tent or hammock</li>
+<li>Sleeping bag</li>
+<li>Sleeping pad</li>
+<li>Cooler</li>
+<li>Tarp</li>
+<li>Camp chair</li>
+<li>Firewood</li>
+<li>Food and water</li>
+<li>Headlamp or flashlight</li>
+</ul>`,
   },
   {
     question: "General (All Events)",
-    answer:
-      "Water bottle, sunscreen, bug spray, weather-appropriate clothing, camp chair, positive attitude, willingness to learn",
+    answer: `<ul class="list-disc pl-5 space-y-1">
+<li>Water bottle</li>
+<li>Sunscreen</li>
+<li>Bug spray</li>
+<li>Weather-appropriate clothing</li>
+<li>Camp chair</li>
+<li>Positive attitude and willingness to learn</li>
+</ul>
+<p class="mt-3 text-sm italic">If you're missing anything or need help with gear, reach out to us at <a href="mailto:info@opportunityoutdoors.org" class="font-semibold text-dark-green underline">info@opportunityoutdoors.org</a> and we can help guide you in the right direction.</p>`,
   },
 ];
 
@@ -103,6 +155,7 @@ export default function FaqPage() {
         label="Resources"
         subtitle="Everything you need to know before your first event."
         backgroundImage="/images/hero/faq-hero.jpg"
+        imagePosition="center 65%"
       />
 
       {/* General FAQ */}

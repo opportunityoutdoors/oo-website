@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import PageHero from "@/components/ui/PageHero";
 import SectionContainer from "@/components/ui/SectionContainer";
 import LabelTag from "@/components/ui/LabelTag";
@@ -11,17 +12,10 @@ export const metadata: Metadata = {
     "Partner with Opportunity Outdoors. Corporate sponsorship, podcast advertising, and individual scholarship opportunities.",
 };
 
-const impactStats = [
-  { value: "400+", label: "Members" },
-  { value: "30+", label: "Events Annually" },
-  { value: "85%", label: "Goes to Programs" },
-];
-
 const podcastPackages = [
-  { name: "Pre-Roll Ad", price: "$150", desc: "15-second intro mention at the top of the episode." },
-  { name: "Mid-Roll Ad", price: "$250", desc: "60-second ad read during the episode with custom talking points." },
-  { name: "Full Episode Sponsorship", price: "$500", desc: "Branded episode with intro/outro mentions, mid-roll, and social promotion." },
-  { name: "Season Package", price: "$2,000", desc: "Ad placement across all episodes for one season (8-10 episodes)." },
+  { name: "Episode Mention", desc: "Brand mention during a podcast episode with a brief description of your business." },
+  { name: "Episode Sponsorship", desc: "Full episode sponsorship with intro/outro mentions and social media promotion." },
+  { name: "Custom Package", desc: "Let's build something that works for you. Reach out to discuss options." },
 ];
 
 const scholarshipTiers = [
@@ -38,25 +32,8 @@ export default function SponsorshipPage() {
         label="Partner With Us"
         subtitle="Opportunity Outdoors runs on community. Corporate sponsors and individual donors make it possible for us to put more people in the field — mentored, equipped, and inspired."
         backgroundImage="/images/hero/sponsorship-hero.jpg"
+        imagePosition="center 65%"
       />
-
-      {/* Impact Stats */}
-      <section className="bg-dark-green py-14">
-        <SectionContainer>
-          <div className="grid grid-cols-3 gap-6 text-center">
-            {impactStats.map((stat) => (
-              <div key={stat.label}>
-                <p className="text-[clamp(2rem,5vw,48px)] font-black leading-none text-white">
-                  {stat.value}
-                </p>
-                <p className="mt-2 text-sm font-semibold uppercase tracking-[2px] text-white/50">
-                  {stat.label}
-                </p>
-              </div>
-            ))}
-          </div>
-        </SectionContainer>
-      </section>
 
       {/* Corporate Tiers */}
       <section className="bg-cream py-20">
@@ -80,7 +57,10 @@ export default function SponsorshipPage() {
               Reach Our Audience
             </h2>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <p className="mx-auto mb-10 max-w-xl text-center text-sm text-near-black/50">
+            Reach an engaged audience of hunters, anglers, and outdoor enthusiasts across North Carolina. Inquire for pricing and availability.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-3">
             {podcastPackages.map((pkg) => (
               <div
                 key={pkg.name}
@@ -89,9 +69,6 @@ export default function SponsorshipPage() {
                 <h3 className="text-lg font-extrabold text-near-black">
                   {pkg.name}
                 </h3>
-                <p className="mt-1 text-2xl font-black text-dark-green">
-                  {pkg.price}
-                </p>
                 <p className="mt-3 text-sm leading-relaxed text-near-black/50">
                   {pkg.desc}
                 </p>
@@ -133,8 +110,34 @@ export default function SponsorshipPage() {
         </SectionContainer>
       </section>
 
+      {/* Gear Donations */}
+      <section className="bg-white py-20">
+        <SectionContainer>
+          <div className="mx-auto max-w-2xl text-center">
+            <LabelTag>Gear Donations</LabelTag>
+            <h2 className="mt-5 text-[clamp(2rem,5vw,48px)] leading-none text-near-black">
+              Donate Gear &amp; Swag
+            </h2>
+            <p className="mt-4 text-sm leading-relaxed text-near-black/50">
+              Have hunting, fishing, or camping gear collecting dust? We accept gear
+              donations to use in raffles, giveaways, and to help equip new hunters and anglers.
+              Branded swag and merchandise donations are also welcome.
+            </p>
+            <p className="mt-4 text-sm leading-relaxed text-near-black/50">
+              Reach out to coordinate a drop-off or shipment.
+            </p>
+            <Link
+              href="#inquiry-form"
+              className="mt-8 inline-block rounded bg-dark-green px-9 py-4 text-[13px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:bg-dark-green/90"
+            >
+              Donate Gear
+            </Link>
+          </div>
+        </SectionContainer>
+      </section>
+
       {/* Inquiry Form */}
-      <section id="inquiry-form" className="bg-white py-20">
+      <section id="inquiry-form" className="bg-warm-gray py-20">
         <SectionContainer>
           <div className="mx-auto max-w-2xl">
             <div className="mb-10 text-center">

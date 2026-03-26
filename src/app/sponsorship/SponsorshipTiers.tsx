@@ -3,7 +3,6 @@
 const corporateTiers = [
   {
     name: "Camp Sponsor",
-    price: "$2,500",
     badge: null,
     benefits: [
       "Logo on event signage and materials",
@@ -14,7 +13,6 @@ const corporateTiers = [
   },
   {
     name: "Season Sponsor",
-    price: "$5,000",
     badge: "Most Popular",
     benefits: [
       "Everything in Camp Sponsor",
@@ -26,7 +24,6 @@ const corporateTiers = [
   },
   {
     name: "Founding Partner",
-    price: "$10,000",
     badge: null,
     benefits: [
       "Everything in Season Sponsor",
@@ -59,8 +56,8 @@ export default function SponsorshipTiers() {
           <h3 className="text-xl font-extrabold text-near-black">
             {tier.name}
           </h3>
-          <p className="mt-2 text-[36px] font-black leading-none text-dark-green">
-            {tier.price}
+          <p className="mt-2 text-sm font-semibold uppercase tracking-wider text-dark-green">
+            Inquire for Details
           </p>
           <ul className="mt-6 space-y-2.5">
             {tier.benefits.map((benefit) => (

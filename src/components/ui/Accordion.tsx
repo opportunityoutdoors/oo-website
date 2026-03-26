@@ -39,12 +39,13 @@ export default function Accordion({ items }: AccordionProps) {
           </button>
           <div
             className={`overflow-hidden transition-all ${
-              openIndex === index ? "max-h-96 pb-5" : "max-h-0"
+              openIndex === index ? "max-h-[800px] pb-5" : "max-h-0"
             }`}
           >
-            <p className="text-[15px] leading-relaxed text-near-black/60">
-              {item.answer}
-            </p>
+            <div
+              className="text-[15px] leading-relaxed text-near-black/60"
+              dangerouslySetInnerHTML={{ __html: item.answer }}
+            />
           </div>
         </div>
       ))}

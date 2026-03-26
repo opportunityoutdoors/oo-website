@@ -34,7 +34,10 @@ export default function NewsletterSection() {
   return (
     <section className="bg-dark-green px-6 py-20 text-center text-white md:px-10">
       <div className="mx-auto max-w-[600px]">
-        <h3 className="mb-4 text-2xl font-bold uppercase tracking-[1px]">
+        <span className="mb-4 inline-block border-2 border-[#C4941A] px-3.5 py-1 text-[11px] font-bold uppercase tracking-[3px] text-[#C4941A]">
+          Newsletter
+        </span>
+        <h3 className="mb-4 text-[clamp(2rem,5vw,48px)] font-bold uppercase leading-none tracking-[1px]">
           Want Updates?
         </h3>
         <p className="mb-8 text-base leading-relaxed text-white/80">

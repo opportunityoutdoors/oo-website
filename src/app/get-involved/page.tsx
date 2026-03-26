@@ -28,12 +28,12 @@ const faqItems = [
   {
     question: "Do I need to own gear?",
     answer:
-      "No. We have a gear lending program and can outfit you for any camp or event. As you grow in your outdoor journey, we'll help you make smart gear decisions when you're ready to buy your own.",
+      "Not necessarily. Check the gear lists on our FAQ page for activity-specific requirements. If you're missing something or need guidance, reach out and we can help point you in the right direction.",
   },
   {
     question: "What does it cost?",
     answer:
-      "Community events are typically free. Hunt and fish camps have a registration fee (usually $75-$100) that covers meals, venue, insurance, and supplies. Scholarships are available — cost should never be a barrier.",
+      "Community events are typically free. Hunt and fish camps have a registration fee (usually $75–$100). Scholarships are available — cost should never be a barrier.",
   },
   {
     question: "What are the requirements to be a mentor?",
@@ -43,7 +43,7 @@ const faqItems = [
   {
     question: "Is this only for hunting?",
     answer:
-      "No. We run camps and events for hunting (turkey, deer, dove, waterfowl), fishing (freshwater, fly fishing, saltwater), and general outdoor skills. Our community includes all kinds of outdoor enthusiasts.",
+      "No. We run camps and events for hunting (turkey, deer, dove), fishing (freshwater, fly fishing, saltwater), and general outdoor skills. Our community includes all kinds of outdoor enthusiasts.",
   },
 ];
 
@@ -88,10 +88,11 @@ export default function GetInvolvedPage() {
                 I Want to Learn
               </h2>
               <p className="mt-4 text-[15px] leading-relaxed text-near-black/60">
-                New to hunting or fishing? Curious but don&apos;t know where to
-                start? We&apos;ll walk alongside you from day one. No experience
-                necessary — just a willingness to learn and respect for the
-                outdoors.
+                No experience necessary. Just curiosity and a willingness to
+                show up. We&apos;ll pair you with an experienced mentor
+                who&apos;ll walk alongside you from your first time at the range
+                to your first morning in the field. You&apos;ll learn safety,
+                ethics, regulations, and skills at a pace that works for you.
               </p>
               <ul className="mt-6 space-y-3">
                 {[
@@ -120,8 +121,8 @@ export default function GetInvolvedPage() {
             </div>
             <div className="aspect-[4/3] overflow-hidden rounded-lg">
               <Image
-                src="/images/hero/shooting-range.webp"
-                alt="Mentor teaching a new shooter at the range"
+                src="/images/hero/archery-mentoring.webp"
+                alt="Mentee learning archery"
                 width={600}
                 height={450}
                 className="h-full w-full object-cover"
@@ -137,11 +138,11 @@ export default function GetInvolvedPage() {
           <div className="grid items-center gap-12 lg:grid-cols-2">
             <div className="order-2 lg:order-1 aspect-[4/3] overflow-hidden rounded-lg">
               <Image
-                src="/images/hero/archery-mentoring.webp"
-                alt="Mentor teaching archery"
+                src="/images/hero/shooting-range.webp"
+                alt="Mentor teaching at the range"
                 width={600}
                 height={450}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover object-left"
               />
             </div>
             <div className="order-1 lg:order-2">

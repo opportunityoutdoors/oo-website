@@ -9,6 +9,8 @@ const interestOptions = [
   { label: "Season Sponsor", value: "Season Sponsor" },
   { label: "Founding Partner", value: "Founding Partner" },
   { label: "Podcast Sponsorship", value: "Podcast Sponsorship" },
+  { label: "Camper Sponsorship", value: "Camper Sponsorship" },
+  { label: "Gear Donation", value: "Gear Donation" },
   { label: "Other", value: "Other" },
 ];
 

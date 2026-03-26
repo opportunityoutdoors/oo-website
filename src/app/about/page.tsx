@@ -16,7 +16,7 @@ const values = [
   {
     num: "01",
     title: "Mentorship Over\nInstruction",
-    desc: "We don't hand you a pamphlet. We walk alongside you. Mentorship means relationship, patience, and years of showing up.",
+    desc: "We don't hand you a pamphlet. We walk alongside you. Mentorship means honest feedback, patience, and years of showing up.",
   },
   {
     num: "02",
@@ -26,7 +26,7 @@ const values = [
   {
     num: "03",
     title: "Everyone\nBelongs",
-    desc: "No gatekeeping. No intimidation. If you're curious about hunting or fishing, you have a place at our table — and around our campfire.",
+    desc: "No gatekeeping. No intimidation. If you're curious about hunting or fishing, you have a place around our campfire.",
   },
   {
     num: "04",
@@ -50,36 +50,43 @@ const teamMembers = [
     name: "Evan Trebilcock",
     role: "Board Chair & Co-Founder",
     bio: "Evan grew up hunting and fishing in the Southeast and co-founded OO to help others discover what the outdoors gave him. He leads the board and oversees org strategy.",
+    image: "/images/board/evan-trebilcock.jpg",
   },
   {
     name: "John Trice",
     role: "Vice Chair & Marketing",
     bio: "John spent 15 years on the West Coast before coming back to NC. A lifelong outdoorsman and angler, he picked up hunting through OO in 2022 and now leads marketing and the website rebuild.",
+    image: "/images/board/john-trice.jpg",
   },
   {
     name: "Safiyyah Motaib",
     role: "Secretary & Outreach",
     bio: "Safiyyah brings a community organizing background and a passion for making the outdoors more accessible. She manages communications and community partnerships.",
+    image: "/images/board/safiyyah-motaib.jpg",
   },
   {
     name: "Zeke Goldstein",
     role: "Treasurer",
     bio: "Zeke handles the books and keeps OO financially accountable. When he's not crunching numbers, he's chasing trout in the NC mountains.",
+    image: "/images/board/zeke-goldstein.jpg",
   },
   {
     name: 'John "Monty" Montgomery',
     role: "Event Coordinator",
     bio: "Monty is the boots-on-the-ground guy. He coordinates camp logistics, manages gear, and makes sure every event runs smoothly.",
+    image: "/images/board/monty-montgomery.jpg",
   },
   {
     name: "Andy Tomaszewski",
     role: "At Large & Co-Founder",
     bio: "Andy co-founded OO alongside Evan and brings decades of hunting experience. He mentors new hunters and helps shape the camp curriculum.",
+    image: "/images/board/andy-tomaszewski.jpg",
   },
   {
     name: "Evan Weiss",
     role: "At Large",
     bio: "Evan W. is a newer board member with a background in conservation policy. He helps OO navigate partnerships with state agencies and conservation orgs.",
+    image: "/images/board/evan-weiss.jpg",
   },
 ];
 
@@ -88,9 +95,9 @@ export default function AboutPage() {
     <>
       {/* Hero */}
       <PageHero
-        title="About Us"
-        label="Our Story"
-        subtitle="Conservation through mentorship."
+        title={"We Build People\nWho Build Conservation"}
+        label="About Us"
+        subtitle="A North Carolina nonprofit turning curious newcomers into ethical, conservation-minded sportsmen and women — through mentorship, community, and time in the field."
         backgroundImage="/images/hero/about-hero.webp"
       />
 
@@ -101,7 +108,7 @@ export default function AboutPage() {
             <div>
               <LabelTag>Our Mission</LabelTag>
               <h2 className="mb-6 mt-5 text-[56px] leading-none text-near-black">
-                Mentorship Is the Mission
+                We Develop the People
               </h2>
               <p className="mb-5 text-lg font-medium leading-relaxed text-near-black/70">
                 Opportunity Outdoors mentors new hunters and anglers through
@@ -120,7 +127,7 @@ export default function AboutPage() {
               <p className="text-base leading-relaxed text-near-black/50">
                 Our vision is a thriving outdoor community where every aspiring
                 hunter or angler has a mentor, and every experienced sportsman
-                has someone to invest in.
+                has someone to show the ropes.
               </p>
             </div>
             <div className="aspect-[4/3] overflow-hidden rounded-lg">
@@ -139,14 +146,14 @@ export default function AboutPage() {
       {/* Origin Story */}
       <section className="relative overflow-hidden bg-dark-green py-24">
         <Image
-          src="/images/hero/origin-story.jpg"
+          src="/images/hero/campfire.jpg"
           alt=""
           fill
-          className="object-cover opacity-15"
+          className="object-cover opacity-15 object-bottom"
         />
         <SectionContainer className="relative z-10">
           <div className="max-w-[700px]">
-            <LabelTag variant="white">Our Story</LabelTag>
+            <LabelTag variant="warm-gold">Our Story</LabelTag>
             <h2 className="mb-8 mt-5 text-[48px] leading-none text-white">
               Started Around a Campfire
             </h2>
@@ -154,13 +161,13 @@ export default function AboutPage() {
               <strong className="text-white">
                 Opportunity Outdoors started with a simple observation:
               </strong>{" "}
-              there are thousands of people in North Carolina who want to hunt or
+              there are thousands of folks in North Carolina who want to hunt or
               fish but don&apos;t have anyone to show them how. No family
               tradition. No hunting buddy. No idea where to start.
             </p>
             <p className="mb-5 text-base leading-relaxed text-white/70">
-              Most hunting organizations focus on policy, access, or habitat. All
-              critical work. But we saw a gap nobody was filling:{" "}
+              While most hunting organizations focus on policy, access, or
+              habitat, we saw a gap nobody was filling:{" "}
               <strong className="text-white">
                 the human side of conservation.
               </strong>{" "}
@@ -169,19 +176,47 @@ export default function AboutPage() {
               like you belong in the field.
             </p>
             <p className="text-base leading-relaxed text-white/70">
-              What started as a handful of guys hosting informal hunts has grown
-              into a structured mentorship organization with multi-day camps, a
-              podcast, community events, and a clear pathway from curious
-              newcomer to mentor. We&apos;re a 501(c)(3) nonprofit, and every
-              dollar goes toward getting more people into the field the right
-              way.
+              What began as a handful of friends hosting informal hunting trips
+              has grown into a structured mentorship organization with formal
+              hunt camps, community events, a podcast, and a clear pathway from
+              curious newcomer to mentor. As a 501(c)(3) nonprofit, every dollar
+              we raise goes back into the organization to help mentor the next
+              wave of hunters and fishermen.
             </p>
           </div>
         </SectionContainer>
       </section>
 
+      {/* Quick Facts */}
+      <section className="bg-cream py-20">
+        <SectionContainer>
+          <div className="grid grid-cols-2 md:grid-cols-4">
+            {[
+              { value: "2020", label: "Founded" },
+              { value: "400+", label: "Community Members" },
+              { value: "30+", label: "Camps & Events" },
+              { value: "NC", label: "Based & Focused" },
+            ].map((stat, i, arr) => (
+              <div
+                key={stat.label}
+                className={`px-6 py-10 text-center ${
+                  i < arr.length - 1 ? "border-r border-warm-gray" : ""
+                }`}
+              >
+                <p className="font-heading text-[64px] font-black leading-none text-dark-green">
+                  {stat.value}
+                </p>
+                <p className="mt-2 text-[13px] font-bold uppercase tracking-[2px] text-near-black/40">
+                  {stat.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </SectionContainer>
+      </section>
+
       {/* Values */}
-      <section className="bg-cream py-24">
+      <section className="bg-white py-24">
         <SectionContainer>
           <div className="mb-16 text-center">
             <LabelTag>What We Stand For</LabelTag>
@@ -191,8 +226,8 @@ export default function AboutPage() {
           </div>
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {values.map((v) => (
-              <div key={v.num} className="p-8">
-                <span className="text-[64px] font-black leading-none text-gold">
+              <div key={v.num} className="p-8 text-center">
+                <span className="font-heading text-[56px] font-black leading-none text-[#C4941A]">
                   {v.num}
                 </span>
                 <h3 className="mb-3 mt-2 whitespace-pre-line text-2xl leading-tight text-near-black">
@@ -221,9 +256,13 @@ export default function AboutPage() {
             {teamMembers.slice(0, 4).map((member) => (
               <div key={member.name} className="text-center">
                 <div className="mx-auto mb-4 aspect-square w-48 overflow-hidden rounded-lg bg-cream">
-                  <div className="flex h-full items-center justify-center text-xs text-near-black/30">
-                    Photo
-                  </div>
+                  <Image
+                    src={member.image}
+                    alt={member.name}
+                    width={192}
+                    height={192}
+                    className="h-full w-full object-cover"
+                  />
                 </div>
                 <h3 className="text-lg text-near-black">
                   {member.name}
@@ -242,9 +281,13 @@ export default function AboutPage() {
             {teamMembers.slice(4).map((member) => (
               <div key={member.name} className="text-center">
                 <div className="mx-auto mb-4 aspect-square w-48 overflow-hidden rounded-lg bg-cream">
-                  <div className="flex h-full items-center justify-center text-xs text-near-black/30">
-                    Photo
-                  </div>
+                  <Image
+                    src={member.image}
+                    alt={member.name}
+                    width={192}
+                    height={192}
+                    className="h-full w-full object-cover"
+                  />
                 </div>
                 <h3 className="text-lg text-near-black">
                   {member.name}

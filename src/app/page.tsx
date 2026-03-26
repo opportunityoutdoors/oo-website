@@ -135,7 +135,7 @@ export default function Home() {
       <section className="relative overflow-hidden bg-dark-green py-24">
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-gold" />
         <SectionContainer>
-          <LabelTag variant="white">The Mentorship Ladder</LabelTag>
+          <LabelTag variant="warm-gold">The Mentorship Ladder</LabelTag>
           <h2 className="mb-16 mt-5 text-[clamp(2.5rem,5vw,56px)] leading-none text-white">
             Your Path Forward
           </h2>
@@ -147,7 +147,7 @@ export default function Home() {
                   i > 0 ? "border-t border-white/15 md:border-l md:border-t-0" : ""
                 }`}
               >
-                <span className="text-[80px] font-black leading-none text-white/[0.08]">
+                <span className="font-heading text-[64px] font-black leading-none text-white/10">
                   {step.num}
                 </span>
                 <h4 className="mb-2 mt-3 text-2xl font-extrabold text-white">
@@ -249,23 +249,24 @@ export default function Home() {
       </section>
 
       {/* ══════ QUOTE ══════ */}
-      <section className="relative flex min-h-[400px] items-center justify-center overflow-hidden bg-dark-green">
+      <section className="relative flex items-center justify-center overflow-hidden bg-dark-green py-[120px]">
         <Image
           src="/images/hero/testimonial-bg.jpg"
           alt=""
           fill
-          className="object-cover opacity-30"
+          className="object-cover"
+          style={{ backgroundAttachment: "fixed" }}
         />
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="relative z-10 px-6 text-center">
-          <blockquote className="text-[clamp(1.5rem,4vw,36px)] font-black italic leading-snug text-white">
+        <div className="absolute inset-0 bg-near-black/75" />
+        <div className="relative z-10 mx-auto max-w-[900px] px-10 text-center">
+          <blockquote className="font-heading text-[clamp(2rem,5vw,52px)] font-[800] uppercase leading-[1.1] text-white">
             &ldquo;The hunting buddies you{" "}
-            <em className="not-italic text-gold">
+            <em className="not-italic text-[#C4941A]">
               didn&apos;t grow up with
             </em>{" "}
             but wish you had.&rdquo;
           </blockquote>
-          <cite className="mt-6 block text-sm not-italic tracking-wider text-white/40">
+          <cite className="mt-6 block text-sm not-italic uppercase tracking-[2px] text-white/50">
             — The OO Community
           </cite>
         </div>
@@ -284,8 +285,8 @@ export default function Home() {
             {/* Mentee Card */}
             <div className="group relative h-[450px] overflow-hidden rounded-lg bg-dark-green">
               <Image
-                src="/images/hero/shooting-range.webp"
-                alt="Mentee learning at the range"
+                src="/images/hero/archery-mentoring.webp"
+                alt="Mentee learning archery"
                 fill
                 className="object-cover transition-transform duration-400 group-hover:scale-105"
               />
@@ -311,10 +312,10 @@ export default function Home() {
             {/* Mentor Card */}
             <div className="group relative h-[450px] overflow-hidden rounded-lg bg-dark-green">
               <Image
-                src="/images/hero/archery-mentoring.webp"
-                alt="Mentor teaching archery"
+                src="/images/hero/shooting-range.webp"
+                alt="Mentor teaching at the range"
                 fill
-                className="object-cover transition-transform duration-400 group-hover:scale-105"
+                className="object-cover object-left transition-transform duration-400 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 z-10 p-10">
@@ -342,8 +343,8 @@ export default function Home() {
       {/* ══════ PODCAST ══════ */}
       <section className="bg-near-black py-24">
         <SectionContainer>
-          <div className="flex flex-col items-center gap-12 md:flex-row">
-            <div className="aspect-square w-full max-w-[220px] shrink-0 overflow-hidden rounded-2xl bg-near-black/50 shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
+          <div className="mx-auto flex max-w-[700px] flex-col items-center gap-[60px] md:flex-row md:items-center">
+            <div className="aspect-square w-full max-w-[220px] shrink-0 overflow-hidden rounded-xl shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
               <Image
                 src="/images/podcast-art.jpg"
                 alt="Hunt. Fish. Mentor. podcast artwork"
@@ -353,27 +354,23 @@ export default function Home() {
               />
             </div>
             <div>
-              <LabelTag variant="white">Podcast</LabelTag>
-              <h3 className="mb-4 mt-4 text-[40px] font-black leading-none text-white">
+              <LabelTag variant="warm-gold">Podcast</LabelTag>
+              <h3 className="mb-4 mt-4 text-[42px] font-black leading-none text-white">
                 Hunt. Fish.
                 <br />
                 Mentor.
               </h3>
-              <p className="mb-6 max-w-md text-base leading-relaxed text-white/60">
+              <p className="mb-6 max-w-[480px] text-base leading-[1.7] text-white/50">
                 NC-centered hunting and fishing conversations. Experienced
                 mentors share tips, stories, and the conservation ethic behind
                 everything we do.
               </p>
-              <div className="flex flex-wrap gap-3">
-                {["Apple Podcasts", "Spotify", "YouTube"].map((platform) => (
-                  <span
-                    key={platform}
-                    className="rounded border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white/50"
-                  >
-                    {platform}
-                  </span>
-                ))}
-              </div>
+              <Link
+                href="/podcast"
+                className="inline-block rounded bg-gold px-7 py-3 text-[13px] font-bold uppercase tracking-[1.5px] text-near-black transition-colors hover:bg-gold/90"
+              >
+                Listen Now
+              </Link>
             </div>
           </div>
         </SectionContainer>

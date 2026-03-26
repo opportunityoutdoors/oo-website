@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import PageHero from "@/components/ui/PageHero";
+import Link from "next/link";
 import SectionContainer from "@/components/ui/SectionContainer";
 import LabelTag from "@/components/ui/LabelTag";
 import CTABanner from "@/components/ui/CTABanner";
@@ -13,176 +13,64 @@ export const metadata: Metadata = {
 
 export const revalidate = 300;
 
-// Placeholder episodes for development
-const placeholderEpisodes = [
-  {
-    _id: "1",
-    title: "Why Mentorship Matters More Than Gear",
-    episodeNumber: 12,
-    publishedAt: "2026-03-10",
-    duration: "48 min",
-    description:
-      "We break down why having a mentor in the field is worth more than any piece of equipment you can buy.",
-  },
-  {
-    _id: "2",
-    title: "Turkey Season Prep: What You Need to Know",
-    episodeNumber: 11,
-    publishedAt: "2026-02-25",
-    duration: "42 min",
-    description:
-      "Spring gobbler season is right around the corner. We cover scouting, calling, and what to expect at your first turkey camp.",
-  },
-  {
-    _id: "3",
-    title: "Conservation Is the Cost of Entry",
-    episodeNumber: 10,
-    publishedAt: "2026-02-10",
-    duration: "55 min",
-    description:
-      "What does it mean to be a conservation-first organization? We talk about stewardship, ethics, and why every hunter has a responsibility.",
-  },
-  {
-    _id: "4",
-    title: "From Mentee to Mentor: Andy's Story",
-    episodeNumber: 9,
-    publishedAt: "2026-01-28",
-    duration: "38 min",
-    description:
-      "Co-founder Andy Tomaszewski shares his journey from a first-time hunter to leading camps and mentoring others.",
-  },
-  {
-    _id: "5",
-    title: "Fishing 101: Getting Started on the Water",
-    episodeNumber: 8,
-    publishedAt: "2026-01-14",
-    duration: "44 min",
-    description:
-      "Everything you need to know to get started fishing in North Carolina — licenses, gear, spots, and etiquette.",
-  },
-  {
-    _id: "6",
-    title: "The OO Community: More Than Just Hunting",
-    episodeNumber: 7,
-    publishedAt: "2025-12-20",
-    duration: "51 min",
-    description:
-      "Cookouts, range days, and lifelong friendships. We talk about what makes the OO community different.",
-  },
-];
-
 const topicTags = [
-  "Hunting",
+  "Turkey Hunting",
   "Fishing",
+  "Deer Season",
+  "Gear Reviews",
   "Conservation",
   "Mentorship",
-  "Gear Tips",
-  "Community",
-  "Camp Recaps",
-  "Beginner Guides",
+  "Public Land",
+  "NC Wildlife",
 ];
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 export default function PodcastPage() {
   return (
     <>
-      {/* Hero */}
-      <PageHero
-        title="Hunt. Fish. Mentor."
-        label="Podcast"
-        subtitle="NC-centered hunting and fishing conversations. Experienced mentors share tips, stories, and the conservation ethic behind everything we do."
-        backgroundImage="/images/hero/podcast-hero.webp"
-      />
-
-      {/* Podcast Info Bar */}
-      <section className="bg-near-black py-12">
-        <SectionContainer>
-          <div className="flex flex-col items-center gap-8 md:flex-row">
-            <div className="aspect-square w-full max-w-[200px] shrink-0 overflow-hidden rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
-              <Image
-                src="/images/podcast-art.jpg"
-                alt="Hunt. Fish. Mentor. podcast artwork"
-                width={400}
-                height={400}
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <div>
-              <p className="max-w-md text-base leading-relaxed text-white/60">
-                Listen on your favorite platform. New episodes drop every other week.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                {["Apple Podcasts", "Spotify", "YouTube"].map((platform) => (
-                  <a
-                    key={platform}
-                    href={
-                      platform === "Apple Podcasts"
-                        ? process.env.NEXT_PUBLIC_APPLE_PODCASTS_URL ?? "#"
-                        : platform === "Spotify"
-                          ? process.env.NEXT_PUBLIC_SPOTIFY_URL ?? "#"
-                          : process.env.NEXT_PUBLIC_YOUTUBE_URL ?? "#"
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded border border-white/20 px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-white/70 transition-colors hover:border-white/40 hover:text-white"
-                  >
-                    {platform}
-                  </a>
-                ))}
-              </div>
-            </div>
-          </div>
-        </SectionContainer>
+      {/* Hero — podcast art as background */}
+      <section className="relative flex h-[75vh] min-h-[550px] max-h-[750px] items-end overflow-hidden bg-near-black">
+        <Image
+          src="/images/hero/podcast-hero-hires.jpg"
+          alt="Hunt. Fish. Mentor. podcast"
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/70" />
+        <div className="relative z-10 mx-auto w-full max-w-[1200px] px-10 pb-[60px] pt-32">
+          <LabelTag variant="warm-gold">The Podcast</LabelTag>
+          <h1 className="mt-5 text-[72px] leading-[0.95] tracking-[-1px] text-white">
+            Hunt. Fish.
+            <br />
+            Mentor.
+          </h1>
+          <p className="mt-4 max-w-[540px] text-lg leading-[1.7] text-white/85">
+            NC-centered hunting and fishing conversations. Experienced mentors
+            share tips, stories, and the conservation ethic behind everything we
+            do.
+          </p>
+        </div>
       </section>
 
-      {/* Recent Episodes */}
+      {/* Spotify Player */}
       <section className="bg-cream py-20">
         <SectionContainer>
-          <div className="mb-10">
-            <LabelTag>Recent Episodes</LabelTag>
+          <div className="mb-10 text-center">
+            <LabelTag>Latest Episodes</LabelTag>
             <h2 className="mt-5 text-[clamp(2rem,5vw,48px)] leading-none text-near-black">
-              Latest from the Show
+              Listen Now
             </h2>
           </div>
-
-          <div className="space-y-4">
-            {placeholderEpisodes.map((ep) => (
-              <div
-                key={ep._id}
-                className="flex items-start gap-6 rounded-lg border border-near-black/10 bg-white p-6 transition-shadow hover:shadow-sm"
-              >
-                <span className="hidden shrink-0 text-[48px] font-black leading-none text-near-black/10 sm:block">
-                  {String(ep.episodeNumber).padStart(2, "0")}
-                </span>
-                <div className="flex-1">
-                  <h3 className="text-lg font-extrabold text-near-black">
-                    <span className="sm:hidden">Ep. {ep.episodeNumber} — </span>
-                    {ep.title}
-                  </h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-near-black/50">
-                    {ep.description}
-                  </p>
-                  <div className="mt-3 flex items-center gap-3 text-xs text-near-black/40">
-                    <span>{formatDate(ep.publishedAt)}</span>
-                    <span>·</span>
-                    <span>{ep.duration}</span>
-                  </div>
-                </div>
-                <a
-                  href="#"
-                  className="shrink-0 rounded bg-dark-green px-4 py-2 text-[11px] font-bold uppercase tracking-[1px] text-white transition-colors hover:bg-dark-green/90"
-                >
-                  Listen
-                </a>
-              </div>
-            ))}
+          <div className="mx-auto max-w-3xl">
+            <iframe
+              src="https://open.spotify.com/embed/show/70km7MQ3NVkRJK95XdNKFw?utm_source=generator&theme=0"
+              width="100%"
+              height="352"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+              className="rounded-lg"
+              title="Hunt. Fish. Mentor. podcast on Spotify"
+            />
           </div>
         </SectionContainer>
       </section>
@@ -193,14 +81,14 @@ export default function PodcastPage() {
           <div className="mx-auto max-w-3xl text-center">
             <LabelTag>About the Show</LabelTag>
             <h2 className="mt-5 text-[clamp(2rem,5vw,48px)] leading-none text-near-black">
-              What We Talk About
+              Real Conversations From the Field
             </h2>
             <p className="mt-6 text-[15px] leading-relaxed text-near-black/60">
-              Every episode features real conversations with mentors, mentees,
-              and community members about hunting, fishing, conservation, and
-              what it means to be a responsible outdoorsman in North Carolina.
-              Whether you&apos;re a seasoned hunter or completely new to the
-              outdoors, there&apos;s something here for you.
+              Hunt. Fish. Mentor. isn&apos;t about trophy photos or product
+              reviews. It&apos;s about the people, the ethics, and the mentorship
+              that make outdoor culture worth preserving. Whether you&apos;re a
+              seasoned hunter or completely new to the outdoors, there&apos;s
+              something here for you.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-2">
               {topicTags.map((tag) => (
@@ -218,12 +106,12 @@ export default function PodcastPage() {
 
       {/* CTA */}
       <CTABanner
-        heading="Want to Be a Guest?"
-        text="Have a story to share? We're always looking for hunters, anglers, and mentors to feature on the show."
-        primaryLabel="Contact Us"
-        primaryHref="/contact"
-        secondaryLabel="Subscribe"
-        secondaryHref="#"
+        heading="Like What You Hear?"
+        text="Get involved with the community behind the podcast. Camps, events, and mentorship — all the things we talk about, but in real life."
+        primaryLabel="Get Involved"
+        primaryHref="/get-involved"
+        secondaryLabel="Listen on Spotify"
+        secondaryHref="https://open.spotify.com/show/70km7MQ3NVkRJK95XdNKFw"
       />
     </>
   );

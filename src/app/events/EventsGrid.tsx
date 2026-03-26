@@ -1,8 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import FilterTabs from "@/components/ui/FilterTabs";
+import type { Event } from "@/types";
+
+interface EventsGridProps {
+  events?: Event[];
+}
+
 // Placeholder events until Sanity content is populated
 const placeholderEvents: {
   _id: string;
@@ -64,7 +68,6 @@ const placeholderEvents: {
   },
 ];
 
-const TABS = ["All Events", "Camps", "Community", "Workshops"];
 
 function getEventTypeLabel(eventType: string): string {
   switch (eventType) {
@@ -93,33 +96,20 @@ function getButtonLabel(eventType: string, status?: string): string {
   return "Learn More";
 }
 
-export default function EventsGrid() {
-  const [activeTab, setActiveTab] = useState("All Events");
-
-  const filtered = placeholderEvents.filter((e) => {
-    if (activeTab === "All Events") return true;
-    if (activeTab === "Camps")
-      return e.eventType === "hunt-camp" || e.eventType === "fish-camp";
-    if (activeTab === "Community") return e.eventType === "community";
-    if (activeTab === "Workshops") return e.eventType === "workshop";
-    return true;
-  });
+export default function EventsGrid({ events }: EventsGridProps) {
+  const displayEvents = events && events.length > 0 ? events : placeholderEvents;
 
   return (
     <>
-      <div className="mb-10">
-        <FilterTabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
-      </div>
-
-      {filtered.length === 0 ? (
+      {displayEvents.length === 0 ? (
         <div className="py-16 text-center">
           <p className="text-lg text-near-black/40">
-            No events in this category right now. Check back soon!
+            No events right now. Check back soon!
           </p>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
-          {filtered.map((event) => {
+          {displayEvents.map((event) => {
             const dateObj = new Date(event.date);
             const month = dateObj.toLocaleString("en-US", { month: "short" }).toUpperCase();
             const day = dateObj.getDate();

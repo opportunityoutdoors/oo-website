@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import PageHero from "@/components/ui/PageHero";
 import SectionContainer from "@/components/ui/SectionContainer";
 import LabelTag from "@/components/ui/LabelTag";
 import NewsletterSection from "@/components/ui/NewsletterSection";
 import EventsGrid from "./EventsGrid";
+import { client } from "@/lib/sanity";
+import { allEventsQuery } from "@/lib/queries";
+import type { Event } from "@/types";
 
 export const metadata: Metadata = {
   title: "Events",
@@ -13,69 +17,79 @@ export const metadata: Metadata = {
 
 export const revalidate = 300; // 5 min ISR fallback
 
-export default function EventsPage() {
-  // TODO: Fetch events from Sanity once content is populated
-  // const events = await client.fetch(allEventsQuery);
+export default async function EventsPage() {
+  let events: Event[] = [];
+  try {
+    events = await client.fetch(allEventsQuery);
+  } catch {
+    // Sanity not available — fall back to empty (EventsGrid has placeholder data)
+  }
 
   return (
     <>
       <PageHero
-        title="Events"
-        label="Upcoming"
-        subtitle="Get in the field. Find a camp, community event, or workshop near you."
+        title="Get in the Field"
+        label="Events"
+        subtitle="From multi-day camps to casual community meetups — find your next opportunity to connect, learn, and grow."
         backgroundImage="/images/hero/events-hero.webp"
       />
 
-      {/* Events Grid with Filter Tabs */}
+      {/* Events Grid */}
       <section className="bg-cream py-20">
         <SectionContainer>
-          <EventsGrid />
+          <div className="mb-10">
+            <LabelTag>Upcoming</LabelTag>
+            <h2 className="mt-5 text-[clamp(2rem,5vw,48px)] leading-none text-near-black">
+              Calendar
+            </h2>
+          </div>
+          <EventsGrid events={events} />
         </SectionContainer>
       </section>
 
       {/* What to Expect */}
-      <section className="bg-white py-20">
+      <section className="relative bg-dark-green py-20">
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gold" />
         <SectionContainer>
-          <div className="mx-auto max-w-3xl text-center">
-            <LabelTag>What to Expect</LabelTag>
-            <h2 className="mt-5 text-[clamp(2rem,5vw,48px)] leading-none text-near-black">
-              What Happens at a Camp
-            </h2>
-            <p className="mt-6 text-[15px] leading-relaxed text-near-black/60">
-              Our camps are 2-3 day immersive experiences where you&apos;re
-              paired with an experienced mentor. You&apos;ll learn safety,
-              ethics, and skills in the field — not a classroom. Meals, lodging,
-              and most gear are provided. All you need to bring is a willingness
-              to learn and respect for the outdoors.
-            </p>
-          </div>
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {[
-              {
-                title: "Day 1 — Arrive & Settle In",
-                desc: "Meet your mentor, tour the camp, get your gear squared away. Evening orientation and group dinner.",
-              },
-              {
-                title: "Day 2 — In the Field",
-                desc: "Full day with your mentor. Hands-on learning — scouting, calling, shooting, fishing, or whatever the camp focuses on.",
-              },
-              {
-                title: "Day 3 — Wrap Up & Reflect",
-                desc: "Morning session, field dressing / processing instruction, group debrief, and next-steps planning.",
-              },
-            ].map((day) => (
-              <div
-                key={day.title}
-                className="rounded-lg border border-near-black/10 p-6"
-              >
-                <h3 className="text-lg font-extrabold text-near-black">
-                  {day.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-near-black/60">
-                  {day.desc}
-                </p>
-              </div>
-            ))}
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            <div>
+              <LabelTag variant="warm-gold">Camp Life</LabelTag>
+              <h2 className="mt-5 text-[clamp(2rem,5vw,48px)] leading-none text-white">
+                What to Expect
+                <br />
+                at a Camp
+              </h2>
+              <p className="mt-6 text-[15px] leading-relaxed text-white/70">
+                Our camps are multi-day immersive experiences. You&apos;ll be
+                paired with a mentor, learn skills in the field, and become part of
+                a community that sticks around long after the weekend ends.
+              </p>
+              <ul className="mt-8 space-y-4">
+                {[
+                  "Small-group mentorship in the field",
+                  "Safety briefings and scouting discussions",
+                  "Evening campfire Q&A and wild game potluck",
+                  "All experience levels welcome",
+                ].map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-center gap-3 text-base text-white/80"
+                  >
+                    <span className="text-gold">→</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="aspect-[4/3] overflow-hidden rounded-lg">
+              <Image
+                src="/images/hero/origin-story.jpg"
+                alt="Camp experience"
+                width={600}
+                height={450}
+                className="h-full w-full object-cover"
+              />
+            </div>
           </div>
         </SectionContainer>
       </section>

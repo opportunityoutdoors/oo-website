@@ -1,6 +1,6 @@
 interface LabelTagProps {
   children: React.ReactNode;
-  variant?: "gold" | "white";
+  variant?: "gold" | "warm-gold";
 }
 
 export default function LabelTag({
@@ -8,8 +8,8 @@ export default function LabelTag({
   variant = "gold",
 }: LabelTagProps) {
   const colorClasses =
-    variant === "white"
-      ? "text-white border-white"
+    variant === "warm-gold"
+      ? "text-[#C4941A] border-[#C4941A]"
       : "text-[#8B6914] border-[#8B6914]";
 
   return (

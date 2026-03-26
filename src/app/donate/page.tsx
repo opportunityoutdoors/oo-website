@@ -44,11 +44,15 @@ const budgetItems = [
 const otherWays = [
   {
     title: "Monthly Giving",
-    desc: "Set up a recurring gift and provide steady support for mentorship programs year-round.",
+    desc: "Set up a recurring gift and provide steady support for mentorship programs year-round. Reach out to get started.",
+    href: "/contact",
+    linkText: "Contact Us",
   },
   {
     title: "Matching Gifts",
-    desc: "Many employers match charitable contributions. Check with your HR team to double your impact.",
+    desc: "Many employers match charitable contributions. Check with your HR team to double your impact. Contact us for more info.",
+    href: "/contact",
+    linkText: "Contact Us",
   },
   {
     title: "Sponsorship",
@@ -66,12 +70,13 @@ export default function DonatePage() {
         label="Donate"
         subtitle="Every dollar goes toward putting new hunters and anglers in the field with experienced mentors."
         backgroundImage="/images/hero/donate-hero.jpg"
+        flipImage
       />
 
-      {/* Intro */}
-      <section className="bg-cream py-20">
+      {/* Donate */}
+      <section className="bg-white py-20">
         <SectionContainer>
-          <div className="mx-auto max-w-2xl text-center">
+          <div className="mx-auto mb-12 max-w-2xl text-center">
             <LabelTag>Make an Impact</LabelTag>
             <h2 className="mt-5 text-[clamp(2rem,5vw,48px)] leading-none text-near-black">
               Fund the Next Generation
@@ -82,12 +87,6 @@ export default function DonatePage() {
               mentorship, camps, and conservation education.
             </p>
           </div>
-        </SectionContainer>
-      </section>
-
-      {/* Donation Tiers */}
-      <section className="bg-white py-20">
-        <SectionContainer>
           <div className="grid gap-6 md:grid-cols-3">
             {tiers.map((tier) => (
               <div
@@ -138,7 +137,7 @@ export default function DonatePage() {
         </SectionContainer>
       </section>
 
-      {/* Where Your Money Goes */}
+      {/* Where Your Money Goes — commented out until we have real data
       <section className="bg-cream py-20">
         <SectionContainer>
           <div className="mx-auto max-w-2xl">
@@ -148,7 +147,6 @@ export default function DonatePage() {
                 Where Your Money Goes
               </h2>
             </div>
-
             <div className="mt-12 space-y-4">
               {budgetItems.map((item) => (
                 <div key={item.label}>
@@ -172,22 +170,10 @@ export default function DonatePage() {
           </div>
         </SectionContainer>
       </section>
-
-      {/* Testimonial */}
-      <section className="bg-dark-green py-16">
-        <SectionContainer className="text-center">
-          <blockquote className="text-[clamp(1.25rem,3vw,28px)] font-black italic leading-snug text-white">
-            &ldquo;I donated to sponsor a mentee and got to hear about his first
-            turkey harvest. That&apos;s what this is all about.&rdquo;
-          </blockquote>
-          <cite className="mt-4 block text-sm not-italic tracking-wider text-white/40">
-            — OO Supporter
-          </cite>
-        </SectionContainer>
-      </section>
+      */}
 
       {/* Other Ways to Give */}
-      <section className="bg-white py-20">
+      <section className="bg-warm-gray py-20">
         <SectionContainer>
           <div className="mb-12 text-center">
             <LabelTag>Other Ways to Give</LabelTag>
@@ -196,7 +182,7 @@ export default function DonatePage() {
             {otherWays.map((item) => (
               <div
                 key={item.title}
-                className="rounded-lg border border-near-black/10 p-8"
+                className="rounded-lg border border-near-black/10 bg-white p-8"
               >
                 <h3 className="text-xl font-extrabold text-near-black">
                   {item.title}

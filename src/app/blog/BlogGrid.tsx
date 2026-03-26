@@ -3,8 +3,23 @@
 import { useState } from "react";
 import Link from "next/link";
 import FilterTabs from "@/components/ui/FilterTabs";
+import type { BlogPost } from "@/types";
 
 const TABS = ["All", "Camp Recaps", "Tips & Gear", "Conservation", "Community"];
+
+// Category mapping from Sanity values to display labels
+const categoryDisplayMap: Record<string, string> = {
+  hunting: "Camp Recaps",
+  fishing: "Camp Recaps",
+  "gear-tips": "Tips & Gear",
+  conservation: "Conservation",
+  mentorship: "Community",
+  community: "Community",
+};
+
+interface BlogGridProps {
+  posts?: BlogPost[];
+}
 
 // Placeholder posts for development
 const placeholderPosts: {
@@ -79,10 +94,17 @@ function formatDate(dateStr: string): string {
   });
 }
 
-export default function BlogGrid() {
+export default function BlogGrid({ posts }: BlogGridProps) {
   const [activeTab, setActiveTab] = useState("All");
 
-  const filtered = placeholderPosts.filter((post) => {
+  const displayPosts = posts && posts.length > 0
+    ? posts.map((p) => ({
+        ...p,
+        category: categoryDisplayMap[p.category] || p.category,
+      }))
+    : placeholderPosts;
+
+  const filtered = displayPosts.filter((post) => {
     if (activeTab === "All") return true;
     return post.category === activeTab;
   });

@@ -9,9 +9,6 @@ const navLinks = [
   { href: "/about", label: "About" },
   { href: "/get-involved", label: "Get Involved" },
   { href: "/events", label: "Events" },
-  { href: "/podcast", label: "Podcast" },
-  { href: "/blog", label: "Blog" },
-  { href: "/donate", label: "Donate" },
 ];
 
 export default function Navbar() {
@@ -31,38 +28,37 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 px-6 transition-colors duration-300 md:px-10 ${
-        scrolled
-          ? "bg-near-black/95 backdrop-blur-sm shadow-lg"
-          : "bg-transparent"
-      }`}
+      className="fixed top-0 left-0 right-0 z-50 px-6 transition-all duration-300 md:px-10"
+      style={{
+        paddingTop: scrolled ? 0 : 20,
+        backgroundColor: scrolled ? "rgba(26,26,26,0.95)" : "transparent",
+        boxShadow: scrolled ? "0 10px 15px -3px rgba(0,0,0,0.1)" : "none",
+        backdropFilter: scrolled ? "blur(4px)" : "none",
+      }}
     >
       <div
-        className={`mx-auto flex max-w-[1200px] items-center justify-between py-4 ${
-          scrolled ? "" : "border-b border-white/15 mt-5"
-        }`}
+        className="mx-auto flex max-w-[1200px] items-center justify-between border-b py-4"
+        style={{
+          borderColor: scrolled ? "transparent" : "rgba(255,255,255,0.15)",
+        }}
       >
         {/* Logo — full color over hero, white on solid scroll */}
-        <Link href="/" className="relative shrink-0 h-[72px] w-[220px]">
-          <Image
+        <Link href="/" className="relative shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src="/images/OO_Logo_Full_Color.svg"
             alt="Opportunity Outdoors"
-            width={220}
-            height={72}
-            className={`absolute inset-0 h-[72px] w-auto transition-opacity duration-300 ${
-              scrolled ? "opacity-0" : "opacity-100"
+            className={`h-[50px] w-auto transition-opacity duration-300 ${
+              scrolled ? "hidden" : "block"
             }`}
-            priority
           />
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src="/images/OO_Header.svg"
             alt="Opportunity Outdoors"
-            width={220}
-            height={72}
-            className={`absolute inset-0 h-[72px] w-auto transition-opacity duration-300 ${
-              scrolled ? "opacity-100" : "opacity-0"
+            className={`h-[50px] w-auto transition-opacity duration-300 ${
+              scrolled ? "block" : "hidden"
             }`}
-            priority
           />
         </Link>
 
@@ -84,10 +80,10 @@ export default function Navbar() {
           ))}
           <li>
             <Link
-              href="/signup"
+              href="/donate"
               className="rounded bg-gold px-[22px] py-2.5 text-[13px] font-bold uppercase tracking-[1px] text-near-black transition-colors hover:bg-gold/90"
             >
-              Join Us
+              Donate
             </Link>
           </li>
         </ul>
@@ -137,11 +133,11 @@ export default function Navbar() {
             ))}
             <li className="mt-2">
               <Link
-                href="/signup"
+                href="/donate"
                 className="inline-block rounded bg-gold px-6 py-3 text-sm font-bold uppercase tracking-[1px] text-near-black"
                 onClick={() => setMobileOpen(false)}
               >
-                Join Us
+                Donate
               </Link>
             </li>
           </ul>
