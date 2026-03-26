@@ -74,7 +74,28 @@ export default {
       ],
     },
   ],
+  orderings: [
+    {
+      title: "Published Date (Newest)",
+      name: "publishedAtDesc",
+      by: [{ field: "publishedAt", direction: "desc" }],
+    },
+    {
+      title: "Published Date (Oldest)",
+      name: "publishedAtAsc",
+      by: [{ field: "publishedAt", direction: "asc" }],
+    },
+  ],
   preview: {
-    select: { title: "title", subtitle: "category", media: "image" },
+    select: { title: "title", date: "publishedAt", category: "category", media: "image" },
+    prepare({ title, date, category }: { title: string; date: string; category: string }) {
+      const formatted = date
+        ? new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+        : "No date";
+      return {
+        title,
+        subtitle: `${formatted} — ${category || "uncategorized"}`,
+      };
+    },
   },
 };
