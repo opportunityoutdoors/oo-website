@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import FilterTabs from "@/components/ui/FilterTabs";
+import { urlFor } from "@/lib/sanity";
 import type { BlogPost } from "@/types";
 
 const TABS = ["All", "Hunting", "Fishing", "Conservation", "Gear & Tips", "Community"];
@@ -29,6 +31,7 @@ const placeholderPosts: {
   excerpt: string;
   publishedAt: string;
   category: string;
+  image?: BlogPost["image"];
 }[] = [
   {
     _id: "1",
@@ -134,9 +137,19 @@ export default function BlogGrid({ posts }: BlogGridProps) {
             >
               <div className="grid md:grid-cols-2">
                 <div className="aspect-[16/10] bg-warm-gray md:aspect-auto">
-                  <div className="flex h-full items-center justify-center text-sm text-near-black/30">
-                    Featured Image
-                  </div>
+                  {featured.image ? (
+                    <Image
+                      src={urlFor(featured.image).width(800).height(500).fit("crop").url()}
+                      alt={featured.image.alt || featured.title}
+                      width={800}
+                      height={500}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-near-black/30">
+                      Featured Image
+                    </div>
+                  )}
                 </div>
                 <div className="p-8 md:p-10">
                   <span className="inline-block rounded bg-gold/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-gold">
@@ -169,9 +182,19 @@ export default function BlogGrid({ posts }: BlogGridProps) {
                   className="group overflow-hidden rounded-lg bg-white shadow-sm transition-shadow hover:shadow-md"
                 >
                   <div className="aspect-[16/10] bg-warm-gray">
-                    <div className="flex h-full items-center justify-center text-xs text-near-black/30">
-                      Thumbnail
-                    </div>
+                    {post.image ? (
+                      <Image
+                        src={urlFor(post.image).width(600).height(375).fit("crop").url()}
+                        alt={post.image.alt || post.title}
+                        width={600}
+                        height={375}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-xs text-near-black/30">
+                        Thumbnail
+                      </div>
+                    )}
                   </div>
                   <div className="p-6">
                     <span className="inline-block rounded bg-gold/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-gold">
