@@ -4,6 +4,21 @@ import LabelTag from "@/components/ui/LabelTag";
 import SectionContainer from "@/components/ui/SectionContainer";
 import NewsletterSection from "@/components/ui/NewsletterSection";
 import PartnerLogos from "@/components/ui/PartnerLogos";
+import { client, urlFor } from "@/lib/sanity";
+import { featuredEventsQuery } from "@/lib/queries";
+import type { Event } from "@/types";
+
+export const revalidate = 300;
+
+function getEventTypeLabel(eventType: string): string {
+  switch (eventType) {
+    case "hunt-camp": return "Hunt Camp";
+    case "fish-camp": return "Fish Camp";
+    case "community": return "Community";
+    case "workshop": return "Workshop";
+    default: return eventType;
+  }
+}
 
 const whatWeDo = [
   {
@@ -51,7 +66,13 @@ const ladderSteps = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  let featuredEvents: Event[] = [];
+  try {
+    featuredEvents = await client.fetch(featuredEventsQuery);
+  } catch {
+    // Sanity not available
+  }
   return (
     <>
       {/* ══════ HERO ══════ */}
@@ -180,64 +201,56 @@ export default function Home() {
             </Link>
           </div>
           <div className="grid gap-6 md:grid-cols-2">
-            {/* Event Card 1 */}
-            <div className="group relative h-[350px] overflow-hidden rounded-lg bg-dark-green">
-              <Image
-                src="/images/hero/origin-story.jpg"
-                alt="Turkey Camp 2026"
-                fill
-                className="object-cover transition-transform duration-400 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              <div className="absolute top-6 left-6 z-10 text-center">
-                <span className="block text-xs font-bold uppercase tracking-wider text-white/60">
-                  APR
-                </span>
-                <span className="block text-3xl font-black text-white">
-                  17
-                </span>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 z-10 p-8">
-                <span className="mb-2 inline-block rounded bg-gold/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-near-black">
-                  Camp
-                </span>
-                <h3 className="text-2xl font-extrabold text-white">
-                  Turkey Camp 2026
-                </h3>
-                <p className="mt-1 text-sm text-white/60">
-                  Nantahala National Forest, NC — 3 days
-                </p>
-              </div>
-            </div>
-            {/* Event Card 2 */}
-            <div className="group relative h-[350px] overflow-hidden rounded-lg bg-dark-green">
-              <Image
-                src="/images/hero/donate-hero.jpg"
-                alt="Fishing Camp 2026"
-                fill
-                className="object-cover transition-transform duration-400 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-              <div className="absolute top-6 left-6 z-10 text-center">
-                <span className="block text-xs font-bold uppercase tracking-wider text-white/60">
-                  JUN
-                </span>
-                <span className="block text-3xl font-black text-white">
-                  TBD
-                </span>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 z-10 p-8">
-                <span className="mb-2 inline-block rounded bg-gold/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-near-black">
-                  Camp
-                </span>
-                <h3 className="text-2xl font-extrabold text-white">
-                  Fishing Camp 2026
-                </h3>
-                <p className="mt-1 text-sm text-white/60">
-                  Location TBD — Details coming soon
-                </p>
-              </div>
-            </div>
+            {featuredEvents.length > 0 ? (
+              featuredEvents.map((event) => {
+                const dateObj = new Date(event.date);
+                const month = dateObj.toLocaleString("en-US", { month: "short" }).toUpperCase();
+                const day = dateObj.getDate();
+                return (
+                  <Link
+                    key={event._id}
+                    href={`/events/${event.slug.current}`}
+                    className="group relative h-[350px] overflow-hidden rounded-lg bg-dark-green"
+                  >
+                    {event.image ? (
+                      <Image
+                        src={urlFor(event.image).width(800).height(500).fit("crop").url()}
+                        alt={event.image.alt || event.title}
+                        fill
+                        className="object-cover transition-transform duration-400 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-dark-green transition-transform duration-400 group-hover:scale-105" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <div className="absolute top-6 left-6 z-10 text-center">
+                      <span className="block text-xs font-bold uppercase tracking-wider text-white/60">
+                        {month}
+                      </span>
+                      <span className="block text-3xl font-black text-white">
+                        {day}
+                      </span>
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 z-10 p-8">
+                      <span className="mb-2 inline-block rounded bg-gold/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-near-black">
+                        {getEventTypeLabel(event.eventType)}
+                      </span>
+                      <h3 className="text-2xl font-extrabold text-white">
+                        {event.title}
+                      </h3>
+                      <p className="mt-1 text-sm text-white/60">
+                        {event.location}
+                        {event.cost && ` — ${event.cost}`}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })
+            ) : (
+              <p className="col-span-2 py-10 text-center text-near-black/40">
+                Events coming soon — check back!
+              </p>
+            )}
           </div>
           <Link
             href="/events"

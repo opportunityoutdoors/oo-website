@@ -1,169 +1,17 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import SectionContainer from "@/components/ui/SectionContainer";
 import LabelTag from "@/components/ui/LabelTag";
 import Accordion from "@/components/ui/Accordion";
 import CTABanner from "@/components/ui/CTABanner";
 import JsonLd from "@/components/ui/JsonLd";
 import EventRegistration from "./EventRegistration";
-
-// TODO: Fetch from Sanity once content is populated
-// import { client } from "@/lib/sanity";
-// import { eventBySlugQuery, allEventsQuery } from "@/lib/queries";
+import { client, urlFor } from "@/lib/sanity";
+import { eventBySlugQuery } from "@/lib/queries";
 
 export const revalidate = 300;
-
-// Placeholder event data for development
-const placeholderEvents: Record<string, any> = {
-  "turkey-camp-2026": {
-    _id: "1",
-    title: "Turkey Camp 2026",
-    slug: { current: "turkey-camp-2026" },
-    eventType: "hunt-camp",
-    status: "waitlist-open",
-    date: "2026-04-17T00:00:00Z",
-    endDate: "2026-04-19T00:00:00Z",
-    location: "Nantahala National Forest, NC",
-    experienceLevel: "All levels welcome",
-    cost: "$75",
-    spotsTotal: 20,
-    spotsRemaining: 12,
-    description:
-      "Join us for a 3-day turkey hunting camp in the mountains of western North Carolina. Mentees are paired with experienced mentors for hands-on instruction in calling, scouting, safety, and field skills.",
-    waitlistOpens: "2026-03-01T00:00:00Z",
-    waitlistCloses: "2026-04-01T00:00:00Z",
-    meetingSlots: [
-      { label: "Saturday, March 22 @ 7pm ET", date: "2026-03-22T19:00:00Z" },
-      { label: "Wednesday, March 26 @ 8pm ET", date: "2026-03-26T20:00:00Z" },
-    ],
-    schedule: [
-      {
-        day: "Day 1 — Thursday",
-        items: [
-          { time: "3:00 PM", activity: "Arrive & check in" },
-          { time: "4:00 PM", activity: "Gear check & safety briefing" },
-          { time: "5:30 PM", activity: "Scouting trip & calling practice" },
-          { time: "7:00 PM", activity: "Group dinner & evening session" },
-        ],
-      },
-      {
-        day: "Day 2 — Friday",
-        items: [
-          { time: "4:30 AM", activity: "Wake up & head to the woods" },
-          { time: "5:00 AM – 11:00 AM", activity: "Morning hunt with mentor" },
-          { time: "12:00 PM", activity: "Lunch & debrief" },
-          { time: "2:00 PM", activity: "Afternoon skills session" },
-          { time: "5:00 PM", activity: "Evening hunt" },
-          { time: "7:30 PM", activity: "Group dinner & campfire" },
-        ],
-      },
-      {
-        day: "Day 3 — Saturday",
-        items: [
-          { time: "4:30 AM", activity: "Final morning hunt" },
-          { time: "11:00 AM", activity: "Field dressing & processing instruction" },
-          { time: "1:00 PM", activity: "Group debrief & wrap up" },
-          { time: "2:00 PM", activity: "Depart" },
-        ],
-      },
-    ],
-    gearList: {
-      required: [
-        "Hunter safety certification (or willingness to get certified)",
-        "Valid NC hunting license with turkey stamp",
-        "Camouflage clothing (head to toe)",
-        "Sturdy boots",
-        "Headlamp or flashlight",
-      ],
-      recommended: [
-        "Turkey calls (if you have them — we'll provide if not)",
-        "Binoculars",
-        "Camp chair or stool",
-        "Rain gear",
-      ],
-      provided: [
-        "Shotgun and ammunition (if needed)",
-        "Turkey decoys",
-        "All meals and snacks",
-        "Camping/lodging",
-      ],
-    },
-    faq: [
-      {
-        question: "Do I need hunting experience?",
-        answer:
-          "No! This camp is designed for all experience levels. You'll be paired with a mentor who will guide you through everything.",
-      },
-      {
-        question: "What if I don't have a hunting license?",
-        answer:
-          "We'll help you get one. NC licenses can be purchased online. Your mentor can walk you through the process before camp.",
-      },
-      {
-        question: "Is the camp location disclosed before registration?",
-        answer:
-          "The general area (Nantahala National Forest) is public info. The exact camp location is shared only after full registration, background check clearance, and payment.",
-      },
-      {
-        question: "What's the cost?",
-        answer:
-          "$75 per mentee covers all meals, lodging, and supplies. Mentors attend free of charge. Scholarships are available — cost should never be a barrier.",
-      },
-      {
-        question: "Do I need to bring a gun?",
-        answer:
-          "No. We have loaner shotguns available for mentees who don't have their own. Let us know on the registration form.",
-      },
-      {
-        question: "What about the background check?",
-        answer:
-          "All camp participants (mentees and mentors) undergo a background check as part of the registration process. This is for the safety of all participants.",
-      },
-    ],
-  },
-  "fishing-camp-2026": {
-    _id: "2",
-    title: "Fishing Camp 2026",
-    slug: { current: "fishing-camp-2026" },
-    eventType: "fish-camp",
-    status: "draft",
-    date: "2026-06-15T00:00:00Z",
-    endDate: "2026-06-17T00:00:00Z",
-    location: "Location TBD",
-    experienceLevel: "All levels welcome",
-    cost: "$75",
-    description: "Weekend fishing camp — freshwater and fly fishing instruction with experienced mentors. Details coming soon.",
-  },
-  "spring-cookout-2026": {
-    _id: "3",
-    title: "Spring Cookout & Range Day",
-    slug: { current: "spring-cookout-2026" },
-    eventType: "community",
-    status: "registration-open",
-    date: "2026-05-03T00:00:00Z",
-    location: "Raleigh, NC",
-    experienceLevel: "All levels welcome",
-    cost: "Free",
-    spotsTotal: 50,
-    spotsRemaining: 35,
-    description: "Casual cookout and range day. Great way to meet the OO community. Bring a friend, bring an appetite. No firearms experience needed — instruction provided on the range.",
-    registrationOpens: "2026-03-15T00:00:00Z",
-  },
-  "intro-archery-2026": {
-    _id: "4",
-    title: "Intro to Archery Workshop",
-    slug: { current: "intro-archery-2026" },
-    eventType: "workshop",
-    status: "registration-open",
-    date: "2026-05-17T00:00:00Z",
-    location: "Durham, NC",
-    experienceLevel: "No experience needed",
-    cost: "Free",
-    spotsTotal: 15,
-    spotsRemaining: 8,
-    description: "Half-day archery fundamentals workshop. Learn proper form, safety, and basic technique. All equipment provided.",
-  },
-};
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -171,7 +19,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const event = placeholderEvents[slug];
+  const event = await client.fetch(eventBySlugQuery, { slug });
   if (!event) return { title: "Event Not Found" };
 
   return {
@@ -214,24 +62,9 @@ function getEventTypeLabel(eventType: string): string {
 
 export default async function EventDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  const event = placeholderEvents[slug];
+  const event = await client.fetch(eventBySlugQuery, { slug });
 
-  if (!event) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center bg-cream">
-        <div className="text-center">
-          <h1 className="text-4xl font-black text-near-black">Event Not Found</h1>
-          <p className="mt-3 text-near-black/50">This event doesn&apos;t exist or has been removed.</p>
-          <Link
-            href="/events"
-            className="mt-6 inline-block rounded bg-dark-green px-7 py-3 text-[13px] font-bold uppercase tracking-[1.5px] text-white"
-          >
-            View All Events
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  if (!event) notFound();
 
   const isCamp = event.eventType === "hunt-camp" || event.eventType === "fish-camp";
 
@@ -270,11 +103,32 @@ export default async function EventDetailPage({ params }: PageProps) {
       />
       {/* Hero */}
       <section className="relative flex min-h-[450px] items-end overflow-hidden bg-dark-green">
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/15" />
+        {event.image ? (
+          <>
+            <Image
+              src={urlFor(event.image).width(1920).quality(80).url()}
+              alt={event.image.alt || event.title}
+              fill
+              className="object-cover"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/15" />
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/15" />
+        )}
         <div className="relative z-10 mx-auto w-full max-w-[1200px] px-6 pb-16 pt-32 md:px-10">
-          <span className="mb-3 inline-block rounded bg-gold/90 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-near-black">
-            {getEventTypeLabel(event.eventType)}
-          </span>
+          <Link
+            href="/events"
+            className="mb-6 inline-flex items-center text-sm font-medium text-white/60 transition-colors hover:text-white"
+          >
+            &larr; Back to Events
+          </Link>
+          <div>
+            <span className="mb-3 inline-block rounded bg-gold/90 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-near-black">
+              {getEventTypeLabel(event.eventType)}
+            </span>
+          </div>
           <h1 className="text-5xl leading-tight tracking-tight text-white md:text-7xl">
             {event.title}
           </h1>

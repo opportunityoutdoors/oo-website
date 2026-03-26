@@ -1,6 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
+import { urlFor } from "@/lib/sanity";
 import type { Event } from "@/types";
 
 interface EventsGridProps {
@@ -19,6 +21,7 @@ const placeholderEvents: {
   description: string;
   cost?: string;
   status?: string;
+  image?: Event["image"];
 }[] = [
   {
     _id: "1",
@@ -121,8 +124,16 @@ export default function EventsGrid({ events }: EventsGridProps) {
                 href={`/events/${event.slug.current}`}
                 className="group relative flex h-[350px] overflow-hidden rounded-lg bg-dark-green"
               >
-                {/* Placeholder bg */}
-                <div className="absolute inset-0 bg-dark-green transition-transform duration-400 group-hover:scale-105" />
+                {event.image ? (
+                  <Image
+                    src={urlFor(event.image).width(800).height(500).fit("crop").url()}
+                    alt={event.image.alt || event.title}
+                    fill
+                    className="object-cover transition-transform duration-400 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-dark-green transition-transform duration-400 group-hover:scale-105" />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
                 {/* Date badge */}
