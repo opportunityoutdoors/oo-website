@@ -83,26 +83,20 @@ export default async function BlogPostPage({ params }: PageProps) {
         }}
       />
 
-      {/* Hero */}
-      <section className="relative flex min-h-[400px] items-end overflow-hidden bg-dark-green">
-        {post.image ? (
-          <>
-            <Image
-              src={urlFor(post.image).width(1920).quality(80).url()}
-              alt={post.image.alt || post.title}
-              fill
-              className="object-cover"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/60" />
-          </>
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/15" />
-        )}
-        <div className="relative z-10 mx-auto w-full max-w-[1200px] px-6 pb-16 pt-32 md:px-10">
-          <LabelTag variant="warm-gold">
-            {categoryLabels[post.category] || post.category}
-          </LabelTag>
+      {/* Header */}
+      <section className="bg-dark-green pb-16 pt-32">
+        <div className="mx-auto w-full max-w-[1200px] px-6 md:px-10">
+          <Link
+            href="/blog"
+            className="inline-flex items-center text-sm font-medium text-white/60 transition-colors hover:text-white"
+          >
+            &larr; Back to Blog
+          </Link>
+          <div className="mt-6">
+            <LabelTag variant="warm-gold">
+              {categoryLabels[post.category] || post.category}
+            </LabelTag>
+          </div>
           <h1 className="mt-5 max-w-[800px] text-4xl leading-tight tracking-tight text-white md:text-6xl">
             {post.title}
           </h1>
@@ -116,6 +110,18 @@ export default async function BlogPostPage({ params }: PageProps) {
       <section className="bg-cream py-16">
         <SectionContainer>
           <article className="mx-auto max-w-[720px]">
+            {post.image && (
+              <div className="mb-10 overflow-hidden rounded-lg">
+                <Image
+                  src={urlFor(post.image).width(1440).quality(80).url()}
+                  alt={post.image.alt || post.title}
+                  width={1440}
+                  height={810}
+                  className="h-auto w-full"
+                  priority
+                />
+              </div>
+            )}
             <div className="prose prose-lg max-w-none text-near-black/80">
               {post.body && post.body.length > 0 ? (
                 <PortableTextRenderer value={post.body as any} />
