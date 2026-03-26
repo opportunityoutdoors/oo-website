@@ -5,6 +5,10 @@ import PageHero from "@/components/ui/PageHero";
 import SectionContainer from "@/components/ui/SectionContainer";
 import LabelTag from "@/components/ui/LabelTag";
 import PartnerLogos from "@/components/ui/PartnerLogos";
+import { client } from "@/lib/sanity";
+import { urlFor } from "@/lib/sanity";
+import { allTeamMembersQuery } from "@/lib/queries";
+import type { TeamMember } from "@/types";
 
 export const metadata: Metadata = {
   title: "About",
@@ -45,52 +49,15 @@ const values = [
   },
 ];
 
-const teamMembers = [
-  {
-    name: "Evan Trebilcock",
-    role: "Board Chair & Co-Founder",
-    bio: "Evan grew up hunting and fishing in the Southeast and co-founded OO to help others discover what the outdoors gave him. He leads the board and oversees org strategy.",
-    image: "/images/board/evan-trebilcock.jpg",
-  },
-  {
-    name: "John Trice",
-    role: "Vice Chair & Marketing",
-    bio: "John spent 15 years on the West Coast before coming back to NC. A lifelong outdoorsman and angler, he picked up hunting through OO in 2022 and now leads marketing and the website rebuild.",
-    image: "/images/board/john-trice.jpg",
-  },
-  {
-    name: "Safiyyah Motaib",
-    role: "Secretary & Outreach",
-    bio: "Safiyyah brings a community organizing background and a passion for making the outdoors more accessible. She manages communications and community partnerships.",
-    image: "/images/board/safiyyah-motaib.jpg",
-  },
-  {
-    name: "Zeke Goldstein",
-    role: "Treasurer",
-    bio: "Zeke handles the books and keeps OO financially accountable. When he's not crunching numbers, he's chasing trout in the NC mountains.",
-    image: "/images/board/zeke-goldstein.jpg",
-  },
-  {
-    name: 'John "Monty" Montgomery',
-    role: "Event Coordinator",
-    bio: "Monty is the boots-on-the-ground guy. He coordinates camp logistics, manages gear, and makes sure every event runs smoothly.",
-    image: "/images/board/monty-montgomery.jpg",
-  },
-  {
-    name: "Andy Tomaszewski",
-    role: "At Large & Co-Founder",
-    bio: "Andy co-founded OO alongside Evan and brings decades of hunting experience. He mentors new hunters and helps shape the camp curriculum.",
-    image: "/images/board/andy-tomaszewski.jpg",
-  },
-  {
-    name: "Evan Weiss",
-    role: "At Large",
-    bio: "Evan W. is a newer board member with a background in conservation policy. He helps OO navigate partnerships with state agencies and conservation orgs.",
-    image: "/images/board/evan-weiss.jpg",
-  },
-];
+export const revalidate = 300;
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  let teamMembers: TeamMember[] = [];
+  try {
+    teamMembers = await client.fetch(allTeamMembersQuery);
+  } catch {
+    // Sanity not available — team section will be empty
+  }
   return (
     <>
       {/* Hero */}
@@ -256,13 +223,19 @@ export default function AboutPage() {
             {teamMembers.slice(0, 4).map((member) => (
               <div key={member.name} className="text-center">
                 <div className="mx-auto mb-4 aspect-square w-48 overflow-hidden rounded-lg bg-cream">
-                  <Image
-                    src={member.image}
-                    alt={member.name}
-                    width={192}
-                    height={192}
-                    className="h-full w-full object-cover"
-                  />
+                  {member.image ? (
+                    <Image
+                      src={urlFor(member.image).width(384).height(384).fit("crop").url()}
+                      alt={member.image.alt || member.name}
+                      width={192}
+                      height={192}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-xs text-near-black/30">
+                      Photo
+                    </div>
+                  )}
                 </div>
                 <h3 className="text-lg text-near-black">
                   {member.name}
@@ -281,13 +254,19 @@ export default function AboutPage() {
             {teamMembers.slice(4).map((member) => (
               <div key={member.name} className="text-center">
                 <div className="mx-auto mb-4 aspect-square w-48 overflow-hidden rounded-lg bg-cream">
-                  <Image
-                    src={member.image}
-                    alt={member.name}
-                    width={192}
-                    height={192}
-                    className="h-full w-full object-cover"
-                  />
+                  {member.image ? (
+                    <Image
+                      src={urlFor(member.image).width(384).height(384).fit("crop").url()}
+                      alt={member.image.alt || member.name}
+                      width={192}
+                      height={192}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-xs text-near-black/30">
+                      Photo
+                    </div>
+                  )}
                 </div>
                 <h3 className="text-lg text-near-black">
                   {member.name}

@@ -5,13 +5,13 @@ import Link from "next/link";
 import FilterTabs from "@/components/ui/FilterTabs";
 import type { BlogPost } from "@/types";
 
-const TABS = ["All", "Camp Recaps", "Tips & Gear", "Conservation", "Community"];
+const TABS = ["All", "Hunting", "Fishing", "Conservation", "Gear & Tips", "Community"];
 
 // Category mapping from Sanity values to display labels
 const categoryDisplayMap: Record<string, string> = {
-  hunting: "Camp Recaps",
-  fishing: "Camp Recaps",
-  "gear-tips": "Tips & Gear",
+  hunting: "Hunting",
+  fishing: "Fishing",
+  "gear-tips": "Gear & Tips",
   conservation: "Conservation",
   mentorship: "Community",
   community: "Community",
