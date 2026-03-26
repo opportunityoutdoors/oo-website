@@ -8,6 +8,7 @@ import Accordion from "@/components/ui/Accordion";
 import CTABanner from "@/components/ui/CTABanner";
 import JsonLd from "@/components/ui/JsonLd";
 import EventRegistration from "./EventRegistration";
+import PortableTextRenderer from "@/components/ui/PortableTextRenderer";
 import { client, urlFor } from "@/lib/sanity";
 import { eventBySlugQuery } from "@/lib/queries";
 
@@ -141,9 +142,9 @@ export default async function EventDetailPage({ params }: PageProps) {
       {/* Overview Card */}
       <section className="bg-cream py-16">
         <SectionContainer>
-          <div className="grid gap-10 lg:grid-cols-3">
+          <div className="grid items-start gap-10 lg:grid-cols-3">
             {/* Details sidebar */}
-            <div className="lg:col-span-1">
+            <div className="lg:sticky lg:top-8 lg:col-span-1">
               <div className="rounded-lg bg-white p-6 shadow-sm">
                 <h2 className="mb-5 text-xl font-extrabold text-near-black">
                   Event Details
@@ -202,9 +203,16 @@ export default async function EventDetailPage({ params }: PageProps) {
 
             {/* Description + Registration */}
             <div className="lg:col-span-2">
-              <p className="text-[15px] leading-relaxed text-near-black/70">
-                {event.description}
-              </p>
+              {event.description && (
+                <p className="mb-6 text-[15px] leading-relaxed text-near-black/70">
+                  {event.description}
+                </p>
+              )}
+              {event.body && event.body.length > 0 && (
+                <div className="prose prose-lg mb-8 max-w-none text-near-black/80">
+                  <PortableTextRenderer value={event.body as any} />
+                </div>
+              )}
 
               {/* Registration / Waitlist section */}
               <div className="mt-10">
