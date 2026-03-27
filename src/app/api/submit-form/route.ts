@@ -169,7 +169,7 @@ async function appendToSheet(row: string[]): Promise<void> {
 
   const auth = new google.auth.JWT({
     email: clientEmail,
-    key: privateKey.replace(/\\n/g, "\n"),
+    key: privateKey.replace(/\\n/g, "\n").replace(/^"|"$/g, ""),
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });
 
