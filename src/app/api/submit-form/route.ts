@@ -75,96 +75,102 @@ function isRateLimited(ip: string): boolean {
   return entry.count > RATE_LIMIT;
 }
 
-/* ─── Column mapping ─── */
+/* ─── Tab + column mapping per form type ─── */
 
-function buildRow(formType: FormType, data: Record<string, string | string[] | boolean>): string[] {
+interface SheetTarget {
+  tab: string;
+  row: string[];
+}
+
+function buildSheetTarget(formType: FormType, data: Record<string, string | string[] | boolean>): SheetTarget {
   const timestamp = new Date().toISOString();
   const str = (key: string) => sanitize(data[key]);
   const arr = (key: string) =>
     Array.isArray(data[key]) ? (data[key] as string[]).join(", ") : sanitize(data[key]);
 
-  // Event/Source mapping
-  const eventSourceMap: Record<FormType, string> = {
-    newsletter: "Newsletter",
-    contact: "Contact Form",
-    "mentee-signup": "Mentee Signup",
-    "mentor-signup": "Mentor Signup",
-    "event-registration": str("eventName") || "Event Registration",
-    "camp-waitlist": str("eventName") || "Camp Waitlist",
-    "camp-registration": str("eventName") || "Camp Registration",
-    sponsorship: "Sponsorship Inquiry",
-  };
+  switch (formType) {
+    case "newsletter":
+      return {
+        tab: "Newsletter",
+        row: [timestamp, str("email"), "Website"],
+      };
 
-  // Event Type mapping
-  const eventTypeMap: Record<FormType, string> = {
-    newsletter: "Newsletter",
-    contact: "Contact",
-    "mentee-signup": "Mentee Signup",
-    "mentor-signup": "Mentor Signup",
-    "event-registration": str("eventType") || "Community",
-    "camp-waitlist": str("eventType") || "Camp",
-    "camp-registration": str("eventType") || "Camp",
-    sponsorship: "Sponsorship",
-  };
+    case "contact":
+      return {
+        tab: "Contact",
+        row: [timestamp, str("firstName"), str("lastName"), str("email"), str("subject"), str("message")],
+      };
 
-  // Payment status defaults
-  const paymentStatusMap: Record<FormType, string> = {
-    newsletter: "N/A",
-    contact: "N/A",
-    "mentee-signup": "N/A",
-    "mentor-signup": "N/A",
-    "event-registration": data.registrationFee ? "Pending" : "N/A",
-    "camp-waitlist": "N/A",
-    "camp-registration": "Pending",
-    sponsorship: "N/A",
-  };
+    case "mentee-signup":
+      return {
+        tab: "Mentee Applications",
+        row: [
+          timestamp, str("firstName"), str("lastName"), str("dateOfBirth"), str("sex"),
+          str("email"), str("phone"), str("cityState"), arr("outdoorInterests"),
+          str("experienceLevel"), str("gearStatus"), str("howHeard"), str("aboutYourself"),
+        ],
+      };
 
-  // Tab 2 column order (matches spec §8.7)
-  return [
-    timestamp,                                    // Timestamp
-    str("email"),                                 // Email
-    str("firstName") || str("contactName").split(" ")[0],  // First Name
-    str("lastName") || str("contactName").split(" ").slice(1).join(" "),  // Last Name
-    str("phone"),                                 // Phone
-    str("cityState"),                             // City/State
-    eventSourceMap[formType],                     // Event / Source
-    eventTypeMap[formType],                       // Event Type
-    str("experienceLevel"),                       // Experience Level
-    str("gearStatus"),                            // Has Gear
-    str("howHeard"),                              // How Heard
-    str("hunterSafetyCert"),                      // Hunter Safety Cert
-    str("tshirtSize"),                            // T-Shirt Size
-    str("emergencyContactName"),                  // Emergency Contact Name
-    str("emergencyContactPhone"),                 // Emergency Contact Phone
-    str("transportation"),                        // Transportation
-    str("dietaryMedical"),                        // Dietary / Medical
-    data.waiver ? "TRUE" : "",                    // Waiver
-    str("paymentMethod"),                         // Payment Method
-    str("message") || str("aboutYourself") || str("whyMentor") || str("aboutCompany"), // Free Text
-    str("companyName"),                           // Company Name
-    arr("opportunityInterest"),                   // Opportunity Interest
-    str("budgetRange"),                           // Budget Range
-    str("subject"),                               // Subject
-    formType === "event-registration" || formType === "camp-registration" ? "Confirmed" : "", // Registration Status
-    paymentStatusMap[formType],                   // Payment Status
-    "",                                           // Notes (blank)
-  ];
+    case "mentor-signup":
+      return {
+        tab: "Mentor Applications",
+        row: [
+          timestamp, str("firstName"), str("lastName"), str("dateOfBirth"), str("sex"),
+          str("email"), str("phone"), str("cityState"), arr("outdoorSkills"),
+          str("yearsExperience"), str("mentoredBefore"), str("howHeard"), str("whyMentor"),
+        ],
+      };
+
+    case "event-registration":
+      return {
+        tab: "Event Registrations",
+        row: [
+          timestamp, str("firstName"), str("lastName"), str("email"), str("phone"),
+          str("cityState"), str("eventName"), str("eventType"), str("howHeard"),
+        ],
+      };
+
+    case "camp-waitlist":
+      return {
+        tab: "Camp Waitlist",
+        row: [timestamp, str("firstName"), str("lastName"), str("email"), str("phone"), str("role"), str("eventName")],
+      };
+
+    case "camp-registration":
+      return {
+        tab: "Camp Registration",
+        row: [
+          timestamp, str("email"), str("tshirtSize"), str("emergencyContactName"),
+          str("emergencyContactPhone"), str("transportation"), str("dietaryMedical"),
+          data.waiver ? "TRUE" : "", str("eventName"),
+        ],
+      };
+
+    case "sponsorship":
+      return {
+        tab: "Sponsorship",
+        row: [
+          timestamp, str("companyName"),
+          str("contactName").split(" ")[0], str("contactName").split(" ").slice(1).join(" "),
+          str("email"), str("phone"), str("budgetRange"), arr("opportunityInterest"), str("aboutCompany"),
+        ],
+      };
+  }
 }
 
 /* ─── Google Sheets write ─── */
 
-async function appendToSheet(row: string[]): Promise<void> {
+async function appendToSheet(tab: string, row: string[]): Promise<void> {
   const privateKey = process.env.GOOGLE_SHEETS_PRIVATE_KEY;
   const clientEmail = process.env.GOOGLE_SHEETS_CLIENT_EMAIL;
   const spreadsheetId = process.env.GOOGLE_SHEETS_SUBMISSIONS_ID;
 
   if (!privateKey || !clientEmail || !spreadsheetId) {
     console.warn("Google Sheets credentials not configured — logging submission instead:");
-    console.log("Row data:", JSON.stringify(row));
+    console.log("Tab:", tab, "Row data:", JSON.stringify(row));
     return;
   }
 
-  // Dynamic import to avoid bundling googleapis on every request
   const { google } = await import("googleapis");
 
   const auth = new google.auth.JWT({
@@ -177,7 +183,7 @@ async function appendToSheet(row: string[]): Promise<void> {
 
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: "'Event Registrations'!A:Z",
+    range: `'${tab}'!A:Z`,
     valueInputOption: "USER_ENTERED",
     requestBody: {
       values: [row],
@@ -232,9 +238,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
     }
 
-    // Build row and write to Google Sheets
-    const row = buildRow(formType, data);
-    await appendToSheet(row);
+    // Build row and write to form-specific Google Sheets tab
+    const { tab, row } = buildSheetTarget(formType, data);
+    await appendToSheet(tab, row);
 
     return NextResponse.json({ success: true });
   } catch (err) {
