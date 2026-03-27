@@ -191,6 +191,62 @@ async function appendToSheet(tab: string, row: string[]): Promise<void> {
   });
 }
 
+/* ─── Email notifications ─── */
+
+async function sendNotificationEmail(
+  formType: FormType,
+  data: Record<string, string | string[] | boolean>
+): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+
+  const str = (key: string) => (typeof data[key] === "string" ? data[key] as string : "");
+  const arr = (key: string) =>
+    Array.isArray(data[key]) ? (data[key] as string[]).join(", ") : str(key);
+
+  let to: string | null = null;
+  let subject = "";
+  let html = "";
+
+  if (formType === "contact") {
+    to = "john.trice@opportunityoutdoors.org";
+    subject = `New Contact Form — ${str("subject")}`;
+    html = `
+      <h2>New Contact Form Submission</h2>
+      <p><strong>From:</strong> ${str("firstName")} ${str("lastName")}</p>
+      <p><strong>Email:</strong> ${str("email")}</p>
+      <p><strong>Subject:</strong> ${str("subject")}</p>
+      <hr />
+      <p>${str("message")}</p>
+    `;
+  } else if (formType === "sponsorship") {
+    to = "evan.weiss@opportunityoutdoors.org";
+    subject = `New Sponsorship Inquiry — ${str("companyName")}`;
+    html = `
+      <h2>New Sponsorship Inquiry</h2>
+      <p><strong>Company:</strong> ${str("companyName")}</p>
+      <p><strong>Contact:</strong> ${str("contactName")}</p>
+      <p><strong>Email:</strong> ${str("email")}</p>
+      <p><strong>Phone:</strong> ${str("phone")}</p>
+      <p><strong>Budget Range:</strong> ${str("budgetRange")}</p>
+      <p><strong>Interests:</strong> ${arr("opportunityInterest")}</p>
+      ${str("aboutCompany") ? `<hr /><p>${str("aboutCompany")}</p>` : ""}
+    `;
+  }
+
+  if (!to) return;
+
+  const { Resend } = await import("resend");
+  const resend = new Resend(apiKey);
+
+  await resend.emails.send({
+    from: "Opportunity Outdoors <notifications@send.opportunityoutdoors.org>",
+    to,
+    subject,
+    html,
+  });
+}
+
 /* ─── Handler ─── */
 
 export async function POST(request: NextRequest) {
@@ -241,6 +297,11 @@ export async function POST(request: NextRequest) {
     // Build row and write to form-specific Google Sheets tab
     const { tab, row } = buildSheetTarget(formType, data);
     await appendToSheet(tab, row);
+
+    // Send email notification (non-blocking — don't fail the submission if email fails)
+    sendNotificationEmail(formType, data).catch((err) =>
+      console.error("Email notification error:", err)
+    );
 
     return NextResponse.json({ success: true });
   } catch (err) {
