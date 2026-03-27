@@ -123,8 +123,8 @@ function buildRow(formType: FormType, data: Record<string, string | string[] | b
   return [
     timestamp,                                    // Timestamp
     str("email"),                                 // Email
-    str("firstName") || str("contactName"),        // First Name
-    str("lastName"),                              // Last Name
+    str("firstName") || str("contactName").split(" ")[0],  // First Name
+    str("lastName") || str("contactName").split(" ").slice(1).join(" "),  // Last Name
     str("phone"),                                 // Phone
     str("cityState"),                             // City/State
     eventSourceMap[formType],                     // Event / Source
