@@ -30,6 +30,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: event.title,
       description: event.description,
       type: "website",
+      ...(event.image && {
+        images: [
+          {
+            url: urlFor(event.image).width(1200).height(630).fit("crop").url(),
+            width: 1200,
+            height: 630,
+          },
+        ],
+      }),
     },
   };
 }

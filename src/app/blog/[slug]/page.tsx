@@ -39,6 +39,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: post.title,
       description: post.excerpt,
       publishedTime: post.publishedAt,
+      ...(post.image && {
+        images: [
+          {
+            url: urlFor(post.image).width(1200).height(630).fit("crop").url(),
+            width: 1200,
+            height: 630,
+          },
+        ],
+      }),
     },
   };
 }
