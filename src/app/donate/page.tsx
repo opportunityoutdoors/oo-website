@@ -23,14 +23,14 @@ const tiers = [
     name: "Sponsor a Mentee",
     amount: "$100",
     description:
-      "Fully funds one mentee's camp experience — registration, meals, and gear lending.",
+      "Fully funds one mentee's camp experience, including registration, meals, and gear lending.",
     badge: "Most Popular",
   },
   {
     name: "Camp Sponsor",
     amount: "$500",
     description:
-      "Underwrites an entire camp weekend — venue, meals, insurance, and supplies for all participants.",
+      "Underwrites an entire camp weekend: venue, meals, insurance, and supplies for all participants.",
     badge: null,
   },
 ];

@@ -18,7 +18,7 @@ const faqItems = [
   {
     question: "Do I need any experience to join?",
     answer:
-      "Not at all. Our mentorship program is designed for people with zero experience. We start from the basics — safety, ethics, gear, and skills — and walk alongside you every step of the way.",
+      "Not at all. Our mentorship program is designed for people with zero experience. We start from the basics like safety, ethics, gear, and skills, and walk alongside you every step of the way.",
   },
   {
     question: "What's the time commitment?",
@@ -33,12 +33,12 @@ const faqItems = [
   {
     question: "What does it cost?",
     answer:
-      "Community events are typically free. Hunt and fish camps have a registration fee (usually $75–$100). Scholarships are available — cost should never be a barrier.",
+      "Community events are typically free. Hunt and fish camps have a registration fee (usually $75–$100). Scholarships are available, and cost should never be a barrier.",
   },
   {
     question: "What are the requirements to be a mentor?",
     answer:
-      "Mentors must be 18 or older with meaningful outdoor experience. You don't need to be an expert — you just need patience, a willingness to teach, and a commitment to safety and conservation ethics.",
+      "Mentors must be 18 or older with meaningful outdoor experience. You don't need to be an expert. You just need patience, a willingness to teach, and a commitment to safety and conservation ethics.",
   },
   {
     question: "Is this only for hunting?",
@@ -97,7 +97,7 @@ export default function GetInvolvedPage() {
               <ul className="mt-6 space-y-3">
                 {[
                   "Hands-on mentorship from experienced sportsmen",
-                  "All gear provided — no upfront investment needed",
+                  "All gear provided, so there's no upfront investment needed",
                   "Safety, ethics, and conservation from the start",
                   "A community that has your back beyond the field",
                 ].map((item) => (

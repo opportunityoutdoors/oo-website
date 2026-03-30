@@ -33,7 +33,7 @@ export default function Footer() {
             />
             <p className="mt-4 max-w-[300px] text-sm leading-7">
               A North Carolina 501(c)(3) nonprofit building the next generation
-              of ethical, conservation-minded hunters and anglers — one mentor,
+              of ethical, conservation-minded hunters and anglers. One mentor,
               one mentee, one campfire at a time.
             </p>
             <div className="mt-5 flex gap-4">

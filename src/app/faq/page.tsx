@@ -29,7 +29,7 @@ const generalFaq = [
   {
     question: "Where are events held?",
     answer:
-      "Across NC — mountains, piedmont, and coast. Most community events are in the Triangle (Raleigh-Durham-Chapel Hill area), but we also hold camps and events statewide.",
+      "Across NC, from the mountains to the piedmont to the coast. Most community events are in the Triangle (Raleigh-Durham-Chapel Hill area), but we also hold camps and events statewide.",
   },
   {
     question: "How do I sign up?",

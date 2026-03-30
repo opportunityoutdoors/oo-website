@@ -91,7 +91,7 @@ export default async function Home() {
           </h1>
           <p className="mt-5 max-w-[520px] text-lg leading-relaxed text-white/85">
             We mentor new hunters and anglers through immersive camps, community
-            events, and long-term relationships — building conservation-minded
+            events, and long-term relationships, building conservation-minded
             sportsmen and women across North Carolina.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
@@ -240,7 +240,7 @@ export default async function Home() {
                       </h3>
                       <p className="mt-1 text-sm text-white/60">
                         {event.location}
-                        {event.cost && ` — ${event.cost}`}
+                        {event.cost && ` · ${event.cost}`}
                       </p>
                     </div>
                   </Link>
@@ -248,7 +248,7 @@ export default async function Home() {
               })
             ) : (
               <p className="col-span-2 py-10 text-center text-near-black/40">
-                Events coming soon — check back!
+                Events coming soon. Check back!
               </p>
             )}
           </div>
@@ -280,7 +280,7 @@ export default async function Home() {
             but wish you had.&rdquo;
           </blockquote>
           <cite className="mt-6 block text-sm not-italic uppercase tracking-[2px] text-white/50">
-            — The OO Community
+            – The OO Community
           </cite>
         </div>
       </section>

@@ -29,7 +29,7 @@ export default function PrivacyPolicyPage() {
             When you fill out a form on our site (event registration,
             mentor/mentee signup, contact form, newsletter), we collect: name,
             email, phone number, city/state, and any information you provide in
-            form responses. We do not collect payment information directly — any
+            form responses. We do not collect payment information directly. All
             payments are processed through third-party providers.
           </p>
 

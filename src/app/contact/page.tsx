@@ -6,13 +6,13 @@ import ContactForm from "@/components/forms/ContactForm";
 export const metadata: Metadata = {
   title: "Contact Us",
   description:
-    "Get in touch with Opportunity Outdoors. Questions, ideas, partnership inquiries — we'd love to hear from you.",
+    "Get in touch with Opportunity Outdoors. Whether it's a question, an idea, or a partnership inquiry, we'd love to hear from you.",
 };
 
 export default function ContactPage() {
   return (
     <>
-      <PageHero title="Get in Touch" label="Contact" subtitle="Questions, ideas, partnership inquiries — we'd love to hear from you." backgroundImage="/images/hero/contact-hero.webp" />
+      <PageHero title="Get in Touch" label="Contact" subtitle="Questions, ideas, or partnership inquiries. We'd love to hear from you." backgroundImage="/images/hero/contact-hero.webp" />
 
       <section className="bg-cream py-20">
         <SectionContainer>

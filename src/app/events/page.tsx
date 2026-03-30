@@ -12,7 +12,7 @@ import type { Event } from "@/types";
 export const metadata: Metadata = {
   title: "Events",
   description:
-    "Browse upcoming Opportunity Outdoors events — hunting camps, fishing camps, community cookouts, range days, and workshops across North Carolina.",
+    "Browse upcoming Opportunity Outdoors events including hunting camps, fishing camps, community cookouts, range days, and workshops across North Carolina.",
 };
 
 export const revalidate = 300; // 5 min ISR fallback
@@ -30,7 +30,7 @@ export default async function EventsPage() {
       <PageHero
         title="Get in the Field"
         label="Events"
-        subtitle="From multi-day camps to casual community meetups — find your next opportunity to connect, learn, and grow."
+        subtitle="From multi-day camps to casual community meetups, find your next opportunity to connect, learn, and grow."
         backgroundImage="/images/hero/events-hero.webp"
       />
 

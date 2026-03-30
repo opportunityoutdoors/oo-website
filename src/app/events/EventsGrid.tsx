@@ -43,7 +43,7 @@ const placeholderEvents: {
     date: "2026-06-15T00:00:00Z",
     endDate: "2026-06-17T00:00:00Z",
     location: "Location TBD",
-    description: "Weekend fishing camp — freshwater and fly fishing instruction with experienced mentors.",
+    description: "Weekend fishing camp with freshwater and fly fishing instruction from experienced mentors.",
     cost: "$75",
     status: "draft",
   },
@@ -156,7 +156,7 @@ export default function EventsGrid({ events }: EventsGridProps) {
                   </h3>
                   <p className="mt-1 text-sm text-white/60">
                     {event.location}
-                    {event.cost && ` — ${event.cost}`}
+                    {event.cost && ` · ${event.cost}`}
                   </p>
                   <span
                     className={`mt-4 inline-block rounded px-5 py-2 text-[11px] font-bold uppercase tracking-[1px] ${

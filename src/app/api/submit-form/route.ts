@@ -210,7 +210,7 @@ async function sendNotificationEmail(
 
   if (formType === "contact") {
     to = "john.trice@opportunityoutdoors.org";
-    subject = `New Contact Form — ${str("subject")}`;
+    subject = `New Contact Form: ${str("subject")}`;
     html = `
       <h2>New Contact Form Submission</h2>
       <p><strong>From:</strong> ${str("firstName")} ${str("lastName")}</p>
@@ -221,7 +221,7 @@ async function sendNotificationEmail(
     `;
   } else if (formType === "sponsorship") {
     to = "evan.weiss@opportunityoutdoors.org";
-    subject = `New Sponsorship Inquiry — ${str("companyName")}`;
+    subject = `New Sponsorship Inquiry: ${str("companyName")}`;
     html = `
       <h2>New Sponsorship Inquiry</h2>
       <p><strong>Company:</strong> ${str("companyName")}</p>

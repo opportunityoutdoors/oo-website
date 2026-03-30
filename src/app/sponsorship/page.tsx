@@ -30,7 +30,7 @@ export default function SponsorshipPage() {
       <PageHero
         title="Fuel the Mission"
         label="Partner With Us"
-        subtitle="Opportunity Outdoors runs on community. Corporate sponsors and individual donors make it possible for us to put more people in the field — mentored, equipped, and inspired."
+        subtitle="Opportunity Outdoors runs on community. Corporate sponsors and individual donors make it possible for us to put more people in the field: mentored, equipped, and inspired."
         backgroundImage="/images/hero/sponsorship-hero.jpg"
         imagePosition="center 65%"
       />

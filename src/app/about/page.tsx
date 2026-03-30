@@ -13,7 +13,7 @@ import type { TeamMember } from "@/types";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Learn about Opportunity Outdoors — our mission, values, and the team behind North Carolina's outdoor mentorship nonprofit.",
+    "Learn about Opportunity Outdoors: our mission, values, and the team behind North Carolina's outdoor mentorship nonprofit.",
 };
 
 const values = [
@@ -40,7 +40,7 @@ const values = [
   {
     num: "05",
     title: "Do It\nRight",
-    desc: "Ethics, safety, legal compliance, and respect — for the animal, the land, and each other. No shortcuts.",
+    desc: "Ethics, safety, legal compliance, and respect for the animal, the land, and each other. No shortcuts.",
   },
   {
     num: "06",
@@ -64,7 +64,7 @@ export default async function AboutPage() {
       <PageHero
         title={"We Build People\nWho Build Conservation"}
         label="About Us"
-        subtitle="A North Carolina nonprofit turning curious newcomers into ethical, conservation-minded sportsmen and women — through mentorship, community, and time in the field."
+        subtitle="A North Carolina nonprofit turning curious newcomers into ethical, conservation-minded sportsmen and women through mentorship, community, and time in the field."
         backgroundImage="/images/hero/about-hero.webp"
       />
 
@@ -79,14 +79,14 @@ export default async function AboutPage() {
               </h2>
               <p className="mb-5 text-lg font-medium leading-relaxed text-near-black/70">
                 Opportunity Outdoors mentors new hunters and anglers through
-                immersive camps, community events, and long-term relationships —
+                immersive camps, community events, and long-term relationships,
                 building conservation-minded sportsmen and women across North
                 Carolina.
               </p>
               <p className="mb-5 text-base leading-relaxed text-near-black/50">
                 Other organizations conserve the land. We develop the people. We
                 believe that ethical, conservation-minded hunters and anglers
-                aren&apos;t born — they&apos;re mentored. And that mentorship
+                aren&apos;t born. They&apos;re mentored. And that mentorship
                 doesn&apos;t happen in a one-day clinic. It happens around
                 campfires, on pre-dawn truck rides, and through years of showing
                 up for each other.
@@ -293,7 +293,7 @@ export default async function AboutPage() {
         </h2>
         <p className="mb-10 text-lg text-white/70">
           Whether you want to learn to hunt, share your experience as a mentor,
-          or support our mission — there&apos;s a place for you.
+          or support our mission, there&apos;s a place for you.
         </p>
         <Link
           href="/get-involved"

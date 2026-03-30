@@ -8,7 +8,7 @@ import CTABanner from "@/components/ui/CTABanner";
 export const metadata: Metadata = {
   title: "Podcast",
   description:
-    "Hunt. Fish. Mentor. — The Opportunity Outdoors podcast. NC-centered conversations about hunting, fishing, conservation, and mentorship.",
+    "Hunt. Fish. Mentor. The Opportunity Outdoors podcast. NC-centered conversations about hunting, fishing, conservation, and mentorship.",
 };
 
 export const revalidate = 300;
@@ -107,7 +107,7 @@ export default function PodcastPage() {
       {/* CTA */}
       <CTABanner
         heading="Like What You Hear?"
-        text="Get involved with the community behind the podcast. Camps, events, and mentorship — all the things we talk about, but in real life."
+        text="Get involved with the community behind the podcast. Camps, events, and mentorship. All the things we talk about, but in real life."
         primaryLabel="Get Involved"
         primaryHref="/get-involved"
         secondaryLabel="Listen on Spotify"
