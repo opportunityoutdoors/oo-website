@@ -9,6 +9,7 @@ const navLinks = [
   { href: "/about", label: "About" },
   { href: "/get-involved", label: "Get Involved" },
   { href: "/events", label: "Events" },
+  { href: "/podcast", label: "Podcast" },
 ];
 
 export default function Navbar() {
