@@ -64,6 +64,7 @@ async function syncEventToSupabase(
     const statusMap: Record<string, string> = {
       draft: "draft",
       "waitlist-open": "waitlist-open",
+      "waitlist-closed": "waitlist-closed",
       "registration-open": "registration-open",
       "sold-out": "sold-out",
       completed: "completed",
