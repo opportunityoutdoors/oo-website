@@ -444,10 +444,11 @@ export async function POST(request: NextRequest) {
     // 1. Write to Supabase (source of truth)
     await writeToSupabase(formType, data);
 
-    // 2. Sync contact to Direct Mail mailing list (non-blocking)
-    syncToDirectMail(formType, data).catch((err) =>
-      console.error("Direct Mail sync error:", err)
-    );
+    // 2. Direct Mail sync disabled — API blocks Vercel datacenter IPs (ETIMEDOUT).
+    //    TODO: Set up ODBC sync from Direct Mail → Supabase, or find alternative.
+    // syncToDirectMail(formType, data).catch((err) =>
+    //   console.error("Direct Mail sync error:", err)
+    // );
 
     // 3. Send email notification (non-blocking)
     sendNotificationEmail(formType, data).catch((err) =>
