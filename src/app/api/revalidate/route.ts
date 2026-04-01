@@ -83,6 +83,7 @@ async function syncEventToSupabase(
         cost: (body.cost as string) || null,
         spots_total: (body.spotsTotal as number) || null,
         spots_remaining: (body.spotsRemaining as number) || null,
+        meeting_slots: (body.meetingSlots as unknown[]) || [],
       },
       { onConflict: "sanity_id" }
     );

@@ -3,6 +3,13 @@ import { client } from "@/lib/sanity";
 import { adminAllEventsQuery } from "@/lib/queries";
 import { createServiceClient } from "@/lib/supabase/server";
 
+interface MeetingSlot {
+  date: string;
+  label: string;
+  capacity?: number;
+  meetingLink: string;
+}
+
 interface SanityEvent {
   _id: string;
   title: string;
@@ -15,6 +22,7 @@ interface SanityEvent {
   cost: string | null;
   spotsTotal: number | null;
   spotsRemaining: number | null;
+  meetingSlots: MeetingSlot[] | null;
 }
 
 export async function GET() {
@@ -42,6 +50,7 @@ export async function GET() {
         cost: se.cost || null,
         spots_total: se.spotsTotal || null,
         spots_remaining: se.spotsRemaining || null,
+        meeting_slots: se.meetingSlots || [],
       },
       { onConflict: "sanity_id" }
     );
@@ -83,8 +92,7 @@ export async function GET() {
       location: dbEvent.location,
       cost: dbEvent.cost,
       spots_total: dbEvent.spots_total,
-      meeting_date: dbEvent.meeting_date,
-      meeting_link: dbEvent.meeting_link,
+      meeting_slots: dbEvent.meeting_slots || [],
       counts: {
         waitlist: counts.waitlist || 0,
         meeting_rsvp: counts.meeting_rsvp || 0,

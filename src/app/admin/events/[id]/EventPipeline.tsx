@@ -11,8 +11,6 @@ interface Registration {
   waiver_signed: boolean;
   token: string | null;
   meeting_date_selected: string | null;
-  emergency_contact_name: string | null;
-  emergency_contact_phone: string | null;
   created_at: string;
   contacts: {
     id: string;
@@ -23,6 +21,12 @@ interface Registration {
     city_state: string | null;
     tshirt_size: string | null;
   };
+}
+
+interface MeetingSlot {
+  date: string;
+  label: string;
+  meetingLink?: string;
 }
 
 interface EventDetail {
@@ -37,8 +41,7 @@ interface EventDetail {
   cost: string | null;
   spots_total: number | null;
   spots_remaining: number | null;
-  meeting_date: string | null;
-  meeting_link: string | null;
+  meeting_slots: MeetingSlot[];
   registrations: Registration[];
 }
 
@@ -57,18 +60,11 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<PipelineTab>("all");
-  const [editingSettings, setEditingSettings] = useState(false);
-  const [meetingDate, setMeetingDate] = useState("");
-  const [meetingLink, setMeetingLink] = useState("");
-  const [savingSettings, setSavingSettings] = useState(false);
 
   const fetchEvent = useCallback(async () => {
     const res = await fetch(`/api/admin/events/${eventId}`);
     if (res.ok) {
-      const data = await res.json();
-      setEvent(data);
-      setMeetingDate(data.meeting_date ? data.meeting_date.slice(0, 16) : "");
-      setMeetingLink(data.meeting_link || "");
+      setEvent(await res.json());
     }
     setLoading(false);
   }, [eventId]);
@@ -76,21 +72,6 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
   useEffect(() => {
     fetchEvent();
   }, [fetchEvent]);
-
-  async function saveSettings() {
-    setSavingSettings(true);
-    await fetch(`/api/admin/events/${eventId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        meeting_date: meetingDate || null,
-        meeting_link: meetingLink || null,
-      }),
-    });
-    setSavingSettings(false);
-    setEditingSettings(false);
-    fetchEvent();
-  }
 
   if (loading) {
     return <div className="py-16 text-center text-near-black/40">Loading...</div>;
@@ -143,113 +124,79 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
           )}
           {event.location && <span>{event.location}</span>}
           {event.cost && <span>{event.cost}</span>}
+          {event.spots_total && <span>{event.spots_total} spots</span>}
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-4">
-        {/* Settings Card */}
-        <div className="rounded-lg border border-near-black/10 bg-white p-5 lg:col-span-1">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-xs font-bold uppercase tracking-[1px] text-near-black/40">
-              {isCamp ? "Meeting Settings" : "Event Settings"}
+        {/* Event Info Sidebar */}
+        <div className="space-y-4 lg:col-span-1">
+          {/* Stats */}
+          <div className="rounded-lg border border-near-black/10 bg-white p-5">
+            <h2 className="mb-3 text-xs font-bold uppercase tracking-[1px] text-near-black/40">
+              Overview
             </h2>
-            {!editingSettings ? (
-              <button
-                onClick={() => setEditingSettings(true)}
-                className="text-xs font-semibold text-dark-green hover:text-dark-green/70"
-              >
-                Edit
-              </button>
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  onClick={saveSettings}
-                  disabled={savingSettings}
-                  className="text-xs font-semibold text-dark-green hover:text-dark-green/70 disabled:opacity-50"
-                >
-                  {savingSettings ? "Saving..." : "Save"}
-                </button>
-                <button
-                  onClick={() => setEditingSettings(false)}
-                  className="text-xs font-semibold text-near-black/40 hover:text-near-black"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </div>
-
-          {editingSettings ? (
-            <div className="space-y-3">
-              <div>
-                <label className="text-[10px] font-semibold uppercase tracking-[0.5px] text-near-black/40">
-                  Meeting Date & Time
-                </label>
-                <input
-                  type="datetime-local"
-                  value={meetingDate}
-                  onChange={(e) => setMeetingDate(e.target.value)}
-                  className="mt-0.5 w-full rounded border border-near-black/15 px-2.5 py-1.5 text-xs text-near-black focus:border-dark-green focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold uppercase tracking-[0.5px] text-near-black/40">
-                  Google Meet Link
-                </label>
-                <input
-                  type="url"
-                  value={meetingLink}
-                  onChange={(e) => setMeetingLink(e.target.value)}
-                  placeholder="https://meet.google.com/..."
-                  className="mt-0.5 w-full rounded border border-near-black/15 px-2.5 py-1.5 text-xs text-near-black focus:border-dark-green focus:outline-none"
-                />
-              </div>
-            </div>
-          ) : (
             <dl className="space-y-2 text-xs">
+              <div className="flex justify-between">
+                <dt className="font-semibold text-near-black/40">Total Signups</dt>
+                <dd className="font-bold text-near-black">{event.registrations.length}</dd>
+              </div>
               <div className="flex justify-between">
                 <dt className="font-semibold text-near-black/40">Spots</dt>
                 <dd className="text-near-black">{event.spots_total || "Unlimited"}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="font-semibold text-near-black/40">Signups</dt>
-                <dd className="text-near-black">{event.registrations.length}</dd>
+                <dt className="font-semibold text-near-black/40">Status</dt>
+                <dd className="text-near-black">{event.status}</dd>
               </div>
-              {isCamp && (
-                <>
-                  <div className="flex justify-between">
-                    <dt className="font-semibold text-near-black/40">Meeting</dt>
-                    <dd className="text-near-black">
-                      {event.meeting_date
-                        ? new Date(event.meeting_date).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                          })
-                        : "Not set"}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="font-semibold text-near-black/40">Meet Link</dt>
-                    <dd className="truncate text-near-black">
-                      {event.meeting_link ? (
-                        <a
-                          href={event.meeting_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-dark-green hover:underline"
-                        >
-                          Open
-                        </a>
-                      ) : (
-                        "Not set"
-                      )}
-                    </dd>
-                  </div>
-                </>
-              )}
             </dl>
+          </div>
+
+          {/* Meeting Slots (read-only, managed in Sanity) */}
+          {isCamp && event.meeting_slots && event.meeting_slots.length > 0 && (
+            <div className="rounded-lg border border-near-black/10 bg-white p-5">
+              <h2 className="mb-3 text-xs font-bold uppercase tracking-[1px] text-near-black/40">
+                Meeting Slots
+              </h2>
+              <div className="space-y-3">
+                {event.meeting_slots.map((slot, i) => {
+                  const rsvpCount = event.registrations.filter(
+                    (r) => r.meeting_date_selected === slot.date
+                  ).length;
+                  return (
+                    <div key={i} className="rounded border border-near-black/5 p-3">
+                      <p className="text-xs font-medium text-near-black">
+                        {slot.label || new Date(slot.date).toLocaleDateString("en-US", {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                      <div className="mt-1 flex items-center justify-between">
+                        <span className="text-[10px] text-near-black/40">
+                          {rsvpCount} RSVP{rsvpCount !== 1 ? "s" : ""}
+                        </span>
+                        {slot.meetingLink && (
+                          <a
+                            href={slot.meetingLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[10px] font-semibold text-dark-green hover:underline"
+                          >
+                            Join
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-3 text-[10px] text-near-black/30">
+                Edit meeting slots in Content Studio
+              </p>
+            </div>
           )}
         </div>
 
@@ -284,6 +231,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                     <th className="px-5 py-3 font-semibold">Email</th>
                     <th className="px-5 py-3 font-semibold">Phone</th>
                     <th className="px-5 py-3 font-semibold">Role</th>
+                    {isCamp && <th className="px-5 py-3 font-semibold">Meeting</th>}
                     <th className="px-5 py-3 font-semibold">Status</th>
                     <th className="px-5 py-3 font-semibold">Date</th>
                   </tr>
@@ -293,6 +241,10 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                     const name = [reg.contacts?.first_name, reg.contacts?.last_name]
                       .filter(Boolean)
                       .join(" ") || "—";
+
+                    const meetingSlot = reg.meeting_date_selected
+                      ? event.meeting_slots?.find((s) => s.date === reg.meeting_date_selected)
+                      : null;
 
                     return (
                       <tr
@@ -310,6 +262,11 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                         <td className="px-5 py-3 text-near-black/60">{reg.contacts?.email}</td>
                         <td className="px-5 py-3 text-near-black/60">{reg.contacts?.phone || "—"}</td>
                         <td className="px-5 py-3 text-near-black/60">{reg.role || "—"}</td>
+                        {isCamp && (
+                          <td className="px-5 py-3 text-xs text-near-black/50">
+                            {meetingSlot?.label || (reg.meeting_date_selected ? "Selected" : "—")}
+                          </td>
+                        )}
                         <td className="px-5 py-3">
                           <span
                             className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${STATUS_STYLES[reg.status] || "bg-near-black/5 text-near-black/50"}`}
@@ -325,7 +282,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                   })}
                   {filteredRegs.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-5 py-10 text-center text-near-black/40">
+                      <td colSpan={isCamp ? 7 : 6} className="px-5 py-10 text-center text-near-black/40">
                         {event.registrations.length === 0
                           ? "No signups yet"
                           : "No registrations in this stage"}
