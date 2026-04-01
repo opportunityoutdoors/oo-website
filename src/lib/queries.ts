@@ -62,6 +62,26 @@ export const featuredEventsQuery = `*[_type == "event" && featured == true && st
   cost
 }`;
 
+// ─── Admin: All Events (including drafts) ───
+export const adminAllEventsQuery = `*[_type == "event"] | order(date desc) {
+  _id,
+  title,
+  slug,
+  eventType,
+  status,
+  date,
+  endDate,
+  location,
+  cost,
+  spotsTotal,
+  spotsRemaining,
+  registrationOpens,
+  registrationCloses,
+  waitlistOpens,
+  waitlistCloses,
+  meetingSlots
+}`;
+
 // ─── Team Members ───
 export const allTeamMembersQuery = `*[_type == "teamMember"] | order(order asc) {
   _id,
