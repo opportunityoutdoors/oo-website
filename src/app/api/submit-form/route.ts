@@ -265,25 +265,15 @@ async function writeToSupabase(
   }
 }
 
-/* ─── Google Sheets: sync to Master Contacts + form-specific tabs ─── */
+/* ─── Google Sheets: sync contact info to All Contacts tab ─── */
 
-interface SheetWrite {
-  tab: string;
-  row: string[];
-}
-
-function buildSheetWrites(
+function buildSheetRow(
   formType: FormType,
   data: Record<string, string | string[] | boolean>
-): SheetWrite[] {
+): string[] {
   const timestamp = new Date().toISOString();
   const str = (key: string) => sanitize(data[key]);
-  const arr = (key: string) =>
-    Array.isArray(data[key]) ? (data[key] as string[]).join(", ") : sanitize(data[key]);
 
-  const writes: SheetWrite[] = [];
-
-  // Master Contacts row (for all form types)
   const firstName = formType === "sponsorship"
     ? str("contactName").split(" ")[0]
     : str("firstName");
@@ -302,56 +292,15 @@ function buildSheetWrites(
     sponsorship: "Sponsorship Inquiry",
   };
 
-  writes.push({
-    tab: "All Contacts",
-    row: [
-      timestamp,
-      str("email"),
-      firstName,
-      lastName,
-      str("phone"),
-      str("cityState"),
-      sourceMap[formType],
-    ],
-  });
-
-  // Form-specific tabs (only for mentee, mentor, sponsorship)
-  switch (formType) {
-    case "mentee-signup":
-      writes.push({
-        tab: "Mentee Applications",
-        row: [
-          timestamp, str("firstName"), str("lastName"), str("dateOfBirth"), str("sex"),
-          str("email"), str("phone"), str("cityState"), arr("outdoorInterests"),
-          str("experienceLevel"), str("gearStatus"), str("howHeard"), str("aboutYourself"),
-        ],
-      });
-      break;
-
-    case "mentor-signup":
-      writes.push({
-        tab: "Mentor Applications",
-        row: [
-          timestamp, str("firstName"), str("lastName"), str("dateOfBirth"), str("sex"),
-          str("email"), str("phone"), str("cityState"), arr("outdoorSkills"),
-          str("yearsExperience"), str("mentoredBefore"), str("howHeard"), str("whyMentor"),
-        ],
-      });
-      break;
-
-    case "sponsorship":
-      writes.push({
-        tab: "Sponsorship",
-        row: [
-          timestamp, str("companyName"),
-          str("contactName").split(" ")[0], str("contactName").split(" ").slice(1).join(" "),
-          str("email"), str("phone"), str("budgetRange"), arr("opportunityInterest"), str("aboutCompany"),
-        ],
-      });
-      break;
-  }
-
-  return writes;
+  return [
+    timestamp,
+    str("email"),
+    firstName,
+    lastName,
+    str("phone"),
+    str("cityState"),
+    sourceMap[formType],
+  ];
 }
 
 async function appendToSheet(tab: string, row: string[]): Promise<void> {
@@ -490,11 +439,11 @@ export async function POST(request: NextRequest) {
     // 1. Write to Supabase (source of truth)
     await writeToSupabase(formType, data);
 
-    // 2. Sync to Google Sheets (non-blocking)
-    const sheetWrites = buildSheetWrites(formType, data);
-    Promise.all(
-      sheetWrites.map((w) => appendToSheet(w.tab, w.row))
-    ).catch((err) => console.error("Google Sheets sync error:", err));
+    // 2. Sync contact info to Google Sheets "All Contacts" tab (non-blocking)
+    const sheetRow = buildSheetRow(formType, data);
+    appendToSheet("All Contacts", sheetRow).catch((err) =>
+      console.error("Google Sheets sync error:", err)
+    );
 
     // 3. Send email notification (non-blocking)
     sendNotificationEmail(formType, data).catch((err) =>
