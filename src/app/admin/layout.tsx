@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import Image from "next/image";
 import { createAuthClient } from "@/lib/supabase/server-auth";
 
 export const metadata: Metadata = {
@@ -17,8 +17,14 @@ async function AdminNav() {
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-full w-56 flex-col border-r border-near-black/10 bg-near-black">
       <div className="border-b border-white/10 px-5 py-5">
-        <Link href="/admin" className="text-sm font-bold uppercase tracking-[1.5px] text-gold">
-          OO Admin
+        <Link href="/admin">
+          <Image
+            src="/images/OO_Footer_white2.svg"
+            alt="Opportunity Outdoors"
+            width={180}
+            height={40}
+            className="h-auto w-[160px]"
+          />
         </Link>
       </div>
 
@@ -63,28 +69,23 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Don't show admin nav on login page
   const supabase = await createAuthClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     return (
-      <html lang="en">
-        <body className="min-h-screen bg-cream">
-          {children}
-        </body>
-      </html>
+      <div className="min-h-screen bg-cream">
+        {children}
+      </div>
     );
   }
 
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-cream">
-        <AdminNav />
-        <main className="ml-56 min-h-screen px-8 py-8">
-          {children}
-        </main>
-      </body>
-    </html>
+    <div className="min-h-screen bg-cream">
+      <AdminNav />
+      <div className="ml-56 min-h-screen px-8 py-8">
+        {children}
+      </div>
+    </div>
   );
 }
