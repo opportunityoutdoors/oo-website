@@ -265,13 +265,22 @@ async function writeToSupabase(
   }
 }
 
-/* ─── Google Sheets: sync contact info to All Contacts tab ─── */
+/* ─── Direct Mail: sync contact to mailing list ─── */
 
-function buildSheetRow(
+async function syncToDirectMail(
   formType: FormType,
   data: Record<string, string | string[] | boolean>
-): string[] {
-  const timestamp = new Date().toISOString();
+): Promise<void> {
+  const apiKeyId = process.env.DIRECT_MAIL_API_KEY_ID;
+  const apiKeySecret = process.env.DIRECT_MAIL_API_KEY_SECRET;
+  const projectId = process.env.DIRECT_MAIL_PROJECT_ID;
+  const groupId = process.env.DIRECT_MAIL_ADDRESS_GROUP_ID;
+
+  if (!apiKeyId || !apiKeySecret || !projectId || !groupId) {
+    console.warn("Direct Mail credentials not configured, skipping sync");
+    return;
+  }
+
   const str = (key: string) => sanitize(data[key]);
 
   const firstName = formType === "sponsorship"
@@ -292,45 +301,31 @@ function buildSheetRow(
     sponsorship: "Sponsorship Inquiry",
   };
 
-  return [
-    timestamp,
-    str("email"),
-    firstName,
-    lastName,
-    str("phone"),
-    str("cityState"),
-    sourceMap[formType],
-  ];
-}
+  const credentials = Buffer.from(`${apiKeyId}:${apiKeySecret}`).toString("base64");
 
-async function appendToSheet(tab: string, row: string[]): Promise<void> {
-  const privateKey = process.env.GOOGLE_SHEETS_PRIVATE_KEY;
-  const clientEmail = process.env.GOOGLE_SHEETS_CLIENT_EMAIL;
-  const spreadsheetId = process.env.GOOGLE_SHEETS_SUBMISSIONS_ID;
+  const response = await fetch(
+    `https://secure.directmailmac.com/api/v2/projects/${projectId}/address-groups/${groupId}/addresses`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${credentials}`,
+        "Content-Type": "application/json; charset=utf-8",
+      },
+      body: JSON.stringify({
+        email: str("email"),
+        first_name: firstName,
+        last_name: lastName,
+        custom_1: str("phone"),
+        custom_2: str("cityState"),
+        custom_3: sourceMap[formType],
+      }),
+    }
+  );
 
-  if (!privateKey || !clientEmail || !spreadsheetId) {
-    console.warn("Google Sheets credentials not configured. Tab:", tab, "Row:", JSON.stringify(row));
-    return;
+  if (!response.ok) {
+    const text = await response.text();
+    console.error("Direct Mail API error:", response.status, text);
   }
-
-  const { google } = await import("googleapis");
-
-  const auth = new google.auth.JWT({
-    email: clientEmail,
-    key: privateKey.replace(/\\n/g, "\n").replace(/^"|"$/g, ""),
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
-
-  const sheets = google.sheets({ version: "v4", auth });
-
-  await sheets.spreadsheets.values.append({
-    spreadsheetId,
-    range: `'${tab}'!A:Z`,
-    valueInputOption: "USER_ENTERED",
-    requestBody: {
-      values: [row],
-    },
-  });
 }
 
 /* ─── Email notifications ─── */
@@ -439,10 +434,9 @@ export async function POST(request: NextRequest) {
     // 1. Write to Supabase (source of truth)
     await writeToSupabase(formType, data);
 
-    // 2. Sync contact info to Google Sheets "All Contacts" tab (non-blocking)
-    const sheetRow = buildSheetRow(formType, data);
-    appendToSheet("All Contacts", sheetRow).catch((err) =>
-      console.error("Google Sheets sync error:", err)
+    // 2. Sync contact to Direct Mail mailing list (non-blocking)
+    syncToDirectMail(formType, data).catch((err) =>
+      console.error("Direct Mail sync error:", err)
     );
 
     // 3. Send email notification (non-blocking)
