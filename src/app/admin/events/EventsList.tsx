@@ -4,10 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 
 interface EventItem {
+  id: string;
   sanity_id: string;
-  supabase_id: string | null;
   title: string;
-  slug: string;
+  slug: string | null;
   event_type: string;
   status: string;
   date: string;
@@ -15,7 +15,6 @@ interface EventItem {
   location: string;
   cost: string | null;
   spots_total: number | null;
-  synced: boolean;
   meeting_date: string | null;
   meeting_link: string | null;
   counts: {
@@ -48,40 +47,16 @@ const STATUS_STYLES: Record<string, string> = {
 export default function EventsList() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState<string | null>(null);
-
-  async function fetchEvents() {
-    setLoading(true);
-    const res = await fetch("/api/admin/events");
-    const data = await res.json();
-    setEvents(data);
-    setLoading(false);
-  }
 
   useEffect(() => {
+    async function fetchEvents() {
+      const res = await fetch("/api/admin/events");
+      const data = await res.json();
+      setEvents(data);
+      setLoading(false);
+    }
     fetchEvents();
   }, []);
-
-  async function syncEvent(event: EventItem) {
-    setSyncing(event.sanity_id);
-    await fetch("/api/admin/events", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sanity_id: event.sanity_id,
-        title: event.title,
-        event_type: event.event_type,
-        status: event.status,
-        date: event.date,
-        end_date: event.end_date,
-        location: event.location,
-        cost: event.cost,
-        spots_total: event.spots_total,
-      }),
-    });
-    setSyncing(null);
-    fetchEvents();
-  }
 
   const isCamp = (type: string) => type === "hunt-camp" || type === "fish-camp";
 
@@ -91,7 +66,7 @@ export default function EventsList() {
         <h1 className="mb-8 font-heading text-3xl font-[900] uppercase tracking-tight text-near-black">
           Events
         </h1>
-        <div className="py-16 text-center text-near-black/40">Loading events from Sanity...</div>
+        <div className="py-16 text-center text-near-black/40">Loading events...</div>
       </>
     );
   }
@@ -105,14 +80,10 @@ export default function EventsList() {
         <span className="text-sm text-near-black/40">{events.length} events</span>
       </div>
 
-      <p className="mb-6 text-sm text-near-black/50">
-        Events are created in Sanity. Click &ldquo;Enable Registration&rdquo; to start tracking signups in the admin.
-      </p>
-
       <div className="space-y-4">
         {events.map((event) => (
           <div
-            key={event.sanity_id}
+            key={event.id}
             className="rounded-lg border border-near-black/10 bg-white"
           >
             <div className="flex items-start justify-between p-5">
@@ -140,28 +111,16 @@ export default function EventsList() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                {event.synced && event.supabase_id ? (
-                  <Link
-                    href={`/admin/events/${event.supabase_id}`}
-                    className="rounded bg-dark-green px-4 py-2 text-xs font-bold uppercase tracking-[1px] text-white transition-colors hover:bg-dark-green/90"
-                  >
-                    Manage
-                  </Link>
-                ) : (
-                  <button
-                    onClick={() => syncEvent(event)}
-                    disabled={syncing === event.sanity_id}
-                    className="rounded border border-dark-green px-4 py-2 text-xs font-bold uppercase tracking-[1px] text-dark-green transition-colors hover:bg-dark-green hover:text-white disabled:opacity-50"
-                  >
-                    {syncing === event.sanity_id ? "Syncing..." : "Enable Registration"}
-                  </button>
-                )}
-              </div>
+              <Link
+                href={`/admin/events/${event.id}`}
+                className="rounded bg-dark-green px-4 py-2 text-xs font-bold uppercase tracking-[1px] text-white transition-colors hover:bg-dark-green/90"
+              >
+                Manage
+              </Link>
             </div>
 
-            {/* Registration stats (only for synced events) */}
-            {event.synced && event.counts.total > 0 && (
+            {/* Registration stats */}
+            {event.counts.total > 0 && (
               <div className="flex gap-4 border-t border-near-black/5 px-5 py-3">
                 {isCamp(event.event_type) ? (
                   <>
@@ -185,7 +144,7 @@ export default function EventsList() {
 
         {events.length === 0 && (
           <div className="rounded-lg border border-near-black/10 bg-white px-5 py-16 text-center text-near-black/40">
-            No events found in Sanity. Create one in the Content Studio.
+            No events found. Create one in the Content Studio.
           </div>
         )}
       </div>

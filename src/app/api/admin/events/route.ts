@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { client } from "@/lib/sanity";
 import { adminAllEventsQuery } from "@/lib/queries";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -15,13 +15,12 @@ interface SanityEvent {
   cost: string | null;
   spotsTotal: number | null;
   spotsRemaining: number | null;
-  meetingSlots: Array<{ date: string; label: string; capacity: number; meetingLink: string }> | null;
 }
 
 export async function GET() {
   const supabase = createServiceClient();
 
-  // Fetch from both Sanity and Supabase
+  // Fetch all events from Sanity
   let sanityEvents: SanityEvent[] = [];
   try {
     sanityEvents = await client.fetch(adminAllEventsQuery);
@@ -29,11 +28,32 @@ export async function GET() {
     console.warn("Failed to fetch events from Sanity");
   }
 
+  // Auto-sync all Sanity events to Supabase
+  for (const se of sanityEvents) {
+    await supabase.from("events").upsert(
+      {
+        sanity_id: se._id,
+        title: se.title,
+        event_type: se.eventType,
+        status: se.status || "draft",
+        date_start: se.date || null,
+        date_end: se.endDate || null,
+        location: se.location || null,
+        cost: se.cost || null,
+        spots_total: se.spotsTotal || null,
+        spots_remaining: se.spotsRemaining || null,
+      },
+      { onConflict: "sanity_id" }
+    );
+  }
+
+  // Now fetch merged data from Supabase (which has everything synced)
   const { data: supabaseEvents } = await supabase
     .from("events")
-    .select("*");
+    .select("*")
+    .order("date_start", { ascending: false });
 
-  // Get registration counts per event from Supabase
+  // Get registration counts
   const { data: regCounts } = await supabase
     .from("registrations")
     .select("event_id, status");
@@ -44,31 +64,27 @@ export async function GET() {
     countsByEvent[r.event_id][r.status] = (countsByEvent[r.event_id][r.status] || 0) + 1;
   });
 
-  // Merge: for each Sanity event, check if it's synced to Supabase
-  const supabaseBysSanityId = new Map(
-    supabaseEvents?.map((e) => [e.sanity_id, e]) || []
-  );
+  // Build response from Supabase (source of truth for IDs)
+  const sanityMap = new Map(sanityEvents.map((se) => [se._id, se]));
 
-  const events = sanityEvents.map((se) => {
-    const dbEvent = supabaseBysSanityId.get(se._id);
-    const counts = dbEvent ? countsByEvent[dbEvent.id] || {} : {};
+  const events = (supabaseEvents || []).map((dbEvent) => {
+    const se = sanityMap.get(dbEvent.sanity_id);
+    const counts = countsByEvent[dbEvent.id] || {};
 
     return {
-      sanity_id: se._id,
-      supabase_id: dbEvent?.id || null,
-      title: se.title,
-      slug: se.slug?.current,
-      event_type: se.eventType,
-      status: se.status,
-      date: se.date,
-      end_date: se.endDate,
-      location: se.location,
-      cost: se.cost,
-      spots_total: se.spotsTotal,
-      spots_remaining: se.spotsRemaining,
-      meeting_date: dbEvent?.meeting_date || null,
-      meeting_link: dbEvent?.meeting_link || null,
-      synced: !!dbEvent,
+      id: dbEvent.id,
+      sanity_id: dbEvent.sanity_id,
+      title: dbEvent.title,
+      slug: se?.slug?.current || null,
+      event_type: dbEvent.event_type,
+      status: dbEvent.status,
+      date: dbEvent.date_start,
+      end_date: dbEvent.date_end,
+      location: dbEvent.location,
+      cost: dbEvent.cost,
+      spots_total: dbEvent.spots_total,
+      meeting_date: dbEvent.meeting_date,
+      meeting_link: dbEvent.meeting_link,
       counts: {
         waitlist: counts.waitlist || 0,
         meeting_rsvp: counts.meeting_rsvp || 0,
@@ -82,41 +98,4 @@ export async function GET() {
   });
 
   return NextResponse.json(events);
-}
-
-// Sync a Sanity event to Supabase
-export async function POST(request: NextRequest) {
-  const supabase = createServiceClient();
-  const body = await request.json();
-  const { sanity_id, title, event_type, status, date, end_date, location, cost, spots_total } = body;
-
-  if (!sanity_id || !title) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-  }
-
-  const { data, error } = await supabase
-    .from("events")
-    .upsert(
-      {
-        sanity_id,
-        title,
-        event_type,
-        status: status || "draft",
-        date_start: date || null,
-        date_end: end_date || null,
-        location: location || null,
-        cost: cost || null,
-        spots_total: spots_total || null,
-        spots_remaining: spots_total || null,
-      },
-      { onConflict: "sanity_id" }
-    )
-    .select()
-    .single();
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json(data);
 }
