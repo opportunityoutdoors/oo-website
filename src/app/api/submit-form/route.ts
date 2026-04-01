@@ -302,29 +302,39 @@ async function syncToDirectMail(
   };
 
   const credentials = Buffer.from(`${apiKeyId}:${apiKeySecret}`).toString("base64");
+  const url = `https://secure.directmailmac.com/api/v2/projects/${projectId}/address-groups/${groupId}/addresses`;
+  const options: RequestInit = {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${credentials}`,
+      "Content-Type": "application/json; charset=utf-8",
+    },
+    body: JSON.stringify({
+      email: str("email"),
+      first_name: firstName,
+      last_name: lastName,
+      custom_1: str("phone"),
+      custom_2: str("cityState"),
+      custom_3: sourceMap[formType],
+    }),
+  };
 
-  const response = await fetch(
-    `https://secure.directmailmac.com/api/v2/projects/${projectId}/address-groups/${groupId}/addresses`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${credentials}`,
-        "Content-Type": "application/json; charset=utf-8",
-      },
-      body: JSON.stringify({
-        email: str("email"),
-        first_name: firstName,
-        last_name: lastName,
-        custom_1: str("phone"),
-        custom_2: str("cityState"),
-        custom_3: sourceMap[formType],
-      }),
+  // Retry once on connection reset (common on Vercel cold starts)
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("Direct Mail API error:", response.status, text);
+      }
+      return;
+    } catch (err) {
+      if (attempt === 0) {
+        console.warn("Direct Mail fetch failed, retrying:", (err as Error).message);
+        continue;
+      }
+      throw err;
     }
-  );
-
-  if (!response.ok) {
-    const text = await response.text();
-    console.error("Direct Mail API error:", response.status, text);
   }
 }
 
