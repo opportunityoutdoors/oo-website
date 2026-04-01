@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createServiceClient } from "@/lib/supabase/server";
 
 /* ─── Types ─── */
 
@@ -75,90 +76,283 @@ function isRateLimited(ip: string): boolean {
   return entry.count > RATE_LIMIT;
 }
 
-/* ─── Tab + column mapping per form type ─── */
+/* ─── Supabase: upsert contact + create record ─── */
 
-interface SheetTarget {
+async function writeToSupabase(
+  formType: FormType,
+  data: Record<string, string | string[] | boolean>
+): Promise<void> {
+  const supabase = createServiceClient();
+  const str = (key: string) => sanitize(data[key]);
+  const arr = (key: string) =>
+    Array.isArray(data[key]) ? (data[key] as string[]) : [];
+
+  const email = str("email");
+
+  // Determine source label
+  const sourceMap: Record<FormType, string> = {
+    newsletter: "Newsletter Signup",
+    contact: "Contact Form",
+    "mentee-signup": "Mentee Application",
+    "mentor-signup": "Mentor Application",
+    "event-registration": str("eventName") || "Event Registration",
+    "camp-waitlist": str("eventName") || "Camp Waitlist",
+    "camp-registration": str("eventName") || "Camp Registration",
+    sponsorship: "Sponsorship Inquiry",
+  };
+
+  // Build contact upsert data
+  const contactData: Record<string, unknown> = {
+    email,
+    source: sourceMap[formType],
+    updated_at: new Date().toISOString(),
+  };
+
+  // Add name/phone/city if available (don't overwrite with empty)
+  if (str("firstName")) contactData.first_name = str("firstName");
+  if (str("lastName")) contactData.last_name = str("lastName");
+  if (str("phone")) contactData.phone = str("phone");
+  if (str("cityState")) contactData.city_state = str("cityState");
+
+  // Form-specific contact fields
+  if (formType === "mentee-signup") {
+    contactData.experience_level = str("experienceLevel");
+    contactData.interests = arr("outdoorInterests");
+    contactData.gear_status = str("gearStatus");
+  } else if (formType === "mentor-signup") {
+    contactData.interests = arr("outdoorSkills");
+  } else if (formType === "camp-registration") {
+    if (str("tshirtSize")) contactData.tshirt_size = str("tshirtSize");
+  } else if (formType === "sponsorship") {
+    // Parse contactName into first/last
+    const fullName = str("contactName");
+    const parts = fullName.split(" ");
+    contactData.first_name = parts[0];
+    contactData.last_name = parts.slice(1).join(" ");
+  }
+
+  // Upsert contact (insert or update on email conflict)
+  const { data: contact, error: contactError } = await supabase
+    .from("contacts")
+    .upsert(contactData, { onConflict: "email" })
+    .select("id")
+    .single();
+
+  if (contactError) {
+    console.error("Supabase contact upsert error:", contactError);
+    throw new Error("Failed to save contact");
+  }
+
+  const contactId = contact.id;
+
+  // Create form-specific record
+  switch (formType) {
+    case "mentee-signup": {
+      const { error } = await supabase.from("mentee_applications").insert({
+        contact_id: contactId,
+        date_of_birth: str("dateOfBirth") || null,
+        sex: str("sex"),
+        outdoor_interests: arr("outdoorInterests"),
+        experience_level: str("experienceLevel"),
+        gear_status: str("gearStatus"),
+        how_heard: str("howHeard"),
+        affiliations: str("affiliations"),
+        about_yourself: str("aboutYourself"),
+        parent_name: str("parentName") || null,
+        parent_phone: str("parentPhone") || null,
+        parent_email: str("parentEmail") || null,
+      });
+      if (error) console.error("Supabase mentee insert error:", error);
+      break;
+    }
+
+    case "mentor-signup": {
+      const { error } = await supabase.from("mentor_applications").insert({
+        contact_id: contactId,
+        date_of_birth: str("dateOfBirth") || null,
+        sex: str("sex"),
+        outdoor_skills: arr("outdoorSkills"),
+        years_experience: str("yearsExperience"),
+        mentored_before: str("mentoredBefore"),
+        how_heard: str("howHeard"),
+        certifications: Array.isArray(data.certifications) ? data.certifications as string[] : [],
+        affiliations: str("affiliations"),
+        why_mentor: str("whyMentor"),
+      });
+      if (error) console.error("Supabase mentor insert error:", error);
+      break;
+    }
+
+    case "event-registration": {
+      // Look up event by name, or create a placeholder
+      const eventName = str("eventName");
+      let eventId: string | null = null;
+      if (eventName) {
+        const { data: event } = await supabase
+          .from("events")
+          .select("id")
+          .eq("title", eventName)
+          .single();
+        eventId = event?.id || null;
+      }
+      if (eventId) {
+        const { error } = await supabase.from("registrations").insert({
+          contact_id: contactId,
+          event_id: eventId,
+          status: "registered",
+          role: "attendee",
+        });
+        if (error) console.error("Supabase event registration error:", error);
+      }
+      break;
+    }
+
+    case "camp-waitlist": {
+      const eventName = str("eventName");
+      let eventId: string | null = null;
+      if (eventName) {
+        const { data: event } = await supabase
+          .from("events")
+          .select("id")
+          .eq("title", eventName)
+          .single();
+        eventId = event?.id || null;
+      }
+      if (eventId) {
+        const { error } = await supabase.from("registrations").insert({
+          contact_id: contactId,
+          event_id: eventId,
+          status: "waitlist",
+          role: str("role"),
+          meeting_date_selected: str("meetingDate") || null,
+        });
+        if (error) console.error("Supabase camp waitlist error:", error);
+      }
+      break;
+    }
+
+    case "camp-registration": {
+      // Token-based registration updates an existing registration row
+      // For now, just update contact profile fields
+      const { error } = await supabase
+        .from("contacts")
+        .update({
+          tshirt_size: str("tshirtSize"),
+        })
+        .eq("id", contactId);
+      if (error) console.error("Supabase camp registration update error:", error);
+      break;
+    }
+
+    case "sponsorship": {
+      const { error } = await supabase.from("sponsorship_inquiries").insert({
+        contact_id: contactId,
+        company_name: str("companyName"),
+        budget_range: str("budgetRange"),
+        opportunity_interest: Array.isArray(data.opportunityInterest)
+          ? (data.opportunityInterest as string[])
+          : [],
+        about_company: str("aboutCompany"),
+      });
+      if (error) console.error("Supabase sponsorship insert error:", error);
+      break;
+    }
+
+    // newsletter and contact: contact upsert is enough, no extra table needed
+    case "newsletter":
+    case "contact":
+      break;
+  }
+}
+
+/* ─── Google Sheets: sync to Master Contacts + form-specific tabs ─── */
+
+interface SheetWrite {
   tab: string;
   row: string[];
 }
 
-function buildSheetTarget(formType: FormType, data: Record<string, string | string[] | boolean>): SheetTarget {
+function buildSheetWrites(
+  formType: FormType,
+  data: Record<string, string | string[] | boolean>
+): SheetWrite[] {
   const timestamp = new Date().toISOString();
   const str = (key: string) => sanitize(data[key]);
   const arr = (key: string) =>
     Array.isArray(data[key]) ? (data[key] as string[]).join(", ") : sanitize(data[key]);
 
+  const writes: SheetWrite[] = [];
+
+  // Master Contacts row (for all form types)
+  const firstName = formType === "sponsorship"
+    ? str("contactName").split(" ")[0]
+    : str("firstName");
+  const lastName = formType === "sponsorship"
+    ? str("contactName").split(" ").slice(1).join(" ")
+    : str("lastName");
+
+  const sourceMap: Record<FormType, string> = {
+    newsletter: "Newsletter Signup",
+    contact: "Contact Form",
+    "mentee-signup": "Mentee Application",
+    "mentor-signup": "Mentor Application",
+    "event-registration": str("eventName") || "Event Registration",
+    "camp-waitlist": str("eventName") || "Camp Waitlist",
+    "camp-registration": str("eventName") || "Camp Registration",
+    sponsorship: "Sponsorship Inquiry",
+  };
+
+  writes.push({
+    tab: "All Contacts",
+    row: [
+      timestamp,
+      str("email"),
+      firstName,
+      lastName,
+      str("phone"),
+      str("cityState"),
+      sourceMap[formType],
+    ],
+  });
+
+  // Form-specific tabs (only for mentee, mentor, sponsorship)
   switch (formType) {
-    case "newsletter":
-      return {
-        tab: "Newsletter",
-        row: [timestamp, str("email"), "Website"],
-      };
-
-    case "contact":
-      return {
-        tab: "Contact",
-        row: [timestamp, str("firstName"), str("lastName"), str("email"), str("subject"), str("message")],
-      };
-
     case "mentee-signup":
-      return {
+      writes.push({
         tab: "Mentee Applications",
         row: [
           timestamp, str("firstName"), str("lastName"), str("dateOfBirth"), str("sex"),
           str("email"), str("phone"), str("cityState"), arr("outdoorInterests"),
           str("experienceLevel"), str("gearStatus"), str("howHeard"), str("aboutYourself"),
         ],
-      };
+      });
+      break;
 
     case "mentor-signup":
-      return {
+      writes.push({
         tab: "Mentor Applications",
         row: [
           timestamp, str("firstName"), str("lastName"), str("dateOfBirth"), str("sex"),
           str("email"), str("phone"), str("cityState"), arr("outdoorSkills"),
           str("yearsExperience"), str("mentoredBefore"), str("howHeard"), str("whyMentor"),
         ],
-      };
-
-    case "event-registration":
-      return {
-        tab: "Event Registrations",
-        row: [
-          timestamp, str("firstName"), str("lastName"), str("email"), str("phone"),
-          str("cityState"), str("eventName"), str("eventType"), str("howHeard"),
-        ],
-      };
-
-    case "camp-waitlist":
-      return {
-        tab: "Camp Waitlist",
-        row: [timestamp, str("firstName"), str("lastName"), str("email"), str("phone"), str("role"), str("eventName")],
-      };
-
-    case "camp-registration":
-      return {
-        tab: "Camp Registration",
-        row: [
-          timestamp, str("email"), str("tshirtSize"), str("emergencyContactName"),
-          str("emergencyContactPhone"), str("transportation"), str("dietaryMedical"),
-          data.waiver ? "TRUE" : "", str("eventName"),
-        ],
-      };
+      });
+      break;
 
     case "sponsorship":
-      return {
+      writes.push({
         tab: "Sponsorship",
         row: [
           timestamp, str("companyName"),
           str("contactName").split(" ")[0], str("contactName").split(" ").slice(1).join(" "),
           str("email"), str("phone"), str("budgetRange"), arr("opportunityInterest"), str("aboutCompany"),
         ],
-      };
+      });
+      break;
   }
-}
 
-/* ─── Google Sheets write ─── */
+  return writes;
+}
 
 async function appendToSheet(tab: string, row: string[]): Promise<void> {
   const privateKey = process.env.GOOGLE_SHEETS_PRIVATE_KEY;
@@ -166,8 +360,7 @@ async function appendToSheet(tab: string, row: string[]): Promise<void> {
   const spreadsheetId = process.env.GOOGLE_SHEETS_SUBMISSIONS_ID;
 
   if (!privateKey || !clientEmail || !spreadsheetId) {
-    console.warn("Google Sheets credentials not configured — logging submission instead:");
-    console.log("Tab:", tab, "Row data:", JSON.stringify(row));
+    console.warn("Google Sheets credentials not configured. Tab:", tab, "Row:", JSON.stringify(row));
     return;
   }
 
@@ -294,11 +487,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
     }
 
-    // Build row and write to form-specific Google Sheets tab
-    const { tab, row } = buildSheetTarget(formType, data);
-    await appendToSheet(tab, row);
+    // 1. Write to Supabase (source of truth)
+    await writeToSupabase(formType, data);
 
-    // Send email notification (non-blocking — don't fail the submission if email fails)
+    // 2. Sync to Google Sheets (non-blocking)
+    const sheetWrites = buildSheetWrites(formType, data);
+    Promise.all(
+      sheetWrites.map((w) => appendToSheet(w.tab, w.row))
+    ).catch((err) => console.error("Google Sheets sync error:", err));
+
+    // 3. Send email notification (non-blocking)
     sendNotificationEmail(formType, data).catch((err) =>
       console.error("Email notification error:", err)
     );
