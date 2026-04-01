@@ -31,17 +31,16 @@ async function AdminNav() {
       <nav className="flex-1 px-3 py-4">
         <ul className="space-y-1">
           {[
-            { href: "/admin", label: "Dashboard", icon: "◉" },
-            { href: "/admin/contacts", label: "Contacts", icon: "◎" },
-            { href: "/admin/events", label: "Events", icon: "◈" },
-            { href: "/admin/studio", label: "Content Studio", icon: "◆" },
+            { href: "/admin", label: "Dashboard" },
+            { href: "/admin/contacts", label: "Contacts" },
+            { href: "/admin/events", label: "Events" },
+            { href: "/admin/studio", label: "Content Studio" },
           ].map((item) => (
             <li key={item.href}>
               <Link
                 href={item.href}
-                className="flex items-center gap-3 rounded px-3 py-2.5 text-sm text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+                className="block rounded px-3 py-2.5 text-sm text-white/60 transition-colors hover:bg-white/5 hover:text-white"
               >
-                <span className="text-xs">{item.icon}</span>
                 {item.label}
               </Link>
             </li>
