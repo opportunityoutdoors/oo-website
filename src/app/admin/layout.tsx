@@ -23,7 +23,7 @@ async function AdminNav() {
             alt="Opportunity Outdoors"
             width={180}
             height={40}
-            className="h-auto w-[160px]"
+            className="h-auto w-full"
           />
         </Link>
       </div>
