@@ -18,9 +18,21 @@ function getContact(reg: any): ContactInfo | null {
 
 interface CampLocation {
   label: string;
-  latitude: number;
-  longitude: number;
+  coordinates?: string;
+  latitude?: number;
+  longitude?: number;
   onxLink?: string;
+}
+
+function parseCoords(loc: CampLocation): { lat: number; lng: number } | null {
+  if (loc.latitude && loc.longitude) return { lat: loc.latitude, lng: loc.longitude };
+  if (loc.coordinates) {
+    const parts = loc.coordinates.split(",").map((s) => parseFloat(s.trim()));
+    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+      return { lat: parts[0], lng: parts[1] };
+    }
+  }
+  return null;
 }
 
 // POST: Send welcome packets
@@ -154,14 +166,18 @@ export async function POST(
 
     // Build camp locations HTML
     const locationsHtml = campLocations.map((loc) => {
-      const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${loc.latitude},${loc.longitude}`;
+      const coords = parseCoords(loc);
+      const coordStr = coords ? `${coords.lat}, ${coords.lng}` : (loc.coordinates || "");
+      const googleMapsUrl = coords
+        ? `https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`
+        : null;
       return `
         <div style="margin-bottom: 12px; padding: 12px; background: #f0ebe2; border-radius: 4px;">
           <p style="margin: 0; font-size: 14px; font-weight: 600;">${loc.label || "Camp Location"}</p>
-          <p style="margin: 4px 0 0; font-size: 13px; color: #666;">${loc.latitude}, ${loc.longitude}</p>
+          ${coordStr ? `<p style="margin: 4px 0 0; font-size: 13px; color: #666;">${coordStr}</p>` : ""}
           <p style="margin: 8px 0 0; font-size: 13px;">
-            <a href="${googleMapsUrl}" style="color: #2D5016; font-weight: 600;">Google Maps Directions</a>
-            ${loc.onxLink ? ` · <a href="${loc.onxLink}" style="color: #2D5016; font-weight: 600;">View on OnX</a>` : ""}
+            ${googleMapsUrl ? `<a href="${googleMapsUrl}" style="color: #2D5016; font-weight: 600;">Google Maps Directions</a>` : ""}
+            ${loc.onxLink ? `${googleMapsUrl ? " · " : ""}<a href="${loc.onxLink}" style="color: #2D5016; font-weight: 600;">View on OnX</a>` : ""}
           </p>
         </div>
       `;

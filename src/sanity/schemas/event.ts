@@ -191,14 +191,13 @@ export default {
           type: "object",
           fields: [
             { name: "label", title: "Label", type: "string", description: "e.g., 'Base Camp', 'Hunt Area A'" },
-            { name: "latitude", title: "Latitude", type: "number" },
-            { name: "longitude", title: "Longitude", type: "number" },
+            { name: "coordinates", title: "Coordinates", type: "string", description: "Paste from OnX, e.g., '35.4215, -83.94966'" },
             { name: "onxLink", title: "OnX Map Link", type: "url", description: "Link to this pin on OnX Maps" },
           ],
           preview: {
-            select: { title: "label", lat: "latitude", lng: "longitude" },
-            prepare({ title, lat, lng }: { title: string; lat: number; lng: number }) {
-              return { title: title || "Unnamed", subtitle: lat && lng ? `${lat}, ${lng}` : "No coordinates" };
+            select: { title: "label", coordinates: "coordinates" },
+            prepare({ title, coordinates }: { title: string; coordinates: string }) {
+              return { title: title || "Unnamed", subtitle: coordinates || "No coordinates" };
             },
           },
         },
