@@ -72,12 +72,6 @@ export default {
       validation: (Rule: any) => Rule.required(),
     },
     {
-      name: "locationPrivate",
-      title: "Location (Private)",
-      type: "string",
-      description: "Exact address/coordinates. NEVER displayed publicly. Only in welcome email after registration.",
-    },
-    {
       name: "experienceLevel",
       title: "Experience Level",
       type: "string",
