@@ -31,6 +31,8 @@ interface SanityEvent {
   spotsRemaining: number | null;
   meetingSlots: MeetingSlot[] | null;
   campLocations: CampLocation[] | null;
+  mentorPerks: Array<{ title: string; link?: string }> | null;
+  menteePerks: Array<{ title: string; link?: string }> | null;
 }
 
 export async function GET() {
@@ -61,6 +63,8 @@ export async function GET() {
         spots_remaining: se.spotsRemaining || null,
         meeting_slots: se.meetingSlots || [],
         camp_locations: se.campLocations || [],
+        mentor_perks: se.mentorPerks || [],
+        mentee_perks: se.menteePerks || [],
       },
       { onConflict: "sanity_id" }
     );

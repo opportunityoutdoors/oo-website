@@ -167,6 +167,19 @@ export async function POST(
       `;
     }).join("");
 
+    // Build perks HTML (role-specific)
+    const perks: Array<{ title: string; link?: string }> = isMentor
+      ? (event.mentor_perks || [])
+      : (event.mentee_perks || []);
+
+    const perksHtml = perks.length > 0 ? `
+      <hr style="border: none; border-top: 1px solid #e8e3db; margin: 24px 0;" />
+      <p style="font-size: 16px; line-height: 1.6; font-weight: 600;">Your Perks</p>
+      <ul style="font-size: 15px; line-height: 1.8; padding-left: 20px;">
+        ${perks.map((p) => `<li>${p.link ? `<a href="${p.link}" style="color: #2D5016; font-weight: 600;">${p.title}</a>` : p.title}</li>`).join("")}
+      </ul>
+    ` : "";
+
     const eventDate = event.date_start
       ? new Date(event.date_start).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
       : null;
@@ -202,6 +215,8 @@ export async function POST(
             Please keep these coordinates private and do not share publicly.
           </p>
           ${locationsHtml}
+
+          ${perksHtml}
 
           <hr style="border: none; border-top: 1px solid #e8e3db; margin: 24px 0;" />
 

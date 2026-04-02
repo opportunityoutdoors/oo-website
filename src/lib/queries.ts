@@ -80,7 +80,9 @@ export const adminAllEventsQuery = `*[_type == "event"] | order(date desc) {
   waitlistOpens,
   waitlistCloses,
   meetingSlots,
-  campLocations
+  campLocations,
+  mentorPerks,
+  menteePerks
 }`;
 
 // ─── Team Members ───

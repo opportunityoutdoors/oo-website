@@ -152,6 +152,40 @@ export default {
       description: "For hunt/fish camps only.",
     },
 
+    // ─── Perks (included in welcome packet emails) ───
+    {
+      name: "mentorPerks",
+      title: "Mentor Perks",
+      type: "array",
+      description: "Perks included in the mentor welcome packet email. One per line.",
+      of: [
+        {
+          type: "object",
+          fields: [
+            { name: "title", title: "Perk", type: "string", description: "e.g., '3 months free OnX Hunt'" },
+            { name: "link", title: "Link (optional)", type: "url" },
+          ],
+          preview: { select: { title: "title" } },
+        },
+      ],
+    },
+    {
+      name: "menteePerks",
+      title: "Mentee Perks",
+      type: "array",
+      description: "Perks included in the mentee welcome packet email. One per line.",
+      of: [
+        {
+          type: "object",
+          fields: [
+            { name: "title", title: "Perk", type: "string", description: "e.g., '3 months free OnX Hunt'" },
+            { name: "link", title: "Link (optional)", type: "url" },
+          ],
+          preview: { select: { title: "title" } },
+        },
+      ],
+    },
+
     // ─── Private Camp Location (not shown publicly) ───
     {
       name: "campLocations",
