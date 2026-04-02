@@ -114,9 +114,12 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (fullReg) {
-    sendRegistrationConfirmation(fullReg, signature_name, waiver_text).catch((err) =>
-      console.error("Registration confirmation email error:", err)
-    );
+    try {
+      await sendRegistrationConfirmation(fullReg, signature_name, waiver_text);
+    } catch (err) {
+      console.error("Registration confirmation email error:", err);
+      // Don't fail the registration, but log the error
+    }
   }
 
   return NextResponse.json({ success: true });
@@ -180,7 +183,7 @@ async function sendRegistrationConfirmation(
     attachments: [
       {
         filename,
-        content: pdfBuffer,
+        content: pdfBuffer.toString("base64"),
       },
     ],
     html: `
