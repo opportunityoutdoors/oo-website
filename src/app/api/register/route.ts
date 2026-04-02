@@ -122,13 +122,14 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ success: true });
 }
 
-// Send registration confirmation with waiver copy
+// Send registration confirmation with waiver PDF attachment
 async function sendRegistrationConfirmation(
   registration: {
     contacts: { email: string; first_name: string | null; last_name: string | null } | null;
     events: { title: string; date_start: string | null; date_end: string | null; location: string | null } | null;
     role: string | null;
     waiver_signed_at: string | null;
+    waiver_ip: string | null;
   },
   signatureName: string,
   waiverText: string
@@ -140,34 +141,48 @@ async function sendRegistrationConfirmation(
   if (!email) return;
 
   const { Resend } = await import("resend");
+  const { generateWaiverPdf } = await import("@/lib/waiver-pdf");
   const resend = new Resend(apiKey);
 
   const firstName = registration.contacts?.first_name || "there";
+  const lastName = registration.contacts?.last_name || "";
+  const participantName = [firstName, lastName].filter(Boolean).join(" ");
   const eventTitle = registration.events?.title || "the upcoming event";
+
   const signedAt = registration.waiver_signed_at
-    ? new Date(registration.waiver_signed_at).toLocaleString("en-US", {
-        dateStyle: "long",
-        timeStyle: "short",
-      })
+    ? new Date(registration.waiver_signed_at).toLocaleString("en-US", { dateStyle: "long", timeStyle: "short" })
     : new Date().toLocaleString("en-US", { dateStyle: "long", timeStyle: "short" });
 
   const eventDate = registration.events?.date_start
-    ? new Date(registration.events.date_start).toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
-    : "";
+    ? new Date(registration.events.date_start).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+    : null;
 
-  const waiverHtml = waiverText
-    .split("\n")
-    .map((line) => (line.trim() ? `<p style="margin: 4px 0;">${line}</p>` : "<br/>"))
-    .join("");
+  // Generate waiver PDF
+  const pdfBuffer = generateWaiverPdf({
+    participantName,
+    participantEmail: email,
+    eventTitle,
+    eventDate,
+    eventLocation: registration.events?.location || null,
+    role: registration.role,
+    signatureName,
+    signedAt,
+    ipAddress: registration.waiver_ip || "Unknown",
+    waiverText,
+  });
+
+  const filename = `OO-Waiver-${participantName.replace(/\s+/g, "-")}-${eventTitle.replace(/\s+/g, "-")}.pdf`;
 
   await resend.emails.send({
     from: "Opportunity Outdoors <notifications@send.opportunityoutdoors.org>",
     to: email,
     subject: `Registration Confirmed: ${eventTitle}`,
+    attachments: [
+      {
+        filename,
+        content: pdfBuffer,
+      },
+    ],
     html: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1a1a;">
         <p style="font-size: 16px; line-height: 1.6;">Hey ${firstName},</p>
@@ -184,6 +199,10 @@ async function sendRegistrationConfirmation(
         ` : ""}
 
         <p style="font-size: 16px; line-height: 1.6;">
+          A copy of your signed waiver is attached to this email for your records.
+        </p>
+
+        <p style="font-size: 16px; line-height: 1.6;">
           We'll send you a welcome packet closer to the event with your mentor/mentee assignment, camp schedule, gear list, and everything else you need.
         </p>
 
@@ -196,20 +215,6 @@ async function sendRegistrationConfirmation(
           See you in the field!<br/>
           — The Opportunity Outdoors Team
         </p>
-
-        <hr style="border: none; border-top: 1px solid #e8e3db; margin: 32px 0;" />
-
-        <div style="font-size: 12px; color: #666;">
-          <p style="margin: 0 0 12px;"><strong>Your Signed Waiver — Keep for Your Records</strong></p>
-          <p style="margin: 0 0 8px;">
-            Signed by: <strong>${signatureName}</strong><br/>
-            Date: ${signedAt}
-          </p>
-
-          <div style="margin-top: 16px; padding: 16px; background: #fafafa; border: 1px solid #eee; border-radius: 4px; font-size: 11px; line-height: 1.6; color: #444;">
-            ${waiverHtml}
-          </div>
-        </div>
       </div>
     `,
   });

@@ -391,6 +391,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                     <th className="px-4 py-3 font-semibold">Role</th>
                     {isCamp && <th className="px-4 py-3 font-semibold">Meeting</th>}
                     <th className="px-4 py-3 font-semibold">Status</th>
+                    <th className="px-4 py-3 font-semibold">Waiver</th>
                     <th className="w-24 px-4 py-3 font-semibold">Actions</th>
                   </tr>
                 </thead>
@@ -441,6 +442,21 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                           </span>
                         </td>
                         <td className="px-4 py-3">
+                          {reg.waiver_signed ? (
+                            <a
+                              href={`/api/admin/registrations/${reg.id}/waiver`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="rounded bg-dark-green/10 px-2 py-1 text-[10px] font-semibold text-dark-green transition-colors hover:bg-dark-green/20"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              PDF
+                            </a>
+                          ) : (
+                            <span className="text-[10px] text-near-black/30">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
                           <div className="flex gap-1">
                             {reg.status === "waitlist" && (
                               <button
@@ -477,7 +493,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                   })}
                   {filteredRegs.length === 0 && (
                     <tr>
-                      <td colSpan={isCamp ? 8 : 7} className="px-5 py-10 text-center text-near-black/40">
+                      <td colSpan={isCamp ? 9 : 8} className="px-5 py-10 text-center text-near-black/40">
                         {event.registrations.length === 0
                           ? "No signups yet"
                           : "No registrations in this stage"}
