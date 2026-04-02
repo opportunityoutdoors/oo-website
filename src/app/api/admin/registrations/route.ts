@@ -42,10 +42,22 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ updated: ids.length });
   }
 
+  // When moving back to waitlist, clear waiver and token data
+  const resetFields = status === "waitlist" ? {
+    status,
+    token: null,
+    waiver_signed: false,
+    waiver_text: null,
+    waiver_signature_name: null,
+    waiver_signed_at: null,
+    waiver_ip: null,
+    payment_status: "none",
+  } : { status };
+
   // For all other status changes, bulk update
   const { data, error } = await supabase
     .from("registrations")
-    .update({ status })
+    .update(resetFields)
     .in("id", ids)
     .select("*, contacts(email, first_name), events(title, slug)");
 
