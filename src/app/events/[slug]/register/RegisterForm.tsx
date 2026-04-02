@@ -160,6 +160,8 @@ export default function RegisterForm() {
         transportation,
         dietary_medical: dietaryMedical,
         waiver_signed: waiverSigned,
+        waiver_text: WAIVER_TEXT,
+        signature_name: signatureName,
       }),
     });
 

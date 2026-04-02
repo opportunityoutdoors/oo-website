@@ -35,20 +35,36 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const supabase = createServiceClient();
   const body = await request.json();
-  const { token, tshirt_size, emergency_contact_name, emergency_contact_phone, transportation, dietary_medical, waiver_signed } = body;
+  const {
+    token,
+    tshirt_size,
+    emergency_contact_name,
+    emergency_contact_phone,
+    transportation,
+    dietary_medical,
+    waiver_signed,
+    waiver_text,
+    signature_name,
+  } = body;
 
   if (!token) {
     return NextResponse.json({ error: "Missing token" }, { status: 400 });
   }
 
-  if (!waiver_signed) {
+  if (!waiver_signed || !signature_name?.trim()) {
     return NextResponse.json({ error: "Waiver must be signed" }, { status: 400 });
   }
+
+  // Get client IP
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("x-real-ip") ??
+    "unknown";
 
   // Verify token and status
   const { data: registration } = await supabase
     .from("registrations")
-    .select("id, contact_id, status")
+    .select("id, contact_id, event_id, role, status")
     .eq("token", token)
     .single();
 
@@ -60,12 +76,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not eligible for registration" }, { status: 403 });
   }
 
-  // Update registration
+  // Update registration with waiver audit trail
   const { error: regError } = await supabase
     .from("registrations")
     .update({
       status: "registered",
       waiver_signed: true,
+      waiver_text: waiver_text || null,
+      waiver_signature_name: signature_name,
+      waiver_signed_at: new Date().toISOString(),
+      waiver_ip: ip,
       payment_status: "pending", // Stripe TBD
       emergency_contact_name: emergency_contact_name || null,
       emergency_contact_phone: emergency_contact_phone || null,
@@ -86,5 +106,111 @@ export async function POST(request: NextRequest) {
       .eq("id", registration.contact_id);
   }
 
+  // Fetch contact + event info for confirmation email
+  const { data: fullReg } = await supabase
+    .from("registrations")
+    .select("*, contacts(email, first_name, last_name), events(title, date_start, date_end, location)")
+    .eq("id", registration.id)
+    .single();
+
+  if (fullReg) {
+    sendRegistrationConfirmation(fullReg, signature_name, waiver_text).catch((err) =>
+      console.error("Registration confirmation email error:", err)
+    );
+  }
+
   return NextResponse.json({ success: true });
+}
+
+// Send registration confirmation with waiver copy
+async function sendRegistrationConfirmation(
+  registration: {
+    contacts: { email: string; first_name: string | null; last_name: string | null } | null;
+    events: { title: string; date_start: string | null; date_end: string | null; location: string | null } | null;
+    role: string | null;
+    waiver_signed_at: string | null;
+  },
+  signatureName: string,
+  waiverText: string
+) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+
+  const email = registration.contacts?.email;
+  if (!email) return;
+
+  const { Resend } = await import("resend");
+  const resend = new Resend(apiKey);
+
+  const firstName = registration.contacts?.first_name || "there";
+  const eventTitle = registration.events?.title || "the upcoming event";
+  const signedAt = registration.waiver_signed_at
+    ? new Date(registration.waiver_signed_at).toLocaleString("en-US", {
+        dateStyle: "long",
+        timeStyle: "short",
+      })
+    : new Date().toLocaleString("en-US", { dateStyle: "long", timeStyle: "short" });
+
+  const eventDate = registration.events?.date_start
+    ? new Date(registration.events.date_start).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "";
+
+  const waiverHtml = waiverText
+    .split("\n")
+    .map((line) => (line.trim() ? `<p style="margin: 4px 0;">${line}</p>` : "<br/>"))
+    .join("");
+
+  await resend.emails.send({
+    from: "Opportunity Outdoors <notifications@send.opportunityoutdoors.org>",
+    to: email,
+    subject: `Registration Confirmed: ${eventTitle}`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1a1a;">
+        <p style="font-size: 16px; line-height: 1.6;">Hey ${firstName},</p>
+
+        <p style="font-size: 16px; line-height: 1.6;">
+          Your registration for <strong>${eventTitle}</strong> is confirmed! We're looking forward to having you${registration.role === "Mentor" ? " as a mentor" : ""}.
+        </p>
+
+        ${eventDate || registration.events?.location ? `
+        <div style="margin: 20px 0; padding: 16px; background: #f0ebe2; border-radius: 4px;">
+          ${eventDate ? `<p style="margin: 0; font-size: 14px;"><strong>When:</strong> ${eventDate}</p>` : ""}
+          ${registration.events?.location ? `<p style="margin: 4px 0 0; font-size: 14px;"><strong>Where:</strong> ${registration.events.location}</p>` : ""}
+        </div>
+        ` : ""}
+
+        <p style="font-size: 16px; line-height: 1.6;">
+          We'll send you a welcome packet closer to the event with your mentor/mentee assignment, camp schedule, gear list, and everything else you need.
+        </p>
+
+        <p style="font-size: 16px; line-height: 1.6;">
+          If you have any questions in the meantime, reach out at
+          <a href="mailto:info@opportunityoutdoors.org" style="color: #2D5016; font-weight: 600;">info@opportunityoutdoors.org</a>.
+        </p>
+
+        <p style="font-size: 16px; line-height: 1.6;">
+          See you in the field!<br/>
+          — The Opportunity Outdoors Team
+        </p>
+
+        <hr style="border: none; border-top: 1px solid #e8e3db; margin: 32px 0;" />
+
+        <div style="font-size: 12px; color: #666;">
+          <p style="margin: 0 0 12px;"><strong>Your Signed Waiver — Keep for Your Records</strong></p>
+          <p style="margin: 0 0 8px;">
+            Signed by: <strong>${signatureName}</strong><br/>
+            Date: ${signedAt}
+          </p>
+
+          <div style="margin-top: 16px; padding: 16px; background: #fafafa; border: 1px solid #eee; border-radius: 4px; font-size: 11px; line-height: 1.6; color: #444;">
+            ${waiverHtml}
+          </div>
+        </div>
+      </div>
+    `,
+  });
 }
