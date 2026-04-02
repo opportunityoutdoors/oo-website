@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -100,6 +100,9 @@ export default function RegisterForm() {
   const [transportation, setTransportation] = useState("");
   const [dietaryMedical, setDietaryMedical] = useState("");
   const [waiverSigned, setWaiverSigned] = useState(false);
+  const [waiverScrolled, setWaiverScrolled] = useState(false);
+  const [signatureName, setSignatureName] = useState("");
+  const waiverRef = useRef<HTMLDivElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -139,7 +142,7 @@ export default function RegisterForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!waiverSigned) return;
+    if (!waiverSigned || !signatureName.trim()) return;
 
     setSubmitting(true);
     const res = await fetch("/api/register", {
@@ -175,7 +178,7 @@ export default function RegisterForm() {
 
   if (error && !registration) {
     return (
-      <div className="mx-auto max-w-lg px-6 py-24 text-center">
+      <div className="mx-auto max-w-lg px-6 pb-24 pt-36 text-center">
         <h1 className="mb-4 font-heading text-3xl font-[900] uppercase text-near-black">
           Registration Unavailable
         </h1>
@@ -192,7 +195,7 @@ export default function RegisterForm() {
 
   if (alreadyRegistered && registration) {
     return (
-      <div className="mx-auto max-w-lg px-6 py-24 text-center">
+      <div className="mx-auto max-w-lg px-6 pb-24 pt-36 text-center">
         <h1 className="mb-4 font-heading text-3xl font-[900] uppercase text-near-black">
           Already Registered
         </h1>
@@ -212,7 +215,7 @@ export default function RegisterForm() {
 
   if (success) {
     return (
-      <div className="mx-auto max-w-lg px-6 py-24 text-center">
+      <div className="mx-auto max-w-lg px-6 pb-24 pt-36 text-center">
         <h1 className="mb-4 font-heading text-3xl font-[900] uppercase text-dark-green">
           You&apos;re Registered!
         </h1>
@@ -235,12 +238,19 @@ export default function RegisterForm() {
   const event = registration!.events;
   const contact = registration!.contacts;
 
+  function handleWaiverScroll() {
+    const el = waiverRef.current;
+    if (!el) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 20;
+    if (atBottom) setWaiverScrolled(true);
+  }
+
   return (
-    <div className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="mb-2 font-heading text-3xl font-[900] uppercase tracking-tight text-near-black">
+    <div className="mx-auto max-w-2xl px-6 pb-20 pt-32">
+      <h1 className="mb-2 font-heading text-[clamp(2rem,5vw,3rem)] font-[900] uppercase leading-tight tracking-tight text-near-black">
         Complete Your Registration
       </h1>
-      <p className="mb-8 text-near-black/60">
+      <p className="mb-4 text-lg text-near-black/60">
         {event.title}
         {event.date_start && (
           <> · {new Date(event.date_start).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</>
@@ -248,14 +258,14 @@ export default function RegisterForm() {
         {event.location && <> · {event.location}</>}
       </p>
 
-      <p className="mb-8 text-sm text-near-black/50">
-        Registering as <strong>{contact.first_name} {contact.last_name}</strong> ({contact.email})
+      <p className="mb-10 text-near-black/50">
+        Registering as <strong className="text-near-black">{contact.first_name} {contact.last_name}</strong> ({contact.email})
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-10">
         {/* Camp Details */}
         <section>
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-[1px] text-near-black">
+          <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
             Camp Details
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -295,7 +305,7 @@ export default function RegisterForm() {
 
         {/* Emergency Contact */}
         <section>
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-[1px] text-near-black">
+          <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
             Emergency Contact <span className="text-red-500">*</span>
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -330,8 +340,8 @@ export default function RegisterForm() {
 
         {/* Dietary / Medical */}
         <section>
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-[1px] text-near-black">
-            Dietary Restrictions or Medical Conditions
+          <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
+            Dietary &amp; Medical
           </h2>
           <textarea
             value={dietaryMedical}
@@ -345,7 +355,7 @@ export default function RegisterForm() {
         {/* Payment Placeholder */}
         {event.cost && (
           <section>
-            <h2 className="mb-4 text-sm font-bold uppercase tracking-[1px] text-near-black">
+            <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
               Payment
             </h2>
             <div className="rounded border border-gold/30 bg-gold/5 p-5">
@@ -362,24 +372,54 @@ export default function RegisterForm() {
 
         {/* Waiver */}
         <section>
-          <h2 className="mb-4 text-sm font-bold uppercase tracking-[1px] text-near-black">
+          <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
             Waiver <span className="text-red-500">*</span>
           </h2>
-          <div className="mb-4 h-64 overflow-y-scroll rounded border border-near-black/20 bg-white p-5 text-xs leading-relaxed text-near-black/70">
+          <div
+            ref={waiverRef}
+            onScroll={handleWaiverScroll}
+            className="mb-2 h-72 overflow-y-scroll rounded border border-near-black/20 bg-white p-6 text-sm leading-relaxed text-near-black/70"
+          >
             <pre className="whitespace-pre-wrap font-sans">{WAIVER_TEXT}</pre>
           </div>
-          <label className="flex cursor-pointer items-start gap-3">
-            <input
-              type="checkbox"
-              required
-              checked={waiverSigned}
-              onChange={(e) => setWaiverSigned(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-near-black/30 accent-dark-green"
-            />
-            <span className="text-sm text-near-black">
-              I have read and agree to the Acknowledgment of Risks, Release of Liability, and Indemnification Agreement above. I understand that this is a legally binding document and I sign it voluntarily.
-            </span>
-          </label>
+          {!waiverScrolled && (
+            <p className="mb-4 text-xs font-semibold text-gold">
+              Please scroll to the bottom of the waiver to continue
+            </p>
+          )}
+
+          <div className={`space-y-4 transition-opacity ${waiverScrolled ? "opacity-100" : "pointer-events-none opacity-30"}`}>
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={waiverSigned}
+                onChange={(e) => setWaiverSigned(e.target.checked)}
+                disabled={!waiverScrolled}
+                className="mt-0.5 h-4 w-4 rounded border-near-black/30 accent-dark-green"
+              />
+              <span className="text-sm text-near-black">
+                I have read and agree to the Acknowledgment of Risks, Release of Liability, and Indemnification Agreement above. I understand that this is a legally binding document and I sign it voluntarily.
+              </span>
+            </label>
+
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-[1px] text-near-black/70">
+                Electronic Signature <span className="text-red-500">*</span>
+              </label>
+              <p className="mb-2 text-xs text-near-black/40">
+                Type your full legal name as your electronic signature
+              </p>
+              <input
+                type="text"
+                required
+                value={signatureName}
+                onChange={(e) => setSignatureName(e.target.value)}
+                disabled={!waiverScrolled}
+                placeholder="Your full legal name"
+                className="w-full rounded border border-near-black/20 bg-white px-4 py-3 font-serif text-lg italic text-near-black placeholder:text-near-black/30 focus:border-dark-green focus:outline-none focus:ring-1 focus:ring-dark-green"
+              />
+            </div>
+          </div>
         </section>
 
         {error && (
@@ -388,7 +428,7 @@ export default function RegisterForm() {
 
         <button
           type="submit"
-          disabled={submitting || !waiverSigned}
+          disabled={submitting || !waiverSigned || !signatureName.trim() || !waiverScrolled}
           className="w-full rounded bg-dark-green px-8 py-4 text-[13px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:bg-dark-green/90 disabled:opacity-50"
         >
           {submitting ? "Submitting..." : "Complete Registration"}
