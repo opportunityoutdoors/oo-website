@@ -161,6 +161,7 @@ function WaitlistForm({
 }) {
   const router = useRouter();
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [bringingMinor, setBringingMinor] = useState(false);
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -168,6 +169,9 @@ function WaitlistForm({
     phone: "",
     role: "",
     meetingDate: "",
+    minorFirstName: "",
+    minorLastName: "",
+    minorDob: "",
     honeypot: "",
   });
 
@@ -202,6 +206,10 @@ function WaitlistForm({
             meetingDate: form.meetingDate,
             eventName: event.title,
             eventType: event.eventType === "hunt-camp" ? "Hunt Camp" : "Fish Camp",
+            bringingMinor: bringingMinor,
+            minorFirstName: bringingMinor ? form.minorFirstName : "",
+            minorLastName: bringingMinor ? form.minorLastName : "",
+            minorDob: bringingMinor ? form.minorDob : "",
           },
         }),
       });
@@ -243,6 +251,39 @@ function WaitlistForm({
 
         {meetingOptions.length > 0 && (
           <FormField type="radio" label="Preferred Meeting Date" name="wl-meeting" required value={form.meetingDate} onChange={(v) => setForm({ ...form, meetingDate: v })} options={meetingOptions} />
+        )}
+
+        {/* Minor toggle */}
+        <div className="border-t border-near-black/10 pt-5">
+          <label className="flex cursor-pointer items-center gap-3">
+            <input
+              type="checkbox"
+              checked={bringingMinor}
+              onChange={(e) => setBringingMinor(e.target.checked)}
+              className="h-4 w-4 rounded border-near-black/30 accent-dark-green"
+            />
+            <span className="text-sm font-medium text-near-black">
+              I&apos;m also registering a minor (under 18)
+            </span>
+          </label>
+        </div>
+
+        {bringingMinor && (
+          <div className="rounded border border-gold/30 bg-gold/5 p-5">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-[1px] text-gold">
+              Minor Information
+            </p>
+            <p className="mb-4 text-sm text-near-black/60">
+              Minors must attend with a parent or guardian. They will be registered as a mentee.
+            </p>
+            <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField type="text" label="Minor's First Name" name="wl-minorFirst" required value={form.minorFirstName} onChange={(v) => setForm({ ...form, minorFirstName: v })} />
+                <FormField type="text" label="Minor's Last Name" name="wl-minorLast" required value={form.minorLastName} onChange={(v) => setForm({ ...form, minorLastName: v })} />
+              </div>
+              <FormField type="date" label="Minor's Date of Birth" name="wl-minorDob" required value={form.minorDob} onChange={(v) => setForm({ ...form, minorDob: v })} />
+            </div>
+          </div>
         )}
 
         {status === "error" && (

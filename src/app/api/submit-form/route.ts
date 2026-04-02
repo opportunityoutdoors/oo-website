@@ -219,14 +219,47 @@ async function writeToSupabase(
         eventId = event?.id || null;
       }
       if (eventId) {
-        const { error } = await supabase.from("registrations").insert({
+        // Create parent/adult registration
+        const { data: parentReg, error } = await supabase.from("registrations").insert({
           contact_id: contactId,
           event_id: eventId,
           status: "waitlist",
           role: str("role"),
           meeting_date_selected: str("meetingDate") || null,
-        });
+        }).select("id").single();
         if (error) console.error("Supabase camp waitlist error:", error);
+
+        // If bringing a minor, create minor contact + linked registration
+        if (data.bringingMinor && str("minorFirstName")) {
+          const minorEmail = `minor.${str("minorFirstName").toLowerCase()}.${str("minorLastName").toLowerCase()}@parent.${email}`;
+          const { data: minorContact, error: minorContactError } = await supabase
+            .from("contacts")
+            .upsert({
+              email: minorEmail,
+              first_name: str("minorFirstName"),
+              last_name: str("minorLastName"),
+              phone: str("phone"), // parent's phone
+              city_state: str("cityState"),
+              source: str("eventName") || "Camp Waitlist",
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "email" })
+            .select("id")
+            .single();
+
+          if (minorContactError) {
+            console.error("Minor contact error:", minorContactError);
+          } else if (minorContact && parentReg) {
+            const { error: minorRegError } = await supabase.from("registrations").insert({
+              contact_id: minorContact.id,
+              event_id: eventId,
+              status: "waitlist",
+              role: "Mentee", // Minors are always mentees
+              meeting_date_selected: str("meetingDate") || null,
+              guardian_registration_id: parentReg.id,
+            });
+            if (minorRegError) console.error("Minor registration error:", minorRegError);
+          }
+        }
       }
       break;
     }
