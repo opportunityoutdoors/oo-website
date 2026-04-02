@@ -9,6 +9,7 @@ interface MatchRegistration {
   mentor_id: string | null;
   guardian_registration_id: string | null;
   is_board_member: boolean;
+  welcome_packet_sent: boolean;
   contacts: {
     id: string;
     email: string;
@@ -23,6 +24,8 @@ export default function MatchingTab({ eventId }: { eventId: string }) {
   const [loading, setLoading] = useState(true);
   const [autoMatching, setAutoMatching] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [sendingWelcome, setSendingWelcome] = useState(false);
+  const [sendingOneOff, setSendingOneOff] = useState<string | null>(null);
 
   const fetchMatching = useCallback(async () => {
     const res = await fetch(`/api/admin/events/${eventId}/matching`);
@@ -65,6 +68,45 @@ export default function MatchingTab({ eventId }: { eventId: string }) {
     }
   }
 
+  const registeredCount = registrations.filter((r) => r.status === "registered" || r.status === "attended").length;
+  const unsent = registrations.filter((r) => (r.status === "registered" || r.status === "attended") && !r.welcome_packet_sent);
+  const canSendAll = allMatched && unsent.length > 0;
+
+  async function handleSendWelcomePackets() {
+    if (!confirm(`Send welcome packets to ${unsent.length} participant${unsent.length !== 1 ? "s" : ""}?`)) return;
+    setSendingWelcome(true);
+    const res = await fetch(`/api/admin/events/${eventId}/welcome-packet`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    const data = await res.json();
+    setSendingWelcome(false);
+    if (res.ok) {
+      alert(`Welcome packets sent to ${data.sent} participant${data.sent !== 1 ? "s" : ""}.`);
+      fetchMatching();
+    } else {
+      alert(data.error || "Failed to send welcome packets");
+    }
+  }
+
+  async function handleSendOneOff(registrationId: string) {
+    setSendingOneOff(registrationId);
+    const res = await fetch(`/api/admin/events/${eventId}/welcome-packet`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ registration_ids: [registrationId] }),
+    });
+    const data = await res.json();
+    setSendingOneOff(null);
+    if (res.ok) {
+      alert("Welcome packet sent.");
+      fetchMatching();
+    } else {
+      alert(data.error || "Failed to send");
+    }
+  }
+
   function getName(r: MatchRegistration) {
     return [r.contacts?.first_name, r.contacts?.last_name].filter(Boolean).join(" ") || r.contacts?.email || "Unknown";
   }
@@ -97,6 +139,14 @@ export default function MatchingTab({ eventId }: { eventId: string }) {
             className="rounded border border-near-black/20 px-4 py-2 text-xs font-bold uppercase tracking-[1px] text-near-black/60 transition-colors hover:bg-near-black/5"
           >
             Add Participant
+          </button>
+          <button
+            onClick={handleSendWelcomePackets}
+            disabled={sendingWelcome || !canSendAll}
+            className="rounded bg-gold px-4 py-2 text-xs font-bold uppercase tracking-[1px] text-near-black transition-colors hover:bg-gold/90 disabled:opacity-50"
+            title={!allMatched ? "All mentees must be matched first" : unsent.length === 0 ? "All packets already sent" : ""}
+          >
+            {sendingWelcome ? "Sending..." : `Send Welcome Packets${unsent.length > 0 ? ` (${unsent.length})` : ""}`}
           </button>
         </div>
         <div className="text-xs text-near-black/40">
@@ -133,6 +183,17 @@ export default function MatchingTab({ eventId }: { eventId: string }) {
                     Board
                   </span>
                 )}
+                {mentor.welcome_packet_sent ? (
+                  <span className="rounded bg-dark-green/10 px-1.5 py-0.5 text-[9px] font-semibold text-dark-green">Sent</span>
+                ) : mentor.status === "registered" ? (
+                  <button
+                    onClick={() => handleSendOneOff(mentor.id)}
+                    disabled={sendingOneOff === mentor.id}
+                    className="rounded bg-gold/15 px-1.5 py-0.5 text-[9px] font-semibold text-gold hover:bg-gold/25"
+                  >
+                    {sendingOneOff === mentor.id ? "..." : "Send"}
+                  </button>
+                ) : null}
                 {mentor.contacts?.interests && mentor.contacts.interests.length > 0 && (
                   <div className="ml-auto flex gap-1">
                     {mentor.contacts.interests.slice(0, 5).map((i) => (
@@ -163,12 +224,25 @@ export default function MatchingTab({ eventId }: { eventId: string }) {
                             </div>
                           )}
                         </div>
-                        <button
-                          onClick={() => handleManualMatch(mentee.id, null)}
-                          className="text-[10px] font-semibold text-near-black/30 hover:text-red-500"
-                        >
-                          Unmatch
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {mentee.welcome_packet_sent ? (
+                            <span className="rounded bg-dark-green/10 px-1.5 py-0.5 text-[9px] font-semibold text-dark-green">Sent</span>
+                          ) : mentee.status === "registered" ? (
+                            <button
+                              onClick={() => handleSendOneOff(mentee.id)}
+                              disabled={sendingOneOff === mentee.id}
+                              className="rounded bg-gold/15 px-1.5 py-0.5 text-[9px] font-semibold text-gold hover:bg-gold/25"
+                            >
+                              {sendingOneOff === mentee.id ? "..." : "Send"}
+                            </button>
+                          ) : null}
+                          <button
+                            onClick={() => handleManualMatch(mentee.id, null)}
+                            className="text-[10px] font-semibold text-near-black/30 hover:text-red-500"
+                          >
+                            Unmatch
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>

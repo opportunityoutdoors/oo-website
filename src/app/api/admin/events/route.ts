@@ -10,6 +10,13 @@ interface MeetingSlot {
   meetingLink: string;
 }
 
+interface CampLocation {
+  label: string;
+  latitude: number;
+  longitude: number;
+  onxLink?: string;
+}
+
 interface SanityEvent {
   _id: string;
   title: string;
@@ -23,6 +30,7 @@ interface SanityEvent {
   spotsTotal: number | null;
   spotsRemaining: number | null;
   meetingSlots: MeetingSlot[] | null;
+  campLocations: CampLocation[] | null;
 }
 
 export async function GET() {
@@ -52,6 +60,7 @@ export async function GET() {
         spots_total: se.spotsTotal || null,
         spots_remaining: se.spotsRemaining || null,
         meeting_slots: se.meetingSlots || [],
+        camp_locations: se.campLocations || [],
       },
       { onConflict: "sanity_id" }
     );

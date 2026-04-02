@@ -79,7 +79,8 @@ export const adminAllEventsQuery = `*[_type == "event"] | order(date desc) {
   registrationCloses,
   waitlistOpens,
   waitlistCloses,
-  meetingSlots
+  meetingSlots,
+  campLocations
 }`;
 
 // ─── Team Members ───

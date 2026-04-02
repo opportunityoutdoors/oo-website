@@ -152,6 +152,31 @@ export default {
       description: "For hunt/fish camps only.",
     },
 
+    // ─── Private Camp Location (not shown publicly) ───
+    {
+      name: "campLocations",
+      title: "Camp Locations (Private)",
+      type: "array",
+      description: "Private camp location pins. NOT shown on the public event page. Shared only in the camp welcome packet email.",
+      of: [
+        {
+          type: "object",
+          fields: [
+            { name: "label", title: "Label", type: "string", description: "e.g., 'Base Camp', 'Hunt Area A'" },
+            { name: "latitude", title: "Latitude", type: "number" },
+            { name: "longitude", title: "Longitude", type: "number" },
+            { name: "onxLink", title: "OnX Map Link", type: "url", description: "Link to this pin on OnX Maps" },
+          ],
+          preview: {
+            select: { title: "label", lat: "latitude", lng: "longitude" },
+            prepare({ title, lat, lng }: { title: string; lat: number; lng: number }) {
+              return { title: title || "Unnamed", subtitle: lat && lng ? `${lat}, ${lng}` : "No coordinates" };
+            },
+          },
+        },
+      ],
+    },
+
     // ─── Camp-specific fields ───
     {
       name: "meetingSlots",

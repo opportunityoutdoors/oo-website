@@ -11,7 +11,7 @@ export async function GET(
 
   const { data: registrations } = await supabase
     .from("registrations")
-    .select("id, role, status, mentor_id, guardian_registration_id, is_board_member, contacts(id, email, first_name, last_name, interests)")
+    .select("id, role, status, mentor_id, guardian_registration_id, is_board_member, welcome_packet_sent, contacts(id, email, first_name, last_name, interests)")
     .eq("event_id", id)
     .in("status", ["approved", "registered", "attended"])
     .order("created_at", { ascending: true });
