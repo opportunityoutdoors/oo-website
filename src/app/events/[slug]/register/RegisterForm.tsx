@@ -104,6 +104,7 @@ export default function RegisterForm() {
   const [waiverScrolled, setWaiverScrolled] = useState(false);
   const [signatureName, setSignatureName] = useState("");
   const [mentorCommitment, setMentorCommitment] = useState(false);
+  const [menteeCommitment, setMenteeCommitment] = useState(false);
   const [contactShareConsent, setContactShareConsent] = useState(false);
   const waiverRef = useRef<HTMLDivElement>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -274,15 +275,15 @@ export default function RegisterForm() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-[1px] text-near-black/70">
-                T-Shirt Size <span className="text-red-500">*</span>
+                T-Shirt Size{registration!.role === "Mentor" ? " ($25, optional)" : ""} {registration!.role !== "Mentor" && <span className="text-red-500">*</span>}
               </label>
               <select
-                required
+                required={registration!.role !== "Mentor"}
                 value={tshirtSize}
                 onChange={(e) => setTshirtSize(e.target.value)}
                 className="w-full rounded border border-near-black/20 bg-white px-4 py-3 text-sm text-near-black focus:border-dark-green focus:outline-none focus:ring-1 focus:ring-dark-green"
               >
-                <option value="">Select size</option>
+                <option value="">{registration!.role === "Mentor" ? "No thanks" : "Select size"}</option>
                 {TSHIRT_SIZES.map((size) => (
                   <option key={size} value={size}>{size}</option>
                 ))}
@@ -361,7 +362,7 @@ export default function RegisterForm() {
             Commitments <span className="text-red-500">*</span>
           </h2>
           <div className="space-y-4">
-            {registration!.role === "Mentor" && (
+            {registration!.role === "Mentor" ? (
               <label className="flex cursor-pointer items-start gap-3 rounded border border-near-black/10 bg-white p-4">
                 <input
                   type="checkbox"
@@ -370,8 +371,21 @@ export default function RegisterForm() {
                   onChange={(e) => setMentorCommitment(e.target.checked)}
                   className="mt-0.5 h-4 w-4 rounded border-near-black/30 accent-dark-green"
                 />
-                <span className="text-sm text-near-black">
-                  I commit to mentoring up to 3 campers during this event. I understand this includes guiding them in the field, prioritizing their safety, and modeling ethical and conservation-minded practices.
+                <span className="text-sm leading-relaxed text-near-black">
+                  I understand that as a mentor, my role is to be a buddy to my assigned mentee(s). This means being available to offer advice and guidance, checking in with them before and after time in the field, and being a reliable presence throughout the camp. This is not a guided hunt. Hunting together is welcome but not required. I commit to prioritizing safety, ethical practices, and a positive experience for my mentee(s).
+                </span>
+              </label>
+            ) : (
+              <label className="flex cursor-pointer items-start gap-3 rounded border border-near-black/10 bg-white p-4">
+                <input
+                  type="checkbox"
+                  required
+                  checked={menteeCommitment}
+                  onChange={(e) => setMenteeCommitment(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-near-black/30 accent-dark-green"
+                />
+                <span className="text-sm leading-relaxed text-near-black">
+                  I understand that I will be assigned a mentor for this camp. My mentor is a volunteer who is there to support me, answer questions, and check in with me before and after time in the field. I commit to being respectful, communicative, and open to learning. This is not a guided hunt. Hunting together is welcome but not required.
                 </span>
               </label>
             )}
@@ -383,8 +397,8 @@ export default function RegisterForm() {
                 onChange={(e) => setContactShareConsent(e.target.checked)}
                 className="mt-0.5 h-4 w-4 rounded border-near-black/30 accent-dark-green"
               />
-              <span className="text-sm text-near-black">
-                I agree to allow Opportunity Outdoors to share my contact information (name and email) with my assigned {registration!.role === "Mentor" ? "mentee(s)" : "mentor"} for the purpose of coordinating before and during the event.
+              <span className="text-sm leading-relaxed text-near-black">
+                I agree to allow Opportunity Outdoors to share my name, email, and phone number with my assigned {registration!.role === "Mentor" ? "mentee(s)" : "mentor"} for the purpose of coordinating before and during the event. More details about your match will be included in the camp welcome packet.
               </span>
             </label>
           </div>
@@ -454,27 +468,29 @@ export default function RegisterForm() {
           </div>
         </section>
 
-        {/* Payment */}
-        <section>
-          <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
-            Payment
-          </h2>
-          <div className="rounded border border-near-black/10 bg-white p-6">
-            <div className="mb-5 flex items-center justify-between">
-              <p className="text-sm font-semibold text-near-black">
-                {registration!.role === "Mentor" ? "T-Shirt Fee" : "Registration Fee"}
-              </p>
-              <p className="text-2xl font-extrabold text-dark-green">
-                {registration!.role === "Mentor" ? "$25" : (event.cost || "Free")}
-              </p>
+        {/* Payment — show for mentees always, mentors only if t-shirt selected */}
+        {(registration!.role !== "Mentor" || tshirtSize) && (
+          <section>
+            <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
+              Payment
+            </h2>
+            <div className="rounded border border-near-black/10 bg-white p-6">
+              <div className="mb-5 flex items-center justify-between">
+                <p className="text-sm font-semibold text-near-black">
+                  {registration!.role === "Mentor" ? "T-Shirt Fee" : "Registration Fee"}
+                </p>
+                <p className="text-2xl font-extrabold text-dark-green">
+                  {registration!.role === "Mentor" ? "$25" : (event.cost || "Free")}
+                </p>
+              </div>
+              {/* Stripe Elements will go here */}
+              <div className="rounded border border-dashed border-near-black/15 bg-cream/50 px-5 py-8 text-center">
+                <p className="text-sm font-medium text-near-black/50">Payment processing coming soon</p>
+                <p className="mt-1 text-xs text-near-black/30">You can complete your registration now. Payment will be collected separately.</p>
+              </div>
             </div>
-            {/* Stripe Elements will go here */}
-            <div className="rounded border border-dashed border-near-black/15 bg-cream/50 px-5 py-8 text-center">
-              <p className="text-sm font-medium text-near-black/50">Payment processing coming soon</p>
-              <p className="mt-1 text-xs text-near-black/30">You can complete your registration now. Payment will be collected separately.</p>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {error && (
           <p className="text-sm text-red-600">{error}</p>
@@ -482,7 +498,7 @@ export default function RegisterForm() {
 
         <button
           type="submit"
-          disabled={submitting || !waiverSigned || !signatureName.trim() || !waiverScrolled || !contactShareConsent || (registration!.role === "Mentor" && !mentorCommitment)}
+          disabled={submitting || !waiverSigned || !signatureName.trim() || !waiverScrolled || !contactShareConsent || (registration!.role === "Mentor" ? !mentorCommitment : !menteeCommitment)}
           className="w-full rounded bg-dark-green px-8 py-4 text-[13px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:bg-dark-green/90 disabled:opacity-50"
         >
           {submitting ? "Submitting..." : "Complete Registration"}
