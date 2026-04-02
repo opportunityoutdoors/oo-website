@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 
@@ -16,11 +17,37 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
+  // For approvals, generate unique tokens
+  if (status === "approved") {
+    for (const id of ids) {
+      const token = randomBytes(24).toString("hex");
+      await supabase
+        .from("registrations")
+        .update({ status, token })
+        .eq("id", id);
+    }
+
+    // Fetch updated registrations with contact and event info for emails
+    const { data } = await supabase
+      .from("registrations")
+      .select("*, contacts(email, first_name), events(title, slug, cost)")
+      .in("id", ids);
+
+    if (data?.length) {
+      sendApprovalEmails(data).catch((err) =>
+        console.error("Approval email error:", err)
+      );
+    }
+
+    return NextResponse.json({ updated: ids.length });
+  }
+
+  // For all other status changes, bulk update
   const { data, error } = await supabase
     .from("registrations")
     .update({ status })
     .in("id", ids)
-    .select("*, contacts(email, first_name), events(title)");
+    .select("*, contacts(email, first_name), events(title, slug)");
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -58,7 +85,75 @@ export async function DELETE(request: NextRequest) {
   return NextResponse.json({ deleted: ids.length });
 }
 
-// Send denial notification emails
+// ─── Email: Approval ───
+
+async function sendApprovalEmails(
+  registrations: Array<{
+    token: string | null;
+    contacts: { email: string; first_name: string | null } | null;
+    events: { title: string; slug: string | null; cost: string | null } | null;
+  }>
+) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://opportunityoutdoors.org";
+  const { Resend } = await import("resend");
+  const resend = new Resend(apiKey);
+
+  for (const reg of registrations) {
+    const email = reg.contacts?.email;
+    if (!email || !reg.token) continue;
+
+    const firstName = reg.contacts?.first_name || "there";
+    const eventTitle = reg.events?.title || "our upcoming event";
+    const slug = reg.events?.slug || "event";
+    const cost = reg.events?.cost;
+    const registerUrl = `${baseUrl}/events/${slug}/register?token=${reg.token}`;
+
+    await resend.emails.send({
+      from: "Opportunity Outdoors <notifications@send.opportunityoutdoors.org>",
+      to: email,
+      subject: `You're In! Complete Your ${eventTitle} Registration`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1a1a;">
+          <p style="font-size: 16px; line-height: 1.6;">Hey ${firstName},</p>
+
+          <p style="font-size: 16px; line-height: 1.6;">
+            Great news! You've been approved for <strong>${eventTitle}</strong>. We're excited to have you join us.
+          </p>
+
+          <p style="font-size: 16px; line-height: 1.6;">
+            To lock in your spot, you need to complete your registration. This includes signing the waiver${cost ? ` and paying the registration fee (${cost})` : ""}.
+          </p>
+
+          <div style="margin: 28px 0; text-align: center;">
+            <a href="${registerUrl}" style="display: inline-block; background-color: #2D5016; color: #ffffff; padding: 14px 32px; border-radius: 4px; text-decoration: none; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;">
+              Complete Registration
+            </a>
+          </div>
+
+          <p style="font-size: 14px; line-height: 1.6; color: #666;">
+            This link is unique to you. Please don't share it with anyone else.
+          </p>
+
+          <p style="font-size: 16px; line-height: 1.6;">
+            If you have any questions, reply to this email or reach out at
+            <a href="mailto:info@opportunityoutdoors.org" style="color: #2D5016; font-weight: 600;">info@opportunityoutdoors.org</a>.
+          </p>
+
+          <p style="font-size: 16px; line-height: 1.6;">
+            See you in the field!<br />
+            — The Opportunity Outdoors Team
+          </p>
+        </div>
+      `,
+    });
+  }
+}
+
+// ─── Email: Denial ───
+
 async function sendDenialEmails(
   registrations: Array<{
     contacts: { email: string; first_name: string | null } | null;

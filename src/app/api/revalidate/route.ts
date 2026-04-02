@@ -75,6 +75,7 @@ async function syncEventToSupabase(
       {
         sanity_id: sanityId,
         title: (body.title as string) || "Untitled Event",
+        slug: (body.slug as { current: string })?.current || null,
         event_type: typeMap[(body.eventType as string)] || "community",
         status: statusMap[(body.status as string)] || "draft",
         date_start: (body.date as string) || null,

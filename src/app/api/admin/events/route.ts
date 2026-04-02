@@ -42,6 +42,7 @@ export async function GET() {
       {
         sanity_id: se._id,
         title: se.title,
+        slug: se.slug?.current || null,
         event_type: se.eventType,
         status: se.status || "draft",
         date_start: se.date || null,
