@@ -60,6 +60,8 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<PipelineTab>("all");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [actionLoading, setActionLoading] = useState(false);
 
   const fetchEvent = useCallback(async () => {
     const res = await fetch(`/api/admin/events/${eventId}`);
@@ -72,6 +74,74 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
   useEffect(() => {
     fetchEvent();
   }, [fetchEvent]);
+
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll(ids: string[]) {
+    const allSelected = ids.every((id) => selected.has(id));
+    if (allSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(ids));
+    }
+  }
+
+  async function bulkUpdateStatus(status: string) {
+    if (selected.size === 0) return;
+    setActionLoading(true);
+    await fetch("/api/admin/registrations", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [...selected], status }),
+    });
+    setSelected(new Set());
+    await fetchEvent();
+    setActionLoading(false);
+  }
+
+  async function bulkDelete() {
+    if (selected.size === 0) return;
+    if (!confirm(`Remove ${selected.size} camper${selected.size > 1 ? "s" : ""} from this event?`)) return;
+    setActionLoading(true);
+    await fetch("/api/admin/registrations", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [...selected] }),
+    });
+    setSelected(new Set());
+    await fetchEvent();
+    setActionLoading(false);
+  }
+
+  async function updateSingle(id: string, status: string) {
+    setActionLoading(true);
+    await fetch("/api/admin/registrations", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [id], status }),
+    });
+    await fetchEvent();
+    setActionLoading(false);
+  }
+
+  async function deleteSingle(id: string) {
+    if (!confirm("Remove this camper from the event?")) return;
+    setActionLoading(true);
+    await fetch("/api/admin/registrations", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [id] }),
+    });
+    await fetchEvent();
+    setActionLoading(false);
+  }
 
   if (loading) {
     return <div className="py-16 text-center text-near-black/40">Loading...</div>;
@@ -94,6 +164,9 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
     if (activeTab === "registered") return r.status === "registered" || r.status === "attended";
     return true;
   });
+
+  const filteredIds = filteredRegs.map((r) => r.id);
+  const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
 
   const counts = {
     waitlist: event.registrations.filter((r) => r.status === "waitlist" || r.status === "meeting_rsvp").length,
@@ -131,7 +204,6 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
       <div className="grid gap-6 lg:grid-cols-4">
         {/* Event Info Sidebar */}
         <div className="space-y-4 lg:col-span-1">
-          {/* Stats */}
           <div className="rounded-lg border border-near-black/10 bg-white p-5">
             <h2 className="mb-3 text-xs font-bold uppercase tracking-[1px] text-near-black/40">
               Overview
@@ -152,7 +224,6 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
             </dl>
           </div>
 
-          {/* Meeting Slots (read-only, managed in Sanity) */}
           {isCamp && event.meeting_slots && event.meeting_slots.length > 0 && (
             <div className="rounded-lg border border-near-black/10 bg-white p-5">
               <h2 className="mb-3 text-xs font-bold uppercase tracking-[1px] text-near-black/40">
@@ -194,7 +265,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                 })}
               </div>
               <p className="mt-3 text-[10px] text-near-black/30">
-                Edit meeting slots in Content Studio
+                Edit in Content Studio
               </p>
             </div>
           )}
@@ -208,7 +279,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
               {(["all", "waitlist", "approved", "registered"] as PipelineTab[]).map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => { setActiveTab(tab); setSelected(new Set()); }}
                   className={`flex-1 rounded px-3 py-2 text-xs font-bold uppercase tracking-[0.5px] transition-colors ${
                     activeTab === tab
                       ? "bg-dark-green text-white"
@@ -221,19 +292,81 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
             </div>
           )}
 
+          {/* Bulk Actions Bar */}
+          {selected.size > 0 && (
+            <div className="mb-3 flex items-center gap-3 rounded-lg border border-dark-green/20 bg-dark-green/5 px-4 py-2.5">
+              <span className="text-xs font-semibold text-dark-green">
+                {selected.size} selected
+              </span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => bulkUpdateStatus("approved")}
+                  disabled={actionLoading}
+                  className="rounded bg-dark-green px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.5px] text-white transition-colors hover:bg-dark-green/90 disabled:opacity-50"
+                >
+                  Approve
+                </button>
+                <button
+                  onClick={() => bulkUpdateStatus("denied")}
+                  disabled={actionLoading}
+                  className="rounded border border-near-black/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.5px] text-near-black/60 transition-colors hover:bg-near-black/5 disabled:opacity-50"
+                >
+                  Deny
+                </button>
+                <button
+                  onClick={() => bulkUpdateStatus("waitlist")}
+                  disabled={actionLoading}
+                  className="rounded border border-near-black/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.5px] text-near-black/60 transition-colors hover:bg-near-black/5 disabled:opacity-50"
+                >
+                  Move to Waitlist
+                </button>
+                <button
+                  onClick={() => bulkUpdateStatus("registered")}
+                  disabled={actionLoading}
+                  className="rounded border border-near-black/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.5px] text-near-black/60 transition-colors hover:bg-near-black/5 disabled:opacity-50"
+                >
+                  Mark Registered
+                </button>
+                <button
+                  onClick={() => bulkUpdateStatus("attended")}
+                  disabled={actionLoading}
+                  className="rounded border border-near-black/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.5px] text-near-black/60 transition-colors hover:bg-near-black/5 disabled:opacity-50"
+                >
+                  Mark Attended
+                </button>
+                <div className="mx-1 h-5 w-px bg-near-black/10" />
+                <button
+                  onClick={bulkDelete}
+                  disabled={actionLoading}
+                  className="rounded border border-red-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.5px] text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Registrations Table */}
           <div className="rounded-lg border border-near-black/10 bg-white">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-near-black/5 text-xs uppercase tracking-[1px] text-near-black/40">
-                    <th className="px-5 py-3 font-semibold">Name</th>
-                    <th className="px-5 py-3 font-semibold">Email</th>
-                    <th className="px-5 py-3 font-semibold">Phone</th>
-                    <th className="px-5 py-3 font-semibold">Role</th>
-                    {isCamp && <th className="px-5 py-3 font-semibold">Meeting</th>}
-                    <th className="px-5 py-3 font-semibold">Status</th>
-                    <th className="px-5 py-3 font-semibold">Date</th>
+                    <th className="w-10 px-3 py-3">
+                      <input
+                        type="checkbox"
+                        checked={allFilteredSelected}
+                        onChange={() => toggleSelectAll(filteredIds)}
+                        className="h-3.5 w-3.5 rounded border-near-black/30 accent-dark-green"
+                      />
+                    </th>
+                    <th className="px-4 py-3 font-semibold">Name</th>
+                    <th className="px-4 py-3 font-semibold">Email</th>
+                    <th className="px-4 py-3 font-semibold">Phone</th>
+                    <th className="px-4 py-3 font-semibold">Role</th>
+                    {isCamp && <th className="px-4 py-3 font-semibold">Meeting</th>}
+                    <th className="px-4 py-3 font-semibold">Status</th>
+                    <th className="w-24 px-4 py-3 font-semibold">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -249,9 +382,17 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                     return (
                       <tr
                         key={reg.id}
-                        className="border-b border-near-black/5 transition-colors last:border-0 hover:bg-cream/50"
+                        className={`border-b border-near-black/5 transition-colors last:border-0 hover:bg-cream/50 ${selected.has(reg.id) ? "bg-dark-green/5" : ""}`}
                       >
-                        <td className="px-5 py-3">
+                        <td className="px-3 py-3">
+                          <input
+                            type="checkbox"
+                            checked={selected.has(reg.id)}
+                            onChange={() => toggleSelect(reg.id)}
+                            className="h-3.5 w-3.5 rounded border-near-black/30 accent-dark-green"
+                          />
+                        </td>
+                        <td className="px-4 py-3">
                           <Link
                             href={`/admin/contacts/${reg.contacts?.id}`}
                             className="font-medium text-near-black hover:text-dark-green"
@@ -259,30 +400,59 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                             {name}
                           </Link>
                         </td>
-                        <td className="px-5 py-3 text-near-black/60">{reg.contacts?.email}</td>
-                        <td className="px-5 py-3 text-near-black/60">{reg.contacts?.phone || "—"}</td>
-                        <td className="px-5 py-3 text-near-black/60">{reg.role || "—"}</td>
+                        <td className="px-4 py-3 text-near-black/60">{reg.contacts?.email}</td>
+                        <td className="px-4 py-3 text-near-black/60">{reg.contacts?.phone || "—"}</td>
+                        <td className="px-4 py-3 text-near-black/60">{reg.role || "—"}</td>
                         {isCamp && (
-                          <td className="px-5 py-3 text-xs text-near-black/50">
+                          <td className="px-4 py-3 text-xs text-near-black/50">
                             {meetingSlot?.label || (reg.meeting_date_selected ? "Selected" : "—")}
                           </td>
                         )}
-                        <td className="px-5 py-3">
+                        <td className="px-4 py-3">
                           <span
                             className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${STATUS_STYLES[reg.status] || "bg-near-black/5 text-near-black/50"}`}
                           >
                             {reg.status}
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-near-black/40">
-                          {new Date(reg.created_at).toLocaleDateString()}
+                        <td className="px-4 py-3">
+                          <div className="flex gap-1">
+                            {reg.status === "waitlist" && (
+                              <button
+                                onClick={() => updateSingle(reg.id, "approved")}
+                                disabled={actionLoading}
+                                className="rounded bg-dark-green/10 px-2 py-1 text-[10px] font-semibold text-dark-green transition-colors hover:bg-dark-green/20 disabled:opacity-50"
+                                title="Approve"
+                              >
+                                Approve
+                              </button>
+                            )}
+                            {reg.status === "approved" && (
+                              <button
+                                onClick={() => updateSingle(reg.id, "registered")}
+                                disabled={actionLoading}
+                                className="rounded bg-dark-green/10 px-2 py-1 text-[10px] font-semibold text-dark-green transition-colors hover:bg-dark-green/20 disabled:opacity-50"
+                                title="Mark Registered"
+                              >
+                                Register
+                              </button>
+                            )}
+                            <button
+                              onClick={() => deleteSingle(reg.id)}
+                              disabled={actionLoading}
+                              className="rounded px-2 py-1 text-[10px] font-semibold text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                              title="Remove from event"
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
                   })}
                   {filteredRegs.length === 0 && (
                     <tr>
-                      <td colSpan={isCamp ? 7 : 6} className="px-5 py-10 text-center text-near-black/40">
+                      <td colSpan={isCamp ? 8 : 7} className="px-5 py-10 text-center text-near-black/40">
                         {event.registrations.length === 0
                           ? "No signups yet"
                           : "No registrations in this stage"}
