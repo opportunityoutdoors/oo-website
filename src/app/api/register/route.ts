@@ -113,13 +113,18 @@ export async function POST(request: NextRequest) {
     .eq("id", registration.id)
     .single();
 
+  console.log("fullReg fetched:", fullReg ? "yes" : "null", "email:", fullReg?.contacts?.email);
+
   if (fullReg) {
     try {
+      console.log("Generating waiver PDF and sending confirmation email...");
       await sendRegistrationConfirmation(fullReg, signature_name, waiver_text);
+      console.log("Confirmation email sent successfully");
     } catch (err) {
       console.error("Registration confirmation email error:", err);
-      // Don't fail the registration, but log the error
     }
+  } else {
+    console.warn("Could not fetch registration for confirmation email");
   }
 
   return NextResponse.json({ success: true });
