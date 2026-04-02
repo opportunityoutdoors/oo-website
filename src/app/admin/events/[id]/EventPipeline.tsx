@@ -45,7 +45,7 @@ interface EventDetail {
   registrations: Registration[];
 }
 
-type PipelineTab = "waitlist" | "approved" | "registered" | "all";
+type PipelineTab = "waitlist" | "approved" | "denied" | "registered" | "all";
 
 const STATUS_STYLES: Record<string, string> = {
   waitlist: "bg-gold/15 text-gold",
@@ -160,7 +160,8 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
   const filteredRegs = event.registrations.filter((r) => {
     if (activeTab === "all") return true;
     if (activeTab === "waitlist") return r.status === "waitlist" || r.status === "meeting_rsvp";
-    if (activeTab === "approved") return r.status === "approved" || r.status === "denied";
+    if (activeTab === "approved") return r.status === "approved";
+    if (activeTab === "denied") return r.status === "denied";
     if (activeTab === "registered") return r.status === "registered" || r.status === "attended";
     return true;
   });
@@ -170,7 +171,8 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
 
   const counts = {
     waitlist: event.registrations.filter((r) => r.status === "waitlist" || r.status === "meeting_rsvp").length,
-    approved: event.registrations.filter((r) => r.status === "approved" || r.status === "denied").length,
+    approved: event.registrations.filter((r) => r.status === "approved").length,
+    denied: event.registrations.filter((r) => r.status === "denied").length,
     registered: event.registrations.filter((r) => r.status === "registered" || r.status === "attended").length,
     all: event.registrations.length,
   };
@@ -276,7 +278,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
           {/* Tabs */}
           {isCamp && (
             <div className="mb-4 flex gap-1 rounded-lg border border-near-black/10 bg-white p-1">
-              {(["all", "waitlist", "approved", "registered"] as PipelineTab[]).map((tab) => (
+              {(["all", "waitlist", "approved", "denied", "registered"] as PipelineTab[]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => { setActiveTab(tab); setSelected(new Set()); }}
