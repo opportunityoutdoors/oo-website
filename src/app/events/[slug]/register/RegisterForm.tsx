@@ -352,24 +352,6 @@ export default function RegisterForm() {
           />
         </section>
 
-        {/* Payment Placeholder */}
-        {event.cost && (
-          <section>
-            <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
-              Payment
-            </h2>
-            <div className="rounded border border-gold/30 bg-gold/5 p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-bold text-near-black">Registration Fee</p>
-                  <p className="text-sm text-near-black/50">Payment will be collected separately</p>
-                </div>
-                <p className="text-2xl font-extrabold text-dark-green">{event.cost}</p>
-              </div>
-            </div>
-          </section>
-        )}
-
         {/* Waiver */}
         <section>
           <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
@@ -421,6 +403,26 @@ export default function RegisterForm() {
             </div>
           </div>
         </section>
+
+        {/* Payment */}
+        {event.cost && (
+          <section>
+            <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
+              Payment
+            </h2>
+            <div className="rounded border border-near-black/10 bg-white p-6">
+              <div className="mb-5 flex items-center justify-between">
+                <p className="text-sm font-semibold text-near-black">Registration Fee</p>
+                <p className="text-2xl font-extrabold text-dark-green">{event.cost}</p>
+              </div>
+              {/* Stripe Elements will go here */}
+              <div className="rounded border border-dashed border-near-black/15 bg-cream/50 px-5 py-8 text-center">
+                <p className="text-sm font-medium text-near-black/50">Payment processing coming soon</p>
+                <p className="mt-1 text-xs text-near-black/30">You can complete your registration now. Payment will be collected separately.</p>
+              </div>
+            </div>
+          </section>
+        )}
 
         {error && (
           <p className="text-sm text-red-600">{error}</p>
