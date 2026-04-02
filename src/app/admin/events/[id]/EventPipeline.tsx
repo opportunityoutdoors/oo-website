@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import MatchingTab from "./MatchingTab";
 
 interface Registration {
   id: string;
@@ -45,7 +46,7 @@ interface EventDetail {
   registrations: Registration[];
 }
 
-type PipelineTab = "waitlist" | "approved" | "denied" | "registered" | "all";
+type PipelineTab = "waitlist" | "approved" | "denied" | "registered" | "matching" | "all";
 
 const STATUS_STYLES: Record<string, string> = {
   waitlist: "bg-gold/15 text-gold",
@@ -169,11 +170,16 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
   const filteredIds = filteredRegs.map((r) => r.id);
   const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
 
+  const approvedAndRegistered = event.registrations.filter(
+    (r) => r.status === "approved" || r.status === "registered" || r.status === "attended"
+  );
+
   const counts = {
     waitlist: event.registrations.filter((r) => r.status === "waitlist" || r.status === "meeting_rsvp").length,
     approved: event.registrations.filter((r) => r.status === "approved").length,
     denied: event.registrations.filter((r) => r.status === "denied").length,
     registered: event.registrations.filter((r) => r.status === "registered" || r.status === "attended").length,
+    matching: approvedAndRegistered.length,
     all: event.registrations.length,
   };
 
@@ -301,7 +307,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
           {/* Tabs */}
           {isCamp && (
             <div className="mb-4 flex gap-1 rounded-lg border border-near-black/10 bg-white p-1">
-              {(["all", "waitlist", "approved", "denied", "registered"] as PipelineTab[]).map((tab) => (
+              {(["all", "waitlist", "approved", "denied", "registered", "matching"] as PipelineTab[]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => { setActiveTab(tab); setSelected(new Set()); }}
@@ -317,8 +323,13 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
             </div>
           )}
 
+          {/* Matching Tab */}
+          {activeTab === "matching" && (
+            <MatchingTab eventId={eventId} />
+          )}
+
           {/* Bulk Actions Bar */}
-          {selected.size > 0 && (
+          {activeTab !== "matching" && selected.size > 0 && (
             <div className="mb-3 flex items-center gap-3 rounded-lg border border-dark-green/20 bg-dark-green/5 px-4 py-2.5">
               <span className="text-xs font-semibold text-dark-green">
                 {selected.size} selected
@@ -372,7 +383,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
           )}
 
           {/* Registrations Table */}
-          <div className="rounded-lg border border-near-black/10 bg-white">
+          {activeTab !== "matching" && <div className="rounded-lg border border-near-black/10 bg-white">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
@@ -503,7 +514,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                 </tbody>
               </table>
             </div>
-          </div>
+          </div>}
         </div>
       </div>
     </>
