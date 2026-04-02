@@ -210,20 +210,43 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
             <h2 className="mb-3 text-xs font-bold uppercase tracking-[1px] text-near-black/40">
               Overview
             </h2>
-            <dl className="space-y-2 text-xs">
-              <div className="flex justify-between">
-                <dt className="font-semibold text-near-black/40">Total Signups</dt>
-                <dd className="font-bold text-near-black">{event.registrations.length}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="font-semibold text-near-black/40">Spots</dt>
-                <dd className="text-near-black">{event.spots_total || "Unlimited"}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="font-semibold text-near-black/40">Status</dt>
-                <dd className="text-near-black">{event.status}</dd>
-              </div>
-            </dl>
+            {(() => {
+              const active = event.registrations.filter((r) => r.status !== "denied");
+              const mentees = active.filter((r) => r.role === "Mentee").length;
+              const mentors = active.filter((r) => r.role === "Mentor").length;
+              const ratio = mentors > 0 ? `${(mentees / mentors).toFixed(1)}:1` : mentees > 0 ? "No mentors" : "—";
+
+              return (
+                <dl className="space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <dt className="font-semibold text-near-black/40">Total Signups</dt>
+                    <dd className="font-bold text-near-black">{active.length}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="font-semibold text-near-black/40">Mentees</dt>
+                    <dd className="font-bold text-near-black">{mentees}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="font-semibold text-near-black/40">Mentors</dt>
+                    <dd className="font-bold text-near-black">{mentors}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="font-semibold text-near-black/40">Ratio</dt>
+                    <dd className="font-bold text-near-black">{ratio}</dd>
+                  </div>
+                  <div className="mt-1 border-t border-near-black/5 pt-2">
+                    <div className="flex justify-between">
+                      <dt className="font-semibold text-near-black/40">Spots</dt>
+                      <dd className="text-near-black">{event.spots_total || "Unlimited"}</dd>
+                    </div>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="font-semibold text-near-black/40">Status</dt>
+                    <dd className="text-near-black">{event.status}</dd>
+                  </div>
+                </dl>
+              );
+            })()}
           </div>
 
           {isCamp && event.meeting_slots && event.meeting_slots.length > 0 && (

@@ -24,6 +24,7 @@ interface ContactInfo {
 interface RegistrationData {
   id: string;
   status: string;
+  role: string | null;
   contacts: ContactInfo;
   events: EventInfo;
 }
@@ -102,6 +103,8 @@ export default function RegisterForm() {
   const [waiverSigned, setWaiverSigned] = useState(false);
   const [waiverScrolled, setWaiverScrolled] = useState(false);
   const [signatureName, setSignatureName] = useState("");
+  const [mentorCommitment, setMentorCommitment] = useState(false);
+  const [contactShareConsent, setContactShareConsent] = useState(false);
   const waiverRef = useRef<HTMLDivElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -352,6 +355,41 @@ export default function RegisterForm() {
           />
         </section>
 
+        {/* Commitments & Consent */}
+        <section>
+          <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
+            Commitments <span className="text-red-500">*</span>
+          </h2>
+          <div className="space-y-4">
+            {registration!.role === "Mentor" && (
+              <label className="flex cursor-pointer items-start gap-3 rounded border border-near-black/10 bg-white p-4">
+                <input
+                  type="checkbox"
+                  required
+                  checked={mentorCommitment}
+                  onChange={(e) => setMentorCommitment(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-near-black/30 accent-dark-green"
+                />
+                <span className="text-sm text-near-black">
+                  I commit to mentoring up to 3 campers during this event. I understand this includes guiding them in the field, prioritizing their safety, and modeling ethical and conservation-minded practices.
+                </span>
+              </label>
+            )}
+            <label className="flex cursor-pointer items-start gap-3 rounded border border-near-black/10 bg-white p-4">
+              <input
+                type="checkbox"
+                required
+                checked={contactShareConsent}
+                onChange={(e) => setContactShareConsent(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-near-black/30 accent-dark-green"
+              />
+              <span className="text-sm text-near-black">
+                I agree to allow Opportunity Outdoors to share my contact information (name and email) with my assigned {registration!.role === "Mentor" ? "mentee(s)" : "mentor"} for the purpose of coordinating before and during the event.
+              </span>
+            </label>
+          </div>
+        </section>
+
         {/* Waiver */}
         <section>
           <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
@@ -400,29 +438,43 @@ export default function RegisterForm() {
                 placeholder="Your full legal name"
                 className="w-full rounded border border-near-black/20 bg-white px-4 py-3 font-serif text-lg italic text-near-black placeholder:text-near-black/30 focus:border-dark-green focus:outline-none focus:ring-1 focus:ring-dark-green"
               />
+              {signatureName.trim() && (() => {
+                const expected = `${contact.first_name || ""} ${contact.last_name || ""}`.trim().toLowerCase();
+                const entered = signatureName.trim().toLowerCase();
+                if (expected && entered !== expected) {
+                  return (
+                    <p className="mt-2 text-xs text-gold">
+                      The name you entered doesn&apos;t match the name on your registration ({contact.first_name} {contact.last_name}). Please enter your full legal name.
+                    </p>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
         </section>
 
         {/* Payment */}
-        {event.cost && (
-          <section>
-            <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
-              Payment
-            </h2>
-            <div className="rounded border border-near-black/10 bg-white p-6">
-              <div className="mb-5 flex items-center justify-between">
-                <p className="text-sm font-semibold text-near-black">Registration Fee</p>
-                <p className="text-2xl font-extrabold text-dark-green">{event.cost}</p>
-              </div>
-              {/* Stripe Elements will go here */}
-              <div className="rounded border border-dashed border-near-black/15 bg-cream/50 px-5 py-8 text-center">
-                <p className="text-sm font-medium text-near-black/50">Payment processing coming soon</p>
-                <p className="mt-1 text-xs text-near-black/30">You can complete your registration now. Payment will be collected separately.</p>
-              </div>
+        <section>
+          <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
+            Payment
+          </h2>
+          <div className="rounded border border-near-black/10 bg-white p-6">
+            <div className="mb-5 flex items-center justify-between">
+              <p className="text-sm font-semibold text-near-black">
+                {registration!.role === "Mentor" ? "T-Shirt Fee" : "Registration Fee"}
+              </p>
+              <p className="text-2xl font-extrabold text-dark-green">
+                {registration!.role === "Mentor" ? "$25" : (event.cost || "Free")}
+              </p>
             </div>
-          </section>
-        )}
+            {/* Stripe Elements will go here */}
+            <div className="rounded border border-dashed border-near-black/15 bg-cream/50 px-5 py-8 text-center">
+              <p className="text-sm font-medium text-near-black/50">Payment processing coming soon</p>
+              <p className="mt-1 text-xs text-near-black/30">You can complete your registration now. Payment will be collected separately.</p>
+            </div>
+          </div>
+        </section>
 
         {error && (
           <p className="text-sm text-red-600">{error}</p>
@@ -430,7 +482,7 @@ export default function RegisterForm() {
 
         <button
           type="submit"
-          disabled={submitting || !waiverSigned || !signatureName.trim() || !waiverScrolled}
+          disabled={submitting || !waiverSigned || !signatureName.trim() || !waiverScrolled || !contactShareConsent || (registration!.role === "Mentor" && !mentorCommitment)}
           className="w-full rounded bg-dark-green px-8 py-4 text-[13px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:bg-dark-green/90 disabled:opacity-50"
         >
           {submitting ? "Submitting..." : "Complete Registration"}
