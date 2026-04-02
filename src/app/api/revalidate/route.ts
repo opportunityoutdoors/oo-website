@@ -21,9 +21,10 @@ export async function POST(req: NextRequest) {
       if (slug?.current) revalidatePath(`/events/${slug.current}`);
       revalidatePath("/");
 
-      // Sync event to Supabase — fetch fresh from Sanity to get full data
+      // Update existing Supabase event — fetch fresh from Sanity to get full data
+      // Only updates, never creates. Creation happens on admin page load.
       if (_id) {
-        syncEventToSupabase(_id).catch((err) =>
+        updateEventInSupabase(_id).catch((err) =>
           console.error("Event sync error:", err)
         );
       }
@@ -53,8 +54,19 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ revalidated: true });
 }
 
-async function syncEventToSupabase(sanityId: string) {
+async function updateEventInSupabase(sanityId: string) {
   try {
+    const supabase = createServiceClient();
+
+    // Check if this event already exists in Supabase
+    const { data: existing } = await supabase
+      .from("events")
+      .select("id")
+      .eq("sanity_id", sanityId)
+      .single();
+
+    if (!existing) return; // Not tracked yet — admin page will create it
+
     // Fetch full event document from Sanity
     const event = await sanityClient.fetch(
       `*[_type == "event" && _id == $id][0] {
@@ -64,9 +76,7 @@ async function syncEventToSupabase(sanityId: string) {
       { id: sanityId }
     );
 
-    if (!event) return; // Document was deleted or is a draft
-
-    const supabase = createServiceClient();
+    if (!event) return;
 
     const typeMap: Record<string, string> = {
       "hunt-camp": "hunt-camp",
@@ -85,9 +95,9 @@ async function syncEventToSupabase(sanityId: string) {
       archived: "archived",
     };
 
-    await supabase.from("events").upsert(
-      {
-        sanity_id: sanityId,
+    await supabase
+      .from("events")
+      .update({
         title: event.title || "Untitled Event",
         slug: event.slug?.current || null,
         event_type: typeMap[event.eventType] || "community",
@@ -102,10 +112,9 @@ async function syncEventToSupabase(sanityId: string) {
         camp_locations: event.campLocations || [],
         mentor_perks: event.mentorPerks || [],
         mentee_perks: event.menteePerks || [],
-      },
-      { onConflict: "sanity_id" }
-    );
+      })
+      .eq("sanity_id", sanityId);
   } catch (err) {
-    console.error("Failed to sync event to Supabase:", err);
+    console.error("Failed to update event in Supabase:", err);
   }
 }
