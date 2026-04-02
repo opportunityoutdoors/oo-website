@@ -120,7 +120,7 @@ async function sendApprovalEmails(
           <p style="font-size: 16px; line-height: 1.6;">Hey ${firstName},</p>
 
           <p style="font-size: 16px; line-height: 1.6;">
-            Great news! You've been approved for <strong>${eventTitle}</strong>. We're excited to have you join us.
+            Great news! You're officially invited to <strong>${eventTitle}</strong>. We're excited to have you join us.
           </p>
 
           <p style="font-size: 16px; line-height: 1.6;">
