@@ -11,6 +11,15 @@ export const client = createClient({
   useCdn: true,
 });
 
+// Write-capable client for server-side mutations (uses API token)
+export const writeClient = createClient({
+  projectId: projectId || "placeholder",
+  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || "production",
+  apiVersion: "2024-01-01",
+  useCdn: false,
+  token: process.env.SANITY_API_TOKEN,
+});
+
 const builder = imageUrlBuilder(client);
 
 export function urlFor(source: SanityImage) {

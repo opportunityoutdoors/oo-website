@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { client as sanityClient } from "@/lib/sanity";
+import { client as sanityClient, writeClient as sanityWriteClient } from "@/lib/sanity";
 import { createCalendarEvent, updateCalendarEvent } from "@/lib/google-calendar";
 
 export async function POST(req: NextRequest) {
@@ -132,7 +132,7 @@ async function updateEventInSupabase(sanityId: string) {
       // If we created calendar events, patch the Sanity document with the new IDs/links
       if (slotsUpdated) {
         try {
-          await sanityClient
+          await sanityWriteClient
             .patch(sanityId)
             .set({ meetingSlots })
             .commit();

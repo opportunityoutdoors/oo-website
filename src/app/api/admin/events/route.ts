@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { client } from "@/lib/sanity";
+import { client, writeClient } from "@/lib/sanity";
 import { adminAllEventsQuery } from "@/lib/queries";
 import { createServiceClient } from "@/lib/supabase/server";
 import { createCalendarEvent } from "@/lib/google-calendar";
@@ -78,7 +78,7 @@ export async function GET() {
       // Patch Sanity with calendar IDs and Meet links
       if (slotsUpdated) {
         try {
-          await client.patch(se._id).set({ meetingSlots: slots }).commit();
+          await writeClient.patch(se._id).set({ meetingSlots: slots }).commit();
         } catch (sanityErr) {
           console.error("Failed to patch Sanity with calendar data:", sanityErr);
         }
