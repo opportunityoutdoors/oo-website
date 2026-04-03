@@ -14,25 +14,52 @@ export async function POST(
     return NextResponse.json({ error: "Email and role are required" }, { status: 400 });
   }
 
-  // Upsert contact
-  const { data: contact, error: contactError } = await supabase
+  // Find existing contact or create new
+  let contact: { id: string } | null = null;
+
+  const { data: existing_contact } = await supabase
     .from("contacts")
-    .upsert(
-      {
-        email,
+    .select("id")
+    .eq("email", email)
+    .single();
+
+  if (existing_contact) {
+    const { data: updated, error: updateError } = await supabase
+      .from("contacts")
+      .update({
         first_name: first_name || null,
         last_name: last_name || null,
         phone: phone || null,
         source: is_board_member ? "Board Member" : "Admin Added",
         updated_at: new Date().toISOString(),
-      },
-      { onConflict: "email" }
-    )
-    .select("id")
-    .single();
+      })
+      .eq("id", existing_contact.id)
+      .select("id")
+      .single();
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+    contact = updated;
+  } else {
+    const { data: inserted, error: insertError } = await supabase
+      .from("contacts")
+      .insert({
+        email,
+        first_name: first_name || null,
+        last_name: last_name || null,
+        phone: phone || null,
+        source: is_board_member ? "Board Member" : "Admin Added",
+      })
+      .select("id")
+      .single();
+    if (insertError) {
+      return NextResponse.json({ error: insertError.message }, { status: 500 });
+    }
+    contact = inserted;
+  }
 
-  if (contactError) {
-    return NextResponse.json({ error: contactError.message }, { status: 500 });
+  if (!contact) {
+    return NextResponse.json({ error: "Failed to create contact" }, { status: 500 });
   }
 
   // Check if already registered for this event
