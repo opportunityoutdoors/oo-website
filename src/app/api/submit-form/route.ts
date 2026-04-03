@@ -234,14 +234,16 @@ async function writeToSupabase(
 
     case "camp-waitlist": {
       const eventName = str("eventName");
+      console.log("Camp waitlist: eventName =", eventName, "contactId =", contactId);
       let eventId: string | null = null;
       if (eventName) {
-        const { data: event } = await supabase
+        const { data: event, error: eventError } = await supabase
           .from("events")
           .select("id")
           .eq("title", eventName)
           .single();
         eventId = event?.id || null;
+        console.log("Camp waitlist: event lookup =", eventId, "error =", eventError?.message);
       }
       if (eventId) {
         // Create parent/adult registration
@@ -252,6 +254,7 @@ async function writeToSupabase(
           role: str("role"),
           meeting_date_selected: str("meetingDate") || null,
         }).select("id").single();
+        console.log("Camp waitlist: parentReg =", parentReg?.id, "error =", error?.message);
         if (error) console.error("Supabase camp waitlist error:", error);
 
         // If bringing a minor, create minor contact (no email) + linked registration
