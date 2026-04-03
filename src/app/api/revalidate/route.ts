@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { client as sanityClient } from "@/lib/sanity";
+import { createCalendarEvent, updateCalendarEvent } from "@/lib/google-calendar";
 
 export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-sanity-webhook-secret");
@@ -95,6 +96,52 @@ async function updateEventInSupabase(sanityId: string) {
       archived: "archived",
     };
 
+    // Process meeting slots — create/update Google Calendar events
+    const meetingSlots = event.meetingSlots || [];
+    let slotsUpdated = false;
+
+    if (process.env.GOOGLE_CALENDAR_ID) {
+      for (const slot of meetingSlots) {
+        try {
+          if (!slot.calendarEventId && slot.date) {
+            // Create new calendar event with Meet link
+            const endTime = new Date(new Date(slot.date).getTime() + 60 * 60 * 1000).toISOString();
+            const { eventId, meetLink } = await createCalendarEvent({
+              summary: `${event.title} — ${slot.label || "Pre-Camp Meeting"}`,
+              description: `Pre-camp virtual meeting for ${event.title}. Attendance is required for all participants.`,
+              start: slot.date,
+              end: endTime,
+            });
+            slot.calendarEventId = eventId;
+            if (meetLink) slot.meetingLink = meetLink;
+            slotsUpdated = true;
+          } else if (slot.calendarEventId && slot.date) {
+            // Update existing calendar event if date changed
+            const endTime = new Date(new Date(slot.date).getTime() + 60 * 60 * 1000).toISOString();
+            await updateCalendarEvent(slot.calendarEventId, {
+              summary: `${event.title} — ${slot.label || "Pre-Camp Meeting"}`,
+              start: slot.date,
+              end: endTime,
+            });
+          }
+        } catch (calErr) {
+          console.error("Calendar event error for slot:", slot.label, calErr);
+        }
+      }
+
+      // If we created calendar events, patch the Sanity document with the new IDs/links
+      if (slotsUpdated) {
+        try {
+          await sanityClient
+            .patch(sanityId)
+            .set({ meetingSlots })
+            .commit();
+        } catch (sanityErr) {
+          console.error("Failed to patch Sanity with calendar data:", sanityErr);
+        }
+      }
+    }
+
     await supabase
       .from("events")
       .update({
@@ -108,7 +155,7 @@ async function updateEventInSupabase(sanityId: string) {
         cost: event.cost || null,
         spots_total: event.spotsTotal || null,
         spots_remaining: event.spotsRemaining || null,
-        meeting_slots: event.meetingSlots || [],
+        meeting_slots: meetingSlots,
         camp_locations: event.campLocations || [],
         mentor_perks: event.mentorPerks || [],
         mentee_perks: event.menteePerks || [],

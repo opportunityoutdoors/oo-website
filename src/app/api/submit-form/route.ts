@@ -296,15 +296,25 @@ async function writeToSupabase(
             .eq("id", eventId)
             .single();
 
+          const slots = eventData?.meeting_slots || [];
+
           sendWaitlistConfirmation({
             email,
             firstName: str("firstName"),
             eventTitle: eventData?.title || eventName || "the event",
             slug: eventData?.slug || "",
             meetingLabel: str("meetingDate"),
-            meetingSlots: eventData?.meeting_slots || [],
+            meetingSlots: slots,
             meetingChangeToken,
           }).catch((err) => console.error("Waitlist confirmation email error:", err));
+
+          // Add attendee to Google Calendar event (non-blocking)
+          const selectedSlot = slots.find((s: MeetingSlot) => s.label === str("meetingDate"));
+          if (selectedSlot?.calendarEventId && email) {
+            import("@/lib/google-calendar").then(({ addAttendee }) =>
+              addAttendee(selectedSlot.calendarEventId, email)
+            ).catch((err) => console.error("Calendar add attendee error:", err));
+          }
         }
       }
       break;
@@ -381,7 +391,8 @@ async function syncToDirectMail(
   };
 
   const credentials = Buffer.from(`${apiKeyId}:${apiKeySecret}`).toString("base64");
-  const url = `https://secure.directmailmac.com/api/v2/projects/${projectId}/address-groups/${groupId}/addresses`;
+  const apiHost = process.env.DIRECT_MAIL_API_HOST || "secure.directmailmac.com";
+  const url = `https://${apiHost}/api/v2/projects/${projectId}/address-groups/${groupId}/addresses`;
   const options: RequestInit = {
     method: "POST",
     headers: {
@@ -398,22 +409,29 @@ async function syncToDirectMail(
     }),
   };
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+
   // Retry once on connection reset (common on Vercel cold starts)
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const response = await fetch(url, options);
-      if (!response.ok) {
-        const text = await response.text();
-        console.error("Direct Mail API error:", response.status, text);
+  try {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        if (!response.ok) {
+          const text = await response.text();
+          console.error("Direct Mail API error:", response.status, text);
+        }
+        return;
+      } catch (err) {
+        if (attempt === 0 && !(err instanceof DOMException && err.name === "AbortError")) {
+          console.warn("Direct Mail fetch failed, retrying:", (err as Error).message);
+          continue;
+        }
+        throw err;
       }
-      return;
-    } catch (err) {
-      if (attempt === 0) {
-        console.warn("Direct Mail fetch failed, retrying:", (err as Error).message);
-        continue;
-      }
-      throw err;
     }
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -523,11 +541,10 @@ export async function POST(request: NextRequest) {
     // 1. Write to Supabase (source of truth)
     await writeToSupabase(formType, data);
 
-    // 2. Direct Mail sync disabled — API blocks Vercel datacenter IPs (ETIMEDOUT).
-    //    TODO: Set up ODBC sync from Direct Mail → Supabase, or find alternative.
-    // syncToDirectMail(formType, data).catch((err) =>
-    //   console.error("Direct Mail sync error:", err)
-    // );
+    // 2. Sync contact to Direct Mail mailing list (non-blocking)
+    syncToDirectMail(formType, data).catch((err) =>
+      console.error("Direct Mail sync error:", err)
+    );
 
     // 3. Send email notification (non-blocking)
     sendNotificationEmail(formType, data).catch((err) =>

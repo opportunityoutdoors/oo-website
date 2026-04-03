@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
   const { data: registration } = await supabase
     .from("registrations")
-    .select("id, status, guardian_registration_id")
+    .select("id, status, meeting_date_selected, guardian_registration_id, event_id, contacts(email)")
     .eq("meeting_change_token", token)
     .single();
 
@@ -64,7 +64,36 @@ export async function POST(request: NextRequest) {
     .update({ meeting_date_selected: new_meeting })
     .eq("guardian_registration_id", registration.id);
 
-  // TODO: When Google Calendar is wired up, remove from old event + add to new event
+  // Move attendee between Google Calendar events
+  const contactEmail = Array.isArray(registration.contacts)
+    ? registration.contacts[0]?.email
+    : (registration.contacts as { email: string } | null)?.email;
+
+  if (contactEmail && registration.event_id) {
+    const { data: eventData } = await supabase
+      .from("events")
+      .select("meeting_slots")
+      .eq("id", registration.event_id)
+      .single();
+
+    const slots = (eventData?.meeting_slots || []) as Array<{ label: string; calendarEventId?: string }>;
+    const oldSlot = slots.find((s) => s.label === registration.meeting_date_selected);
+    const newSlot = slots.find((s) => s.label === new_meeting);
+
+    if (oldSlot?.calendarEventId || newSlot?.calendarEventId) {
+      const { addAttendee, removeAttendee } = await import("@/lib/google-calendar");
+      if (oldSlot?.calendarEventId) {
+        removeAttendee(oldSlot.calendarEventId, contactEmail).catch((err) =>
+          console.error("Calendar remove attendee error:", err)
+        );
+      }
+      if (newSlot?.calendarEventId) {
+        addAttendee(newSlot.calendarEventId, contactEmail).catch((err) =>
+          console.error("Calendar add attendee error:", err)
+        );
+      }
+    }
+  }
 
   return NextResponse.json({ success: true });
 }
