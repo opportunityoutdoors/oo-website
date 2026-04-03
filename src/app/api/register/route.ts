@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 
-// Validate a registration token and return event + contact info
+// Validate a registration token and return event + contact info (including linked minor)
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get("token");
   if (!token) {
@@ -28,10 +28,20 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Registration not approved" }, { status: 403 });
   }
 
-  return NextResponse.json(registration);
+  // Check for linked minor
+  const { data: linkedMinor } = await supabase
+    .from("registrations")
+    .select("id, role, status, contacts(id, first_name, last_name, tshirt_size)")
+    .eq("guardian_registration_id", registration.id)
+    .single();
+
+  return NextResponse.json({
+    ...registration,
+    linked_minor: linkedMinor || null,
+  });
 }
 
-// Complete registration
+// Complete registration (parent + optional minor)
 export async function POST(request: NextRequest) {
   const supabase = createServiceClient();
   const body = await request.json();
@@ -45,6 +55,9 @@ export async function POST(request: NextRequest) {
     waiver_signed,
     waiver_text,
     signature_name,
+    // Minor fields
+    minor_tshirt_size,
+    minor_dietary_medical,
   } = body;
 
   if (!token) {
@@ -76,7 +89,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not eligible for registration" }, { status: 403 });
   }
 
-  // Update registration with waiver audit trail
+  const now = new Date().toISOString();
+
+  // Update parent registration with waiver audit trail
   const { error: regError } = await supabase
     .from("registrations")
     .update({
@@ -84,9 +99,9 @@ export async function POST(request: NextRequest) {
       waiver_signed: true,
       waiver_text: waiver_text || null,
       waiver_signature_name: signature_name,
-      waiver_signed_at: new Date().toISOString(),
+      waiver_signed_at: now,
       waiver_ip: ip,
-      payment_status: "pending", // Stripe TBD
+      payment_status: "pending",
       emergency_contact_name: emergency_contact_name || null,
       emergency_contact_phone: emergency_contact_phone || null,
       transportation: transportation || null,
@@ -98,7 +113,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: regError.message }, { status: 500 });
   }
 
-  // Update contact profile with t-shirt size
+  // Update parent contact with t-shirt size
   if (tshirt_size) {
     await supabase
       .from("contacts")
@@ -106,7 +121,42 @@ export async function POST(request: NextRequest) {
       .eq("id", registration.contact_id);
   }
 
-  // Fetch contact + event info for confirmation email
+  // Handle linked minor
+  const { data: linkedMinor } = await supabase
+    .from("registrations")
+    .select("id, contact_id")
+    .eq("guardian_registration_id", registration.id)
+    .single();
+
+  if (linkedMinor) {
+    // Update minor registration (waiver signed by parent on behalf of minor)
+    await supabase
+      .from("registrations")
+      .update({
+        status: "registered",
+        waiver_signed: true,
+        waiver_text: waiver_text || null,
+        waiver_signature_name: `${signature_name} (on behalf of minor)`,
+        waiver_signed_at: now,
+        waiver_ip: ip,
+        payment_status: "pending",
+        emergency_contact_name: emergency_contact_name || null,
+        emergency_contact_phone: emergency_contact_phone || null,
+        transportation: transportation || null,
+        dietary_medical: minor_dietary_medical || null,
+      })
+      .eq("id", linkedMinor.id);
+
+    // Update minor contact with t-shirt size
+    if (minor_tshirt_size) {
+      await supabase
+        .from("contacts")
+        .update({ tshirt_size: minor_tshirt_size })
+        .eq("id", linkedMinor.contact_id);
+    }
+  }
+
+  // Fetch full info for confirmation email
   const { data: fullReg } = await supabase
     .from("registrations")
     .select("*, contacts(email, first_name, last_name), events(title, date_start, date_end, location)")
@@ -115,7 +165,7 @@ export async function POST(request: NextRequest) {
 
   if (fullReg) {
     try {
-      await sendRegistrationConfirmation(fullReg, signature_name, waiver_text);
+      await sendRegistrationConfirmation(fullReg, signature_name, waiver_text, linkedMinor ? true : false);
     } catch (err) {
       console.error("Registration confirmation email error:", err);
     }
@@ -134,7 +184,8 @@ async function sendRegistrationConfirmation(
     waiver_ip: string | null;
   },
   signatureName: string,
-  waiverText: string
+  waiverText: string,
+  hasMinor: boolean
 ) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return;
@@ -190,7 +241,7 @@ async function sendRegistrationConfirmation(
         <p style="font-size: 16px; line-height: 1.6;">Hey ${firstName},</p>
 
         <p style="font-size: 16px; line-height: 1.6;">
-          Your registration for <strong>${eventTitle}</strong> is confirmed! We're looking forward to having you${registration.role === "Mentor" ? " as a mentor" : ""}.
+          Your registration for <strong>${eventTitle}</strong> is confirmed${hasMinor ? " for you and your minor" : ""}! We're looking forward to having you${registration.role === "Mentor" ? " as a mentor" : ""}.
         </p>
 
         ${eventDate || registration.events?.location ? `

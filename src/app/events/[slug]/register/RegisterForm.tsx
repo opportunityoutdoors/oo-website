@@ -21,12 +21,24 @@ interface ContactInfo {
   tshirt_size: string | null;
 }
 
+interface MinorInfo {
+  id: string;
+  role: string;
+  contacts: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    tshirt_size: string | null;
+  };
+}
+
 interface RegistrationData {
   id: string;
   status: string;
   role: string | null;
   contacts: ContactInfo;
   events: EventInfo;
+  linked_minor: MinorInfo | null;
 }
 
 const WAIVER_TEXT = `Opportunity Outdoors
@@ -106,6 +118,8 @@ export default function RegisterForm() {
   const [mentorCommitment, setMentorCommitment] = useState(false);
   const [menteeCommitment, setMenteeCommitment] = useState(false);
   const [contactShareConsent, setContactShareConsent] = useState(false);
+  const [minorTshirtSize, setMinorTshirtSize] = useState("");
+  const [minorDietaryMedical, setMinorDietaryMedical] = useState("");
   const waiverRef = useRef<HTMLDivElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -162,6 +176,8 @@ export default function RegisterForm() {
         waiver_signed: waiverSigned,
         waiver_text: WAIVER_TEXT,
         signature_name: signatureName,
+        minor_tshirt_size: minorTshirtSize || null,
+        minor_dietary_medical: minorDietaryMedical || null,
       }),
     });
 
@@ -243,6 +259,7 @@ export default function RegisterForm() {
 
   const event = registration!.events;
   const contact = registration!.contacts;
+  const minor = registration!.linked_minor;
 
   function handleWaiverScroll() {
     const el = waiverRef.current;
@@ -266,13 +283,16 @@ export default function RegisterForm() {
 
       <p className="mb-10 text-near-black/50">
         Registering as <strong className="text-near-black">{contact.first_name} {contact.last_name}</strong> ({contact.email})
+        {minor && (
+          <> and <strong className="text-near-black">{minor.contacts.first_name} {minor.contacts.last_name}</strong> (minor)</>
+        )}
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-10">
         {/* Camp Details */}
         <section>
           <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
-            Camp Details
+            {minor ? "Your Details" : "Camp Details"}
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -347,7 +367,7 @@ export default function RegisterForm() {
         {/* Dietary / Medical */}
         <section>
           <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
-            Dietary &amp; Medical
+            {minor ? "Your Dietary & Medical" : "Dietary & Medical"}
           </h2>
           <textarea
             value={dietaryMedical}
@@ -357,6 +377,45 @@ export default function RegisterForm() {
             placeholder='List any allergies, dietary needs, medications, or conditions we should know about. Write "None" if not applicable.'
           />
         </section>
+
+        {/* Minor's Details */}
+        {minor && (
+          <section>
+            <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
+              {minor.contacts.first_name}&apos;s Details <span className="text-sm font-normal normal-case text-near-black/40">(Minor)</span>
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-[1px] text-near-black/70">
+                  T-Shirt Size <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={minorTshirtSize}
+                  onChange={(e) => setMinorTshirtSize(e.target.value)}
+                  className="w-full rounded border border-near-black/20 bg-white px-4 py-3 text-sm text-near-black focus:border-dark-green focus:outline-none focus:ring-1 focus:ring-dark-green"
+                >
+                  <option value="">Select size</option>
+                  {TSHIRT_SIZES.map((size) => (
+                    <option key={size} value={size}>{size}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-[1px] text-near-black/70">
+                  Dietary Restrictions or Medical Conditions
+                </label>
+                <textarea
+                  value={minorDietaryMedical}
+                  onChange={(e) => setMinorDietaryMedical(e.target.value)}
+                  rows={3}
+                  className="w-full rounded border border-near-black/20 bg-white px-4 py-3 text-sm text-near-black placeholder:text-near-black/40 focus:border-dark-green focus:outline-none focus:ring-1 focus:ring-dark-green"
+                  placeholder={`List any allergies, dietary needs, medications, or conditions for ${minor.contacts.first_name}. Write "None" if not applicable.`}
+                />
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Commitments & Consent */}
         <section>
@@ -434,16 +493,16 @@ export default function RegisterForm() {
                 className="mt-0.5 h-4 w-4 rounded border-near-black/30 accent-dark-green"
               />
               <span className="text-sm text-near-black">
-                I have read and agree to the Acknowledgment of Risks, Release of Liability, and Indemnification Agreement above. I understand that this is a legally binding document and I sign it voluntarily.
+                I have read and agree to the Acknowledgment of Risks, Release of Liability, and Indemnification Agreement above. I understand that this is a legally binding document and I sign it voluntarily.{minor && ` As the parent/legal guardian of ${minor.contacts.first_name} ${minor.contacts.last_name}, I also agree to these terms on their behalf per Section 9 of this agreement.`}
               </span>
             </label>
 
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-[1px] text-near-black/70">
-                Electronic Signature <span className="text-red-500">*</span>
+                {minor ? "Parent/Guardian Electronic Signature" : "Electronic Signature"} <span className="text-red-500">*</span>
               </label>
               <p className="mb-2 text-xs text-near-black/40">
-                Type your full legal name as your electronic signature
+                Type your full legal name as your electronic signature{minor ? " (signing on behalf of yourself and your minor child)" : ""}
               </p>
               <input
                 type="text"
@@ -470,23 +529,48 @@ export default function RegisterForm() {
           </div>
         </section>
 
-        {/* Payment — show for mentees always, mentors only if t-shirt selected */}
-        {(registration!.role !== "Mentor" || tshirtSize) && (
+        {/* Payment */}
+        {(registration!.role !== "Mentor" || tshirtSize || minor) && (
           <section>
             <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
               Payment
             </h2>
             <div className="rounded border border-near-black/10 bg-white p-6">
-              <div className="mb-5 flex items-center justify-between">
-                <p className="text-sm font-semibold text-near-black">
-                  {registration!.role === "Mentor" ? "T-Shirt Fee" : "Registration Fee"}
-                </p>
+              <div className="mb-3 space-y-2">
+                {registration!.role === "Mentor" && tshirtSize && (
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-near-black">Your T-Shirt</p>
+                    <p className="text-sm font-semibold text-near-black">$25</p>
+                  </div>
+                )}
+                {registration!.role !== "Mentor" && (
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-near-black">Your Registration</p>
+                    <p className="text-sm font-semibold text-near-black">{event.cost || "Free"}</p>
+                  </div>
+                )}
+                {minor && (
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-near-black">{minor.contacts.first_name}&apos;s Registration</p>
+                    <p className="text-sm font-semibold text-near-black">{event.cost || "Free"}</p>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-between border-t border-near-black/10 pt-3">
+                <p className="text-sm font-bold text-near-black">Total</p>
                 <p className="text-2xl font-extrabold text-dark-green">
-                  {registration!.role === "Mentor" ? "$25" : (event.cost || "Free")}
+                  {(() => {
+                    let total = 0;
+                    const campFee = parseInt((event.cost || "0").replace(/[^0-9]/g, ""), 10);
+                    if (registration!.role === "Mentor" && tshirtSize) total += 25;
+                    if (registration!.role !== "Mentor") total += campFee;
+                    if (minor) total += campFee;
+                    return total > 0 ? `$${total}` : "Free";
+                  })()}
                 </p>
               </div>
               {/* Stripe Elements will go here */}
-              <div className="rounded border border-dashed border-near-black/15 bg-cream/50 px-5 py-8 text-center">
+              <div className="mt-5 rounded border border-dashed border-near-black/15 bg-cream/50 px-5 py-8 text-center">
                 <p className="text-sm font-medium text-near-black/50">Payment processing coming soon</p>
                 <p className="mt-1 text-xs text-near-black/30">You can complete your registration now. Payment will be collected separately.</p>
               </div>
