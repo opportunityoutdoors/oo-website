@@ -263,7 +263,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
               <div className="space-y-3">
                 {event.meeting_slots.map((slot, i) => {
                   const rsvpCount = event.registrations.filter(
-                    (r) => r.meeting_date_selected === slot.date
+                    (r) => r.meeting_date_selected === slot.label || r.meeting_date_selected === slot.date
                   ).length;
                   return (
                     <div key={i} className="rounded border border-near-black/5 p-3">
@@ -413,7 +413,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                       .join(" ") || "—";
 
                     const meetingSlot = reg.meeting_date_selected
-                      ? event.meeting_slots?.find((s) => s.date === reg.meeting_date_selected)
+                      ? event.meeting_slots?.find((s) => s.label === reg.meeting_date_selected || s.date === reg.meeting_date_selected)
                       : null;
 
                     return (
