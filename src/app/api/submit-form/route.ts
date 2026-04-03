@@ -131,17 +131,42 @@ async function writeToSupabase(
     contactData.last_name = parts.slice(1).join(" ");
   }
 
-  // Upsert contact (insert or update on email conflict)
-  const { data: contact, error: contactError } = await supabase
+  // Find existing contact by email, or create new
+  let contact: { id: string } | null = null;
+  const { data: existing } = await supabase
     .from("contacts")
-    .upsert(contactData, { onConflict: "email" })
     .select("id")
+    .eq("email", email)
     .single();
 
-  if (contactError) {
-    console.error("Supabase contact upsert error:", contactError);
-    throw new Error("Failed to save contact");
+  if (existing) {
+    // Update existing contact
+    const { data: updated, error: updateError } = await supabase
+      .from("contacts")
+      .update(contactData)
+      .eq("id", existing.id)
+      .select("id")
+      .single();
+    if (updateError) {
+      console.error("Supabase contact update error:", updateError);
+      throw new Error("Failed to save contact");
+    }
+    contact = updated;
+  } else {
+    // Insert new contact
+    const { data: inserted, error: insertError } = await supabase
+      .from("contacts")
+      .insert(contactData)
+      .select("id")
+      .single();
+    if (insertError) {
+      console.error("Supabase contact insert error:", insertError);
+      throw new Error("Failed to save contact");
+    }
+    contact = inserted;
   }
+
+  if (!contact) throw new Error("Failed to save contact");
 
   const contactId = contact.id;
 
