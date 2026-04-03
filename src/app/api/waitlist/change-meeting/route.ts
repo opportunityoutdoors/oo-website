@@ -82,15 +82,15 @@ export async function POST(request: NextRequest) {
 
     if (oldSlot?.calendarEventId || newSlot?.calendarEventId) {
       const { addAttendee, removeAttendee } = await import("@/lib/google-calendar");
-      if (oldSlot?.calendarEventId) {
-        removeAttendee(oldSlot.calendarEventId, contactEmail).catch((err) =>
-          console.error("Calendar remove attendee error:", err)
-        );
-      }
-      if (newSlot?.calendarEventId) {
-        addAttendee(newSlot.calendarEventId, contactEmail).catch((err) =>
-          console.error("Calendar add attendee error:", err)
-        );
+      try {
+        if (oldSlot?.calendarEventId) {
+          await removeAttendee(oldSlot.calendarEventId, contactEmail);
+        }
+        if (newSlot?.calendarEventId) {
+          await addAttendee(newSlot.calendarEventId, contactEmail);
+        }
+      } catch (err) {
+        console.error("Calendar attendee change error:", err);
       }
     }
   }
