@@ -298,22 +298,29 @@ async function writeToSupabase(
 
           const slots = eventData?.meeting_slots || [];
 
-          sendWaitlistConfirmation({
-            email,
-            firstName: str("firstName"),
-            eventTitle: eventData?.title || eventName || "the event",
-            slug: eventData?.slug || "",
-            meetingLabel: str("meetingDate"),
-            meetingSlots: slots,
-            meetingChangeToken,
-          }).catch((err) => console.error("Waitlist confirmation email error:", err));
+          try {
+            await sendWaitlistConfirmation({
+              email,
+              firstName: str("firstName"),
+              eventTitle: eventData?.title || eventName || "the event",
+              slug: eventData?.slug || "",
+              meetingLabel: str("meetingDate"),
+              meetingSlots: slots,
+              meetingChangeToken,
+            });
+          } catch (err) {
+            console.error("Waitlist confirmation email error:", err);
+          }
 
-          // Add attendee to Google Calendar event (non-blocking)
+          // Add attendee to Google Calendar event
           const selectedSlot = slots.find((s: MeetingSlot) => s.label === str("meetingDate"));
           if (selectedSlot?.calendarEventId && email) {
-            import("@/lib/google-calendar").then(({ addAttendee }) =>
-              addAttendee(selectedSlot.calendarEventId, email)
-            ).catch((err) => console.error("Calendar add attendee error:", err));
+            try {
+              const { addAttendee } = await import("@/lib/google-calendar");
+              await addAttendee(selectedSlot.calendarEventId, email);
+            } catch (err) {
+              console.error("Calendar add attendee error:", err);
+            }
           }
         }
       }
@@ -403,9 +410,7 @@ async function syncToDirectMail(
       email: str("email"),
       first_name: firstName,
       last_name: lastName,
-      custom_1: str("phone"),
-      custom_2: str("cityState"),
-      custom_3: sourceMap[formType],
+      custom_1: new Date().toLocaleDateString("en-US"),
     }),
   };
 
@@ -541,10 +546,11 @@ export async function POST(request: NextRequest) {
     // 1. Write to Supabase (source of truth)
     await writeToSupabase(formType, data);
 
-    // 2. Sync contact to Direct Mail mailing list (non-blocking)
-    syncToDirectMail(formType, data).catch((err) =>
-      console.error("Direct Mail sync error:", err)
-    );
+    // 2. Direct Mail sync disabled — both hostnames blocked from Vercel IPs.
+    //    TODO: Use ODBC sync, Zapier, or client-side approach instead.
+    // syncToDirectMail(formType, data).catch((err) =>
+    //   console.error("Direct Mail sync error:", err)
+    // );
 
     // 3. Send email notification (non-blocking)
     sendNotificationEmail(formType, data).catch((err) =>
