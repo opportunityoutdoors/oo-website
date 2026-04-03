@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 
@@ -244,6 +245,8 @@ async function writeToSupabase(
         eventId = event?.id || null;
       }
       if (eventId) {
+        const meetingChangeToken = randomBytes(24).toString("hex");
+
         // Create parent/adult registration
         const { data: parentReg, error } = await supabase.from("registrations").insert({
           contact_id: contactId,
@@ -251,6 +254,7 @@ async function writeToSupabase(
           status: "waitlist",
           role: str("role"),
           meeting_date_selected: str("meetingDate") || null,
+          meeting_change_token: meetingChangeToken,
         }).select("id").single();
         if (error) console.error("Supabase camp waitlist error:", error);
 
@@ -282,6 +286,25 @@ async function writeToSupabase(
             });
             if (minorRegError) console.error("Minor registration error:", minorRegError);
           }
+        }
+
+        // Send waitlist confirmation email
+        if (parentReg) {
+          const { data: eventData } = await supabase
+            .from("events")
+            .select("title, slug, meeting_slots")
+            .eq("id", eventId)
+            .single();
+
+          sendWaitlistConfirmation({
+            email,
+            firstName: str("firstName"),
+            eventTitle: eventData?.title || eventName || "the event",
+            slug: eventData?.slug || "",
+            meetingLabel: str("meetingDate"),
+            meetingSlots: eventData?.meeting_slots || [],
+            meetingChangeToken,
+          }).catch((err) => console.error("Waitlist confirmation email error:", err));
         }
       }
       break;
@@ -519,4 +542,101 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/* ─── Waitlist Confirmation Email ─── */
+
+interface MeetingSlot {
+  date?: string;
+  label?: string;
+  meetingLink?: string;
+}
+
+async function sendWaitlistConfirmation({
+  email,
+  firstName,
+  eventTitle,
+  slug,
+  meetingLabel,
+  meetingSlots,
+  meetingChangeToken,
+}: {
+  email: string;
+  firstName: string;
+  eventTitle: string;
+  slug: string;
+  meetingLabel: string;
+  meetingSlots: MeetingSlot[];
+  meetingChangeToken: string;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+
+  const { Resend } = await import("resend");
+  const resend = new Resend(apiKey);
+
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://opportunityoutdoors.org";
+  const meetingChangeUrl = `${baseUrl}/events/${slug}/meeting-change?token=${meetingChangeToken}`;
+
+  // Find the selected meeting slot's details
+  const selectedSlot = meetingSlots.find((s) => s.label === meetingLabel);
+  const meetLink = selectedSlot?.meetingLink;
+  const meetingDate = selectedSlot?.date
+    ? new Date(selectedSlot.date).toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : meetingLabel;
+
+  await resend.emails.send({
+    from: "Opportunity Outdoors <notifications@send.opportunityoutdoors.org>",
+    to: email,
+    subject: `You're on the Waitlist: ${eventTitle}`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1a1a;">
+        <p style="font-size: 16px; line-height: 1.6;">Hey ${firstName},</p>
+
+        <p style="font-size: 16px; line-height: 1.6;">
+          Thanks for signing up for the <strong>${eventTitle}</strong> waitlist! We're glad you're interested.
+        </p>
+
+        <p style="font-size: 16px; line-height: 1.6;">
+          Here's what happens next:
+        </p>
+
+        <ol style="font-size: 15px; line-height: 1.8; padding-left: 20px;">
+          <li><strong>Attend your pre-camp virtual meeting</strong> (required)</li>
+          <li>We review the waitlist and send invitations</li>
+          <li>Complete your registration if invited</li>
+        </ol>
+
+        <div style="margin: 24px 0; padding: 16px; background: #f0ebe2; border-radius: 4px;">
+          <p style="margin: 0 0 4px; font-size: 14px; font-weight: 600;">Your Meeting</p>
+          <p style="margin: 0; font-size: 14px;">${meetingDate}</p>
+          ${meetLink ? `<p style="margin: 8px 0 0; font-size: 14px;"><a href="${meetLink}" style="color: #2D5016; font-weight: 600;">Join Meeting</a></p>` : ""}
+        </div>
+
+        <p style="font-size: 14px; line-height: 1.6; color: #666;">
+          <strong>Important:</strong> Attending a pre-camp meeting is required for all participants. This is where we cover safety protocols, camp logistics, what to expect, and answer your questions.
+        </p>
+
+        <p style="font-size: 14px; line-height: 1.6; color: #666;">
+          Need to switch to a different meeting date? <a href="${meetingChangeUrl}" style="color: #2D5016; font-weight: 600;">Change your meeting</a>.
+        </p>
+
+        <p style="font-size: 16px; line-height: 1.6;">
+          Questions? Reply to this email or reach out at
+          <a href="mailto:info@opportunityoutdoors.org" style="color: #2D5016; font-weight: 600;">info@opportunityoutdoors.org</a>.
+        </p>
+
+        <p style="font-size: 16px; line-height: 1.6;">
+          — The Opportunity Outdoors Team
+        </p>
+      </div>
+    `,
+  });
 }

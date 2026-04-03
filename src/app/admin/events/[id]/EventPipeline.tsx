@@ -220,6 +220,10 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
               const active = event.registrations.filter((r) => r.status !== "denied");
               const mentees = active.filter((r) => r.role === "Mentee").length;
               const mentors = active.filter((r) => r.role === "Mentor").length;
+              const registeredMentors = event.registrations.filter((r) => r.role === "Mentor" && r.status === "registered").length;
+              const approvedMentees = event.registrations.filter((r) => r.role === "Mentee" && (r.status === "approved" || r.status === "registered")).length;
+              const maxMenteeSlots = registeredMentors * 3;
+              const availableMenteeSlots = Math.max(0, maxMenteeSlots - approvedMentees);
               const ratio = mentors > 0 ? `${(mentees / mentors).toFixed(1)}:1` : mentees > 0 ? "No mentors" : "—";
 
               return (
@@ -250,6 +254,24 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                     <dt className="font-semibold text-near-black/40">Status</dt>
                     <dd className="text-near-black">{event.status}</dd>
                   </div>
+                  {isCamp && (
+                    <div className="mt-1 border-t border-near-black/5 pt-2">
+                      <div className="flex justify-between">
+                        <dt className="font-semibold text-near-black/40">Registered Mentors</dt>
+                        <dd className="font-bold text-near-black">{registeredMentors}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="font-semibold text-near-black/40">Mentee Slots (3:1)</dt>
+                        <dd className="font-bold text-near-black">{maxMenteeSlots}</dd>
+                      </div>
+                      <div className="flex justify-between">
+                        <dt className="font-semibold text-near-black/40">Available</dt>
+                        <dd className={`font-bold ${availableMenteeSlots > 0 ? "text-dark-green" : "text-red-500"}`}>
+                          {availableMenteeSlots}
+                        </dd>
+                      </div>
+                    </div>
+                  )}
                 </dl>
               );
             })()}
