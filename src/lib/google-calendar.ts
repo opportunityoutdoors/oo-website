@@ -32,7 +32,7 @@ async function getAccessToken(): Promise<string> {
   const { SignJWT, importPKCS8 } = await import("jose");
 
   const key = await importPKCS8(
-    privateKey.replace(/\\n/g, "\n"),
+    privateKey.replace(/\\n/g, "\n").replace(/^"|"$/g, ""),
     "RS256"
   );
 
