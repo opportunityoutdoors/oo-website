@@ -182,10 +182,21 @@ function WaitlistForm({
   ];
 
   const meetingOptions =
-    event.meetingSlots?.map((slot) => ({
-      label: slot.label,
-      value: slot.label,
-    })) ?? [];
+    event.meetingSlots?.map((slot) => {
+      const dateStr = slot.date
+        ? new Date(slot.date).toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          })
+        : "";
+      const displayLabel = dateStr
+        ? `${dateStr}${slot.label ? ` — ${slot.label}` : ""}`
+        : slot.label;
+      return { label: displayLabel, value: slot.label };
+    }) ?? [];
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

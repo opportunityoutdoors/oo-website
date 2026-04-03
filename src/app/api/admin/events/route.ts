@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import { client } from "@/lib/sanity";
 import { adminAllEventsQuery } from "@/lib/queries";
 import { createServiceClient } from "@/lib/supabase/server";
+import { createCalendarEvent } from "@/lib/google-calendar";
 
 interface MeetingSlot {
+  _key?: string;
   date: string;
   label: string;
   capacity?: number;
-  meetingLink: string;
+  meetingLink?: string;
+  calendarEventId?: string;
 }
 
 interface CampLocation {
@@ -46,8 +49,42 @@ export async function GET() {
     console.warn("Failed to fetch events from Sanity");
   }
 
-  // Auto-sync all Sanity events to Supabase
+  // Auto-sync all Sanity events to Supabase + create calendar events
   for (const se of sanityEvents) {
+    const slots = se.meetingSlots || [];
+    let slotsUpdated = false;
+
+    // Create Google Calendar events for slots without calendarEventId
+    if (process.env.GOOGLE_CALENDAR_ID) {
+      for (const slot of slots) {
+        if (!slot.calendarEventId && slot.date) {
+          try {
+            const endTime = new Date(new Date(slot.date).getTime() + 60 * 60 * 1000).toISOString();
+            const { eventId, meetLink } = await createCalendarEvent({
+              summary: `${se.title} — ${slot.label || "Pre-Camp Meeting"}`,
+              description: `Pre-camp virtual meeting for ${se.title}. Attendance is required for all participants.`,
+              start: slot.date,
+              end: endTime,
+            });
+            slot.calendarEventId = eventId;
+            if (meetLink) slot.meetingLink = meetLink;
+            slotsUpdated = true;
+          } catch (calErr) {
+            console.error("Calendar event creation error:", calErr);
+          }
+        }
+      }
+
+      // Patch Sanity with calendar IDs and Meet links
+      if (slotsUpdated) {
+        try {
+          await client.patch(se._id).set({ meetingSlots: slots }).commit();
+        } catch (sanityErr) {
+          console.error("Failed to patch Sanity with calendar data:", sanityErr);
+        }
+      }
+    }
+
     await supabase.from("events").upsert(
       {
         sanity_id: se._id,
@@ -61,7 +98,7 @@ export async function GET() {
         cost: se.cost || null,
         spots_total: se.spotsTotal || null,
         spots_remaining: se.spotsRemaining || null,
-        meeting_slots: se.meetingSlots || [],
+        meeting_slots: slots,
         camp_locations: se.campLocations || [],
         mentor_perks: se.mentorPerks || [],
         mentee_perks: se.menteePerks || [],
