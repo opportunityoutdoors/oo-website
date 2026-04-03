@@ -17,21 +17,40 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  // For approvals, generate unique tokens
+  // For approvals, generate unique tokens + cascade to linked minors
   if (status === "approved") {
+    const allApprovedIds = [...ids];
+
     for (const id of ids) {
       const token = randomBytes(24).toString("hex");
       await supabase
         .from("registrations")
         .update({ status, token })
         .eq("id", id);
+
+      // Find linked minors (where guardian_registration_id = this id)
+      const { data: linkedMinors } = await supabase
+        .from("registrations")
+        .select("id")
+        .eq("guardian_registration_id", id);
+
+      if (linkedMinors?.length) {
+        for (const minor of linkedMinors) {
+          const minorToken = randomBytes(24).toString("hex");
+          await supabase
+            .from("registrations")
+            .update({ status, token: minorToken })
+            .eq("id", minor.id);
+          allApprovedIds.push(minor.id);
+        }
+      }
     }
 
-    // Fetch updated registrations with contact and event info for emails
+    // Fetch updated registrations — only send emails to those with email (not minors)
     const { data } = await supabase
       .from("registrations")
       .select("*, contacts(email, first_name), events(title, slug, cost)")
-      .in("id", ids);
+      .in("id", ids); // Only parent IDs, not minors
 
     if (data?.length) {
       sendApprovalEmails(data).catch((err) =>
@@ -39,7 +58,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ updated: ids.length });
+    return NextResponse.json({ updated: allApprovedIds.length });
   }
 
   // When moving back to waitlist, clear waiver and token data
@@ -54,7 +73,7 @@ export async function PATCH(request: NextRequest) {
     payment_status: "none",
   } : { status };
 
-  // For all other status changes, bulk update
+  // For all other status changes, bulk update + cascade to linked minors
   const { data, error } = await supabase
     .from("registrations")
     .update(resetFields)
@@ -63,6 +82,14 @@ export async function PATCH(request: NextRequest) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Cascade status to linked minors
+  for (const id of ids) {
+    await supabase
+      .from("registrations")
+      .update(resetFields)
+      .eq("guardian_registration_id", id);
   }
 
   // Send denial emails automatically
