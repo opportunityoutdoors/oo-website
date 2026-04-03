@@ -36,14 +36,21 @@ async function getAccessToken(): Promise<string> {
     "RS256"
   );
 
+  const impersonateUser = process.env.GOOGLE_CALENDAR_IMPERSONATE_USER;
+
   const now = Math.floor(Date.now() / 1000);
-  const jwt = await new SignJWT({
+  const claims: Record<string, unknown> = {
     iss: email,
     scope: SCOPES.join(" "),
     aud: "https://oauth2.googleapis.com/token",
     iat: now,
     exp: now + 3600,
-  })
+  };
+  if (impersonateUser) {
+    claims.sub = impersonateUser;
+  }
+
+  const jwt = await new SignJWT(claims)
     .setProtectedHeader({ alg: "RS256", typ: "JWT" })
     .sign(key);
 
