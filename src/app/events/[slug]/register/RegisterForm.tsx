@@ -537,6 +537,12 @@ export default function RegisterForm() {
             </h2>
             <div className="rounded border border-near-black/10 bg-white p-6">
               <div className="mb-3 space-y-2">
+                {registration!.role === "Mentor" && (
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-near-black">Your Registration (Mentor)</p>
+                    <p className="text-sm font-semibold text-near-black">Free</p>
+                  </div>
+                )}
                 {registration!.role === "Mentor" && tshirtSize && (
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-near-black">Your T-Shirt</p>
@@ -545,13 +551,13 @@ export default function RegisterForm() {
                 )}
                 {registration!.role !== "Mentor" && (
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-near-black">Your Registration</p>
+                    <p className="text-sm text-near-black">{minor ? "Your Registration" : "Registration Fee"}</p>
                     <p className="text-sm font-semibold text-near-black">{event.cost || "Free"}</p>
                   </div>
                 )}
                 {minor && (
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-near-black">{minor.contacts.first_name}&apos;s Registration</p>
+                    <p className="text-sm text-near-black">{minor.contacts.first_name}&apos;s Registration (Mentee)</p>
                     <p className="text-sm font-semibold text-near-black">{event.cost || "Free"}</p>
                   </div>
                 )}
