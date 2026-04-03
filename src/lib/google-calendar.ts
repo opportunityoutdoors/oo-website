@@ -72,29 +72,29 @@ function getCalendarId(): string {
 }
 
 /**
- * Create a Google Calendar event with Google Meet conferencing.
- * Returns the event ID and Meet link.
+ * Create a Google Calendar event.
+ * Meet link is managed manually in Sanity — included in the event description.
+ * Returns the calendar event ID.
  */
-export async function createCalendarEvent(event: CalendarEvent): Promise<{ eventId: string; meetLink: string | null }> {
+export async function createCalendarEvent(event: CalendarEvent & { meetLink?: string }): Promise<{ eventId: string; meetLink: string | null }> {
   const token = await getAccessToken();
   const calendarId = getCalendarId();
 
+  const description = [
+    event.description || "",
+    event.meetLink ? `\n\nJoin Meeting: ${event.meetLink}` : "",
+  ].join("");
+
   const body = {
     summary: event.summary,
-    description: event.description || "",
+    description,
     start: { dateTime: event.start, timeZone: "America/New_York" },
     end: { dateTime: event.end || new Date(new Date(event.start).getTime() + 60 * 60 * 1000).toISOString(), timeZone: "America/New_York" },
-    conferenceData: {
-      createRequest: {
-        requestId: `oo-${Date.now()}`,
-        conferenceSolutionKey: { type: "hangoutsMeet" },
-      },
-    },
     attendees: event.attendees?.map((email) => ({ email })) || [],
   };
 
   const res = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?conferenceDataVersion=1`,
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?sendUpdates=all`,
     {
       method: "POST",
       headers: {
@@ -110,11 +110,7 @@ export async function createCalendarEvent(event: CalendarEvent): Promise<{ event
     throw new Error(`Calendar API error: ${JSON.stringify(data)}`);
   }
 
-  const meetLink = data.conferenceData?.entryPoints?.find(
-    (e) => e.entryPointType === "video"
-  )?.uri || data.hangoutLink || null;
-
-  return { eventId: data.id, meetLink };
+  return { eventId: data.id, meetLink: event.meetLink || null };
 }
 
 /**

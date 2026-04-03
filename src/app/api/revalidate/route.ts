@@ -104,16 +104,16 @@ async function updateEventInSupabase(sanityId: string) {
       for (const slot of meetingSlots) {
         try {
           if (!slot.calendarEventId && slot.date) {
-            // Create new calendar event with Meet link
+            // Create new calendar event
             const endTime = new Date(new Date(slot.date).getTime() + 60 * 60 * 1000).toISOString();
-            const { eventId, meetLink } = await createCalendarEvent({
+            const { eventId } = await createCalendarEvent({
               summary: `${event.title} — ${slot.label || "Pre-Camp Meeting"}`,
               description: `Pre-camp virtual meeting for ${event.title}. Attendance is required for all participants.`,
               start: slot.date,
               end: endTime,
+              meetLink: slot.meetingLink || undefined,
             });
             slot.calendarEventId = eventId;
-            if (meetLink) slot.meetingLink = meetLink;
             slotsUpdated = true;
           } else if (slot.calendarEventId && slot.date) {
             // Update existing calendar event if date changed
