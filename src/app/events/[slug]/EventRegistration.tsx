@@ -167,6 +167,7 @@ function WaitlistForm({
     lastName: "",
     email: "",
     phone: "",
+    cityState: "",
     role: "",
     meetingDate: "",
     minorFirstName: "",
@@ -202,6 +203,7 @@ function WaitlistForm({
             lastName: form.lastName,
             email: form.email,
             phone: form.phone,
+            cityState: form.cityState,
             role: form.role,
             meetingDate: form.meetingDate,
             eventName: event.title,
@@ -246,11 +248,20 @@ function WaitlistForm({
 
         <FormField type="email" label="Email" name="wl-email" required value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
         <FormField type="tel" label="Phone" name="wl-phone" required value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
+        <FormField type="text" label="City/State" name="wl-cityState" required value={form.cityState} onChange={(v) => setForm({ ...form, cityState: v })} placeholder="Raleigh, NC" />
 
         <FormField type="select" label="I'm interested as a..." name="wl-role" required value={form.role} onChange={(v) => setForm({ ...form, role: v })} options={roleOptions} placeholder="Select role..." />
 
         {meetingOptions.length > 0 && (
-          <FormField type="radio" label="Preferred Meeting Date" name="wl-meeting" required value={form.meetingDate} onChange={(v) => setForm({ ...form, meetingDate: v })} options={meetingOptions} />
+          <>
+            <div className="rounded border border-dark-green/20 bg-dark-green/5 p-4">
+              <p className="text-sm font-semibold text-dark-green">Pre-Camp Virtual Meeting (Required)</p>
+              <p className="mt-1 text-xs text-near-black/60">
+                All camp participants are required to attend a virtual meeting before camp. This is where we cover safety protocols, camp logistics, what to expect, and answer any questions. You must attend one of the meetings below to be eligible for camp.
+              </p>
+            </div>
+            <FormField type="radio" label="Preferred Meeting Date" name="wl-meeting" required value={form.meetingDate} onChange={(v) => setForm({ ...form, meetingDate: v })} options={meetingOptions} />
+          </>
         )}
 
         {/* Minor toggle */}
