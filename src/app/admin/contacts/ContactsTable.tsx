@@ -94,6 +94,9 @@ export default function ContactsTable() {
   const [editFields, setEditFields] = useState<Partial<Contact>>({});
   const [saving, setSaving] = useState(false);
 
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
+
   const fetchContacts = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({
@@ -179,6 +182,51 @@ export default function ContactsTable() {
     }
   }
 
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    const ids = contacts.map((c) => c.id);
+    const allSelected = ids.every((id) => selected.has(id));
+    setSelected(allSelected ? new Set() : new Set(ids));
+  }
+
+  async function handleBulkDelete() {
+    if (selected.size === 0) return;
+    if (!confirm(`Permanently delete ${selected.size} contact${selected.size !== 1 ? "s" : ""}? This cannot be undone.`)) return;
+    setDeleting(true);
+    await fetch("/api/admin/contacts", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [...selected] }),
+    });
+    setSelected(new Set());
+    setExpandedId(null);
+    setDetail(null);
+    setDeleting(false);
+    fetchContacts();
+  }
+
+  async function handleSingleDelete(id: string) {
+    if (!confirm("Permanently delete this contact? This cannot be undone.")) return;
+    setDeleting(true);
+    await fetch("/api/admin/contacts", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [id] }),
+    });
+    setExpandedId(null);
+    setDetail(null);
+    setDeleting(false);
+    fetchContacts();
+  }
+
   const sortIcon = (field: SortField) => {
     if (sort !== field) return "↕";
     return order === "asc" ? "↑" : "↓";
@@ -229,6 +277,22 @@ export default function ContactsTable() {
         )}
       </form>
 
+      {/* Bulk Actions */}
+      {selected.size > 0 && (
+        <div className="mb-3 flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2.5">
+          <span className="text-xs font-semibold text-red-600">
+            {selected.size} selected
+          </span>
+          <button
+            onClick={handleBulkDelete}
+            disabled={deleting}
+            className="rounded border border-red-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.5px] text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
+          >
+            {deleting ? "Deleting..." : "Delete Selected"}
+          </button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="rounded-lg border border-near-black/10 bg-white">
         {loading ? (
@@ -238,6 +302,14 @@ export default function ContactsTable() {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-near-black/5 text-xs uppercase tracking-[1px] text-near-black/40">
+                  <th className="w-10 px-3 py-3">
+                    <input
+                      type="checkbox"
+                      checked={contacts.length > 0 && contacts.every((c) => selected.has(c.id))}
+                      onChange={toggleSelectAll}
+                      className="h-3.5 w-3.5 rounded border-near-black/30 accent-dark-green"
+                    />
+                  </th>
                   {COLUMNS.map((col) => (
                     <th
                       key={col.key}
@@ -261,6 +333,8 @@ export default function ContactsTable() {
                     isEditing={editingId === contact.id}
                     editFields={editFields}
                     saving={saving}
+                    isSelected={selected.has(contact.id)}
+                    onToggleSelect={() => toggleSelect(contact.id)}
                     onToggle={() => toggleExpand(contact.id)}
                     onStartEdit={() => startEdit(contact)}
                     onCancelEdit={() => setEditingId(null)}
@@ -268,11 +342,12 @@ export default function ContactsTable() {
                     onEditChange={(field, value) =>
                       setEditFields((prev) => ({ ...prev, [field]: value }))
                     }
+                    onDelete={() => handleSingleDelete(contact.id)}
                   />
                 ))}
                 {contacts.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-5 py-10 text-center text-near-black/40">
+                    <td colSpan={8} className="px-5 py-10 text-center text-near-black/40">
                       {search || sourceFilter ? "No contacts match your search" : "No contacts yet"}
                     </td>
                   </tr>
@@ -315,11 +390,14 @@ function ContactRow({
   isEditing,
   editFields,
   saving,
+  isSelected,
+  onToggleSelect,
   onToggle,
   onStartEdit,
   onCancelEdit,
   onSaveEdit,
   onEditChange,
+  onDelete,
 }: {
   contact: Contact;
   isExpanded: boolean;
@@ -328,22 +406,33 @@ function ContactRow({
   isEditing: boolean;
   editFields: Partial<Contact>;
   saving: boolean;
+  isSelected: boolean;
+  onToggleSelect: () => void;
   onToggle: () => void;
   onStartEdit: () => void;
   onCancelEdit: () => void;
   onSaveEdit: () => void;
   onEditChange: (field: string, value: string | string[]) => void;
+  onDelete: () => void;
 }) {
   const name = [contact.first_name, contact.last_name].filter(Boolean).join(" ") || "—";
 
   return (
     <>
       <tr
-        className={`cursor-pointer border-b border-near-black/5 transition-colors last:border-0 hover:bg-cream/50 ${isExpanded ? "bg-cream/30" : ""}`}
+        className={`cursor-pointer border-b border-near-black/5 transition-colors last:border-0 hover:bg-cream/50 ${isExpanded ? "bg-cream/30" : ""} ${isSelected ? "bg-dark-green/5" : ""}`}
         onClick={onToggle}
       >
+        <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={onToggleSelect}
+            className="h-3.5 w-3.5 rounded border-near-black/30 accent-dark-green"
+          />
+        </td>
         <td className="px-5 py-3 font-medium text-near-black">{name}</td>
-        <td className="px-5 py-3 text-near-black/60">{contact.email}</td>
+        <td className="px-5 py-3 text-near-black/60">{contact.email || "—"}</td>
         <td className="px-5 py-3 text-near-black/60">{contact.city_state || "—"}</td>
         <td className="px-5 py-3">
           {contact.source && (
@@ -362,7 +451,7 @@ function ContactRow({
       {/* Expanded Detail */}
       {isExpanded && (
         <tr>
-          <td colSpan={7} className="border-b border-near-black/10 bg-cream/20 px-5 py-5">
+          <td colSpan={8} className="border-b border-near-black/10 bg-cream/20 px-5 py-5">
             {detailLoading ? (
               <p className="py-4 text-center text-near-black/40">Loading details...</p>
             ) : detail ? (
@@ -374,12 +463,20 @@ function ContactRow({
                       Profile
                     </h3>
                     {!isEditing ? (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onStartEdit(); }}
-                        className="text-xs font-semibold text-dark-green hover:text-dark-green/70"
-                      >
-                        Edit
-                      </button>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onStartEdit(); }}
+                          className="text-xs font-semibold text-dark-green hover:text-dark-green/70"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                          className="text-xs font-semibold text-red-400 hover:text-red-600"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     ) : (
                       <div className="flex gap-2">
                         <button

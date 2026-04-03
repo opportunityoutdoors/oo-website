@@ -52,6 +52,27 @@ export async function GET(request: NextRequest) {
   });
 }
 
+export async function DELETE(request: NextRequest) {
+  const supabase = createServiceClient();
+  const body = await request.json();
+  const { ids } = body as { ids: string[] };
+
+  if (!ids?.length) {
+    return NextResponse.json({ error: "Missing ids" }, { status: 400 });
+  }
+
+  const { error } = await supabase
+    .from("contacts")
+    .delete()
+    .in("id", ids);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ deleted: ids.length });
+}
+
 export async function PATCH(request: NextRequest) {
   const supabase = createServiceClient();
   const body = await request.json();
