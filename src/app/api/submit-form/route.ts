@@ -398,43 +398,57 @@ async function syncToDirectMail(
     sponsorship: "Sponsorship Inquiry",
   };
 
+  const interests = Array.isArray(data.interests)
+    ? (data.interests as string[]).join(", ")
+    : str("interests");
+
   const credentials = Buffer.from(`${apiKeyId}:${apiKeySecret}`).toString("base64");
   const apiHost = process.env.DIRECT_MAIL_API_HOST || "www.ethreemail.com";
-  const url = `https://${apiHost}/api/v2/projects/${projectId}/address-groups/${groupId}/addresses`;
-  const options: RequestInit = {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${credentials}`,
-      "Content-Type": "application/json; charset=utf-8",
-    },
-    body: JSON.stringify({
-      email: str("email"),
-      first_name: firstName,
-      last_name: lastName,
-      custom_1: new Date().toLocaleDateString("en-US"),
-    }),
+  const baseUrl = `https://${apiHost}/api/v2/projects/${projectId}/address-groups/${groupId}/addresses`;
+  const email = str("email");
+
+  const addressData = {
+    email,
+    first_name: firstName,
+    last_name: lastName,
+    custom_1: str("cityState"),
+    custom_2: sourceMap[formType],
+    custom_3: interests,
+  };
+
+  const headers = {
+    Authorization: `Basic ${credentials}`,
+    "Content-Type": "application/json; charset=utf-8",
   };
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
 
-  // Retry once on connection reset (common on Vercel cold starts)
   try {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const response = await fetch(url, { ...options, signal: controller.signal });
-        if (!response.ok) {
-          const text = await response.text();
-          console.error("Direct Mail API error:", response.status, text);
-        }
-        return;
-      } catch (err) {
-        if (attempt === 0 && !(err instanceof DOMException && err.name === "AbortError")) {
-          console.warn("Direct Mail fetch failed, retrying:", (err as Error).message);
-          continue;
-        }
-        throw err;
+    // Try PATCH first (updates existing contact by email)
+    const patchUrl = `${baseUrl}?email=${encodeURIComponent(email)}`;
+    const patchRes = await fetch(patchUrl, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify(addressData),
+      signal: controller.signal,
+    });
+
+    if (patchRes.status === 404) {
+      // Contact doesn't exist yet — create via POST
+      const postRes = await fetch(baseUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(addressData),
+        signal: controller.signal,
+      });
+      if (!postRes.ok) {
+        const text = await postRes.text();
+        console.error("Direct Mail POST error:", postRes.status, text);
       }
+    } else if (!patchRes.ok) {
+      const text = await patchRes.text();
+      console.error("Direct Mail PATCH error:", patchRes.status, text);
     }
   } finally {
     clearTimeout(timeout);
