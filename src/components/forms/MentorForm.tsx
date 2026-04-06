@@ -223,9 +223,11 @@ export default function MentorForm() {
 
       <FormField type="select" label="How Did You Hear About Us?" name="mentor-howHeard" required value={form.howHeard} onChange={set("howHeard")} options={howHeardOptions} />
 
-      {status === "error" && (
-        <p className="text-sm text-red-500">Something went wrong. Please try again.</p>
-      )}
+      <div aria-live="polite">
+        {status === "error" && (
+          <p className="text-sm text-red-500">Something went wrong. Please try again.</p>
+        )}
+      </div>
 
       <button
         type="submit"

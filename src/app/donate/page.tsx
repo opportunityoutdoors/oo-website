@@ -177,6 +177,9 @@ export default function DonatePage() {
         <SectionContainer>
           <div className="mb-12 text-center">
             <LabelTag>Other Ways to Give</LabelTag>
+            <h2 className="mt-5 text-[clamp(2rem,5vw,48px)] leading-none text-near-black">
+              Other Ways to Give
+            </h2>
           </div>
           <div className="grid gap-6 md:grid-cols-3">
             {otherWays.map((item) => (

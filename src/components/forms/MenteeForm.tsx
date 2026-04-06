@@ -215,9 +215,11 @@ export default function MenteeForm() {
         </div>
       )}
 
-      {status === "error" && (
-        <p className="text-sm text-red-500">Something went wrong. Please try again.</p>
-      )}
+      <div aria-live="polite">
+        {status === "error" && (
+          <p className="text-sm text-red-500">Something went wrong. Please try again.</p>
+        )}
+      </div>
 
       <button
         type="submit"

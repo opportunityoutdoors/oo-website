@@ -92,6 +92,7 @@ export default async function BlogPostPage({ params }: PageProps) {
         }}
       />
 
+      <article>
       {/* Header */}
       <section className="bg-dark-green pb-16 pt-32">
         <div className="mx-auto w-full max-w-[1200px] px-6 md:px-10">
@@ -118,7 +119,7 @@ export default async function BlogPostPage({ params }: PageProps) {
       {/* Post Body */}
       <section className="bg-cream py-16">
         <SectionContainer>
-          <article className="mx-auto max-w-[720px]">
+          <div className="mx-auto max-w-[720px]">
             {post.image && (
               <div className="mb-10 overflow-hidden rounded-lg">
                 <Image
@@ -163,9 +164,10 @@ export default async function BlogPostPage({ params }: PageProps) {
                 </div>
               </div>
             )}
-          </article>
+          </div>
         </SectionContainer>
       </section>
+      </article>
 
       {/* Related Posts */}
       {relatedPosts.length > 0 && (

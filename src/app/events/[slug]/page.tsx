@@ -111,6 +111,7 @@ export default async function EventDetailPage({ params }: PageProps) {
           }),
         }}
       />
+      <article>
       {/* Hero */}
       <section className="relative flex min-h-[450px] items-end overflow-hidden bg-dark-green">
         {event.image ? (
@@ -353,6 +354,8 @@ export default async function EventDetailPage({ params }: PageProps) {
           </SectionContainer>
         </section>
       )}
+
+      </article>
 
       {/* CTA */}
       <CTABanner
