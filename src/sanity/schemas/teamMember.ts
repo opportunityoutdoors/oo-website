@@ -1,6 +1,6 @@
 export default {
   name: "teamMember",
-  title: "Team Member",
+  title: "Board",
   type: "document",
   fields: [
     {

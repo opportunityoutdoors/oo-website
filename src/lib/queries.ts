@@ -93,7 +93,7 @@ export const allTeamMembersQuery = `*[_type == "teamMember"] | order(order asc) 
 }`;
 
 // ─── Blog Posts ───
-export const allBlogPostsQuery = `*[_type == "blogPost"] | order(publishedAt desc) {
+export const allBlogPostsQuery = `*[_type == "blogPost" && publishedAt <= now()] | order(publishedAt desc) {
   _id,
   title,
   slug,

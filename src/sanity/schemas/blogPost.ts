@@ -1,6 +1,6 @@
 export default {
   name: "blogPost",
-  title: "Blog Post",
+  title: "Blog",
   type: "document",
   fields: [
     {
@@ -25,8 +25,9 @@ export default {
     },
     {
       name: "publishedAt",
-      title: "Published At",
+      title: "Publish Date",
       type: "datetime",
+      description: "Set a future date to schedule. The post won't appear on the site until this date.",
       validation: (Rule: any) => Rule.required(),
     },
     {
