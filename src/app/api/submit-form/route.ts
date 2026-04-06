@@ -414,9 +414,10 @@ async function syncToDirectMail(
     email,
     first_name: firstName,
     last_name: lastName,
-    custom_1: [str("city"), str("state")].filter(Boolean).join(", "),
-    custom_2: sourceMap[formType],
-    custom_3: interests,
+    custom_1: str("city"),
+    custom_2: str("state"),
+    custom_3: sourceMap[formType],
+    custom_4: interests,
   };
 
   const headers = {
