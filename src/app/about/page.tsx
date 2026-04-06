@@ -240,7 +240,7 @@ export default async function AboutPage() {
                 <h3 className="text-lg text-near-black">
                   {member.name}
                 </h3>
-                <p className="mb-2 text-xs font-bold uppercase tracking-[2px] text-gold">
+                <p className="mb-2 text-xs font-bold uppercase tracking-[2px] text-[#8B6914]">
                   {member.role}
                 </p>
                 <p className="text-sm leading-relaxed text-near-black/50">
@@ -271,7 +271,7 @@ export default async function AboutPage() {
                 <h3 className="text-lg text-near-black">
                   {member.name}
                 </h3>
-                <p className="mb-2 text-xs font-bold uppercase tracking-[2px] text-gold">
+                <p className="mb-2 text-xs font-bold uppercase tracking-[2px] text-[#8B6914]">
                   {member.role}
                 </p>
                 <p className="text-sm leading-relaxed text-near-black/50">

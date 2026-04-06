@@ -58,7 +58,7 @@ type FormFieldProps =
   | CheckboxFieldProps;
 
 const inputClasses =
-  "w-full rounded border border-near-black/20 bg-white px-4 py-3 text-sm text-near-black placeholder:text-near-black/40 focus:border-dark-green focus:outline-none focus:ring-1 focus:ring-dark-green";
+  "w-full rounded border border-near-black/20 bg-white px-4 py-3 text-sm text-near-black placeholder:text-near-black/40 focus:border-dark-green focus:outline-2 focus:outline-gold focus:ring-1 focus:ring-dark-green";
 
 export default function FormField(props: FormFieldProps) {
   const { label, name, required, error, className = "", type } = props;

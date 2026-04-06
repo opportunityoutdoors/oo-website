@@ -96,6 +96,7 @@ export default function Navbar() {
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
+          aria-controls="mobile-menu"
         >
           <span
             className={`block h-0.5 w-6 bg-white transition-transform ${
@@ -117,7 +118,7 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="absolute left-0 right-0 top-full bg-near-black/95 px-6 py-8 backdrop-blur-sm lg:hidden">
+        <div id="mobile-menu" className="absolute left-0 right-0 top-full bg-near-black/95 px-6 py-8 backdrop-blur-sm lg:hidden">
           <ul className="flex flex-col gap-4">
             {navLinks.map((link) => (
               <li key={link.href}>

@@ -49,10 +49,10 @@ export default function MentorshipLadder() {
               <span className="text-[64px] font-black leading-none text-white/10">
                 {step.num}
               </span>
-              <h4 className="mb-2 mt-3 text-2xl font-extrabold text-white">
+              <h3 className="mb-2 mt-3 text-2xl font-extrabold text-white">
                 {step.title}
-              </h4>
-              <p className="text-sm leading-relaxed text-white/60">
+              </h3>
+              <p className="text-sm leading-relaxed text-white/70">
                 {step.desc}
               </p>
             </div>

@@ -22,9 +22,9 @@ export default function PrivacyPolicyPage() {
       {/* Content */}
       <section className="bg-cream px-6 py-20 md:px-10">
         <div className="mx-auto max-w-[760px]">
-          <h3 className="mb-5 text-2xl font-bold uppercase tracking-[1px] text-dark-green">
+          <h2 className="mb-5 text-2xl font-bold uppercase tracking-[1px] text-dark-green">
             Information We Collect
-          </h3>
+          </h2>
           <p className="mb-5 text-[17px] leading-[1.8] text-near-black/60">
             When you fill out a form on our site (event registration,
             mentor/mentee signup, contact form, newsletter), we collect: name,
@@ -33,9 +33,9 @@ export default function PrivacyPolicyPage() {
             payments are processed through third-party providers.
           </p>
 
-          <h3 className="mb-5 mt-10 text-2xl font-bold uppercase tracking-[1px] text-dark-green">
+          <h2 className="mb-5 mt-10 text-2xl font-bold uppercase tracking-[1px] text-dark-green">
             How We Use Your Information
-          </h3>
+          </h2>
           <p className="mb-5 text-[17px] leading-[1.8] text-near-black/60">
             We use your information to: communicate with you about events and
             opportunities, match mentors with mentees, send email updates (if
@@ -45,54 +45,54 @@ export default function PrivacyPolicyPage() {
             assigned mentor).
           </p>
 
-          <h3 className="mb-5 mt-10 text-2xl font-bold uppercase tracking-[1px] text-dark-green">
+          <h2 className="mb-5 mt-10 text-2xl font-bold uppercase tracking-[1px] text-dark-green">
             Email Communications
-          </h3>
+          </h2>
           <p className="mb-5 text-[17px] leading-[1.8] text-near-black/60">
             We use Direct Mail to send periodic updates about events, the
             podcast, and community news. You can unsubscribe at any time using
             the link at the bottom of any email.
           </p>
 
-          <h3 className="mb-5 mt-10 text-2xl font-bold uppercase tracking-[1px] text-dark-green">
+          <h2 className="mb-5 mt-10 text-2xl font-bold uppercase tracking-[1px] text-dark-green">
             Cookies
-          </h3>
+          </h2>
           <p className="mb-5 text-[17px] leading-[1.8] text-near-black/60">
             This site uses cookies for basic analytics and site functionality.
             We do not use advertising cookies.
           </p>
 
-          <h3 className="mb-5 mt-10 text-2xl font-bold uppercase tracking-[1px] text-dark-green">
+          <h2 className="mb-5 mt-10 text-2xl font-bold uppercase tracking-[1px] text-dark-green">
             Your Rights
-          </h3>
+          </h2>
           <p className="mb-5 text-[17px] leading-[1.8] text-near-black/60">
             You may request access to, correction of, or deletion of your
             personal information at any time by contacting us at{" "}
             <a
               href="mailto:info@opportunityoutdoors.org"
-              className="text-gold hover:underline"
+              className="text-[#8B6914] hover:underline"
             >
               info@opportunityoutdoors.org
             </a>
             .
           </p>
 
-          <h3 className="mb-5 mt-10 text-2xl font-bold uppercase tracking-[1px] text-dark-green">
+          <h2 className="mb-5 mt-10 text-2xl font-bold uppercase tracking-[1px] text-dark-green">
             Changes
-          </h3>
+          </h2>
           <p className="mb-5 text-[17px] leading-[1.8] text-near-black/60">
             We may update this policy from time to time. Changes will be posted
             on this page with an updated date.
           </p>
 
-          <h3 className="mb-5 mt-10 text-2xl font-bold uppercase tracking-[1px] text-dark-green">
+          <h2 className="mb-5 mt-10 text-2xl font-bold uppercase tracking-[1px] text-dark-green">
             Contact
-          </h3>
+          </h2>
           <p className="mb-5 text-[17px] leading-[1.8] text-near-black/60">
             Questions about this policy? Email{" "}
             <a
               href="mailto:info@opportunityoutdoors.org"
-              className="text-gold hover:underline"
+              className="text-[#8B6914] hover:underline"
             >
               info@opportunityoutdoors.org
             </a>

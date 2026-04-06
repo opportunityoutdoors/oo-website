@@ -171,10 +171,10 @@ export default async function Home() {
                 <span className="font-heading text-[64px] font-black leading-none text-white/10">
                   {step.num}
                 </span>
-                <h4 className="mb-2 mt-3 text-2xl font-extrabold text-white">
+                <h3 className="mb-2 mt-3 text-2xl font-extrabold text-white">
                   {step.title}
-                </h4>
-                <p className="text-sm leading-relaxed text-white/60">
+                </h3>
+                <p className="text-sm leading-relaxed text-white/70">
                   {step.desc}
                 </p>
               </div>
@@ -195,7 +195,7 @@ export default async function Home() {
             </div>
             <Link
               href="/events"
-              className="hidden text-sm font-semibold uppercase tracking-[1px] text-gold transition-colors hover:text-[#8B6914] sm:block"
+              className="hidden text-sm font-semibold uppercase tracking-[1px] text-[#8B6914] transition-colors hover:text-[#6B5010] sm:block"
             >
               View All Events &rarr;
             </Link>
@@ -224,7 +224,7 @@ export default async function Home() {
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                     <div className="absolute top-6 left-6 z-10 text-center">
-                      <span className="block text-xs font-bold uppercase tracking-wider text-white/60">
+                      <span className="block text-xs font-bold uppercase tracking-wider text-white/70">
                         {month}
                       </span>
                       <span className="block text-3xl font-black text-white">
@@ -238,7 +238,7 @@ export default async function Home() {
                       <h3 className="text-2xl font-extrabold text-white">
                         {event.title}
                       </h3>
-                      <p className="mt-1 text-sm text-white/60">
+                      <p className="mt-1 text-sm text-white/70">
                         {event.location}
                         {event.cost && ` · ${event.cost}`}
                       </p>
@@ -254,7 +254,7 @@ export default async function Home() {
           </div>
           <Link
             href="/events"
-            className="mt-8 block text-center text-sm font-semibold uppercase tracking-[1px] text-gold transition-colors hover:text-[#8B6914] sm:hidden"
+            className="mt-8 block text-center text-sm font-semibold uppercase tracking-[1px] text-[#8B6914] transition-colors hover:text-[#6B5010] sm:hidden"
           >
             View All Events &rarr;
           </Link>

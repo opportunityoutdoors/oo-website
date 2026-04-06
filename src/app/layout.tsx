@@ -48,6 +48,9 @@ export default function RootLayout({
       className={`${barlowCondensed.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded focus:bg-dark-green focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-white">
+          Skip to main content
+        </a>
         <PublicShell>
           <JsonLd
             data={{
@@ -73,7 +76,7 @@ export default function RootLayout({
           />
           <Navbar />
         </PublicShell>
-        <main className="flex-1">{children}</main>
+        <main id="main-content" className="flex-1">{children}</main>
         <PublicShell>
           <Footer />
         </PublicShell>
