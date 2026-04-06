@@ -35,18 +35,8 @@ export async function POST(req: NextRequest) {
       if (slug?.current) revalidatePath(`/blog/${slug.current}`);
       revalidatePath("/");
       break;
-    case "podcastEpisode":
-      revalidatePath("/podcast");
-      break;
     case "teamMember":
       revalidatePath("/about");
-      break;
-    case "faqItem":
-      revalidatePath("/faq");
-      break;
-    case "partner":
-      revalidatePath("/about");
-      revalidatePath("/donate");
       break;
     default:
       revalidatePath("/");

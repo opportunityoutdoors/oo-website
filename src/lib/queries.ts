@@ -114,32 +114,3 @@ export const blogPostBySlugQuery = `*[_type == "blogPost" && slug.current == $sl
   gallery,
   body
 }`;
-
-// ─── Podcast Episodes ───
-export const allPodcastEpisodesQuery = `*[_type == "podcastEpisode"] | order(episodeNumber desc) {
-  _id,
-  title,
-  episodeNumber,
-  description,
-  publishedAt,
-  audioUrl,
-  duration
-}`;
-
-// ─── FAQ Items ───
-export const allFaqItemsQuery = `*[_type == "faqItem"] | order(order asc) {
-  _id,
-  question,
-  answer,
-  category,
-  order
-}`;
-
-// ─── Partners ───
-export const allPartnersQuery = `*[_type == "partner"] | order(order asc) {
-  _id,
-  name,
-  logo,
-  url,
-  order
-}`;
