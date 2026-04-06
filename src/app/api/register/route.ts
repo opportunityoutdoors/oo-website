@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
   const { data: registration } = await supabase
     .from("registrations")
-    .select("*, contacts(id, email, first_name, last_name, phone, city_state, tshirt_size), events(id, title, slug, event_type, date_start, date_end, location, cost)")
+    .select("*, contacts(id, email, first_name, last_name, phone, city, state, tshirt_size), events(id, title, slug, event_type, date_start, date_end, location, cost)")
     .eq("token", token)
     .single();
 

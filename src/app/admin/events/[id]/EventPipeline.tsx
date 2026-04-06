@@ -19,7 +19,8 @@ interface Registration {
     first_name: string | null;
     last_name: string | null;
     phone: string | null;
-    city_state: string | null;
+    city: string | null;
+    state: string | null;
     tshirt_size: string | null;
   };
 }

@@ -8,7 +8,8 @@ interface Contact {
   first_name: string | null;
   last_name: string | null;
   phone: string | null;
-  city_state: string | null;
+  city: string | null;
+  state: string | null;
   tshirt_size: string | null;
   experience_level: string | null;
   interests: string[] | null;
@@ -62,12 +63,12 @@ interface ApiResponse {
   sources: string[];
 }
 
-type SortField = "first_name" | "email" | "city_state" | "source" | "experience_level" | "created_at";
+type SortField = "first_name" | "email" | "city" | "source" | "experience_level" | "created_at";
 
 const COLUMNS: { key: SortField; label: string; className?: string }[] = [
   { key: "first_name", label: "Name" },
   { key: "email", label: "Email" },
-  { key: "city_state", label: "Location" },
+  { key: "city", label: "Location" },
   { key: "source", label: "Source" },
   { key: "experience_level", label: "Experience" },
   { key: "created_at", label: "Added", className: "w-28" },
@@ -155,7 +156,8 @@ export default function ContactsTable() {
       first_name: contact.first_name || "",
       last_name: contact.last_name || "",
       phone: contact.phone || "",
-      city_state: contact.city_state || "",
+      city: contact.city || "",
+      state: contact.state || "NC",
       tshirt_size: contact.tshirt_size || "",
       experience_level: contact.experience_level || "",
       gear_status: contact.gear_status || "",
@@ -433,7 +435,7 @@ function ContactRow({
         </td>
         <td className="px-5 py-3 font-medium text-near-black">{name}</td>
         <td className="px-5 py-3 text-near-black/60">{contact.email || "—"}</td>
-        <td className="px-5 py-3 text-near-black/60">{contact.city_state || "—"}</td>
+        <td className="px-5 py-3 text-near-black/60">{[contact.city, contact.state].filter(Boolean).join(", ") || "—"}</td>
         <td className="px-5 py-3">
           {contact.source && (
             <span className="rounded bg-dark-green/10 px-2 py-0.5 text-xs font-medium text-dark-green">
@@ -502,7 +504,8 @@ function ContactRow({
                         { key: "first_name", label: "First Name" },
                         { key: "last_name", label: "Last Name" },
                         { key: "phone", label: "Phone" },
-                        { key: "city_state", label: "Location" },
+                        { key: "city", label: "City" },
+                        { key: "state", label: "State" },
                         { key: "tshirt_size", label: "T-Shirt Size" },
                         { key: "experience_level", label: "Experience" },
                         { key: "gear_status", label: "Gear Status" },
@@ -536,7 +539,7 @@ function ContactRow({
                       {[
                         ["Email", detail.email],
                         ["Phone", detail.phone],
-                        ["Location", detail.city_state],
+                        ["Location", [detail.city, detail.state].filter(Boolean).join(", ")],
                         ["T-Shirt", detail.tshirt_size],
                         ["Experience", detail.experience_level],
                         ["Gear", detail.gear_status],

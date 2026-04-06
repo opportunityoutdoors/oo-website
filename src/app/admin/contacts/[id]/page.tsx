@@ -77,7 +77,7 @@ export default async function ContactDetailPage({
             {[
               ["Email", contact.email],
               ["Phone", contact.phone],
-              ["Location", contact.city_state],
+              ["Location", [contact.city, contact.state].filter(Boolean).join(", ")],
               ["T-Shirt Size", contact.tshirt_size],
               ["Experience", contact.experience_level],
               ["Gear Status", contact.gear_status],

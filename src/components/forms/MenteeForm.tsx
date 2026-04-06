@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import FormField from "@/components/forms/FormField";
+import { US_STATES } from "@/lib/constants/us-states";
 
 const sexOptions = [
   { label: "Male", value: "Male" },
@@ -75,7 +76,8 @@ export default function MenteeForm() {
     sex: "",
     email: "",
     phone: "",
-    cityState: "",
+    city: "",
+    state: "NC",
     outdoorInterests: [] as string[],
     experienceLevel: "",
     gearStatus: "",
@@ -112,7 +114,8 @@ export default function MenteeForm() {
             sex: form.sex,
             email: form.email,
             phone: form.phone,
-            cityState: form.cityState,
+            city: form.city,
+            state: form.state,
             outdoorInterests: form.outdoorInterests,
             experienceLevel: form.experienceLevel,
             gearStatus: form.gearStatus,
@@ -163,9 +166,10 @@ export default function MenteeForm() {
 
       <FormField type="email" label="Email" name="mentee-email" required value={form.email} onChange={set("email")} />
 
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid gap-5 sm:grid-cols-3">
         <FormField type="tel" label="Phone" name="mentee-phone" required value={form.phone} onChange={set("phone")} />
-        <FormField type="text" label="City/State" name="mentee-cityState" required value={form.cityState} onChange={set("cityState")} placeholder="Raleigh, NC" />
+        <FormField type="text" label="City" name="mentee-city" required value={form.city} onChange={set("city")} placeholder="Raleigh" />
+        <FormField type="select" label="State" name="mentee-state" required value={form.state} onChange={set("state")} options={US_STATES} />
       </div>
 
       {/* Outdoor Interests — grouped */}

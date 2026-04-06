@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import FormField from "@/components/forms/FormField";
+import { US_STATES } from "@/lib/constants/us-states";
 
 const sexOptions = [
   { label: "Male", value: "Male" },
@@ -83,7 +84,8 @@ export default function MentorForm() {
     sex: "",
     email: "",
     phone: "",
-    cityState: "",
+    city: "",
+    state: "NC",
     outdoorSkills: [] as string[],
     yearsExperience: "",
     certifications: [] as string[],
@@ -125,7 +127,8 @@ export default function MentorForm() {
             sex: form.sex,
             email: form.email,
             phone: form.phone,
-            cityState: form.cityState,
+            city: form.city,
+            state: form.state,
             outdoorSkills: form.outdoorSkills,
             yearsExperience: form.yearsExperience,
             certifications: form.certifications,
@@ -182,9 +185,10 @@ export default function MentorForm() {
 
       <FormField type="email" label="Email" name="mentor-email" required value={form.email} onChange={set("email")} />
 
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid gap-5 sm:grid-cols-3">
         <FormField type="tel" label="Phone" name="mentor-phone" required value={form.phone} onChange={set("phone")} />
-        <FormField type="text" label="City/State" name="mentor-cityState" required value={form.cityState} onChange={set("cityState")} placeholder="Raleigh, NC" />
+        <FormField type="text" label="City" name="mentor-city" required value={form.city} onChange={set("city")} placeholder="Raleigh" />
+        <FormField type="select" label="State" name="mentor-state" required value={form.state} onChange={set("state")} options={US_STATES} />
       </div>
 
       {/* Outdoor Skills — grouped */}

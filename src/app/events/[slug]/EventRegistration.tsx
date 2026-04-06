@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import FormField from "@/components/forms/FormField";
+import { US_STATES } from "@/lib/constants/us-states";
 
 interface EventRegistrationProps {
   event: {
@@ -167,7 +168,8 @@ function WaitlistForm({
     lastName: "",
     email: "",
     phone: "",
-    cityState: "",
+    city: "",
+    state: "NC",
     role: "",
     meetingDate: "",
     minorFirstName: "",
@@ -214,7 +216,8 @@ function WaitlistForm({
             lastName: form.lastName,
             email: form.email,
             phone: form.phone,
-            cityState: form.cityState,
+            city: form.city,
+            state: form.state,
             role: form.role,
             meetingDate: form.meetingDate,
             eventName: event.title,
@@ -259,7 +262,11 @@ function WaitlistForm({
 
         <FormField type="email" label="Email" name="wl-email" required value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
         <FormField type="tel" label="Phone" name="wl-phone" required value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
-        <FormField type="text" label="City/State" name="wl-cityState" required value={form.cityState} onChange={(v) => setForm({ ...form, cityState: v })} placeholder="Raleigh, NC" />
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <FormField type="text" label="City" name="wl-city" required value={form.city} onChange={(v) => setForm({ ...form, city: v })} placeholder="Raleigh" />
+          <FormField type="select" label="State" name="wl-state" required value={form.state} onChange={(v) => setForm({ ...form, state: v })} options={US_STATES} />
+        </div>
 
         <FormField type="select" label="I'm interested as a..." name="wl-role" required value={form.role} onChange={(v) => setForm({ ...form, role: v })} options={roleOptions} placeholder="Select role..." />
 
@@ -338,7 +345,8 @@ function CommunityRegistrationForm({
     lastName: "",
     email: "",
     phone: "",
-    cityState: "",
+    city: "",
+    state: "NC",
     howHeard: "",
     honeypot: "",
   });
@@ -359,7 +367,8 @@ function CommunityRegistrationForm({
             lastName: form.lastName,
             email: form.email,
             phone: form.phone,
-            cityState: form.cityState,
+            city: form.city,
+            state: form.state,
             howHeard: form.howHeard,
             eventName: event.title,
             eventType: event.eventType === "workshop" ? "Workshop" : "Community",
@@ -398,7 +407,11 @@ function CommunityRegistrationForm({
 
         <FormField type="email" label="Email" name="reg-email" required value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
         <FormField type="tel" label="Phone" name="reg-phone" required value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
-        <FormField type="text" label="City/State" name="reg-cityState" required value={form.cityState} onChange={(v) => setForm({ ...form, cityState: v })} placeholder="Raleigh, NC" />
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <FormField type="text" label="City" name="reg-city" required value={form.city} onChange={(v) => setForm({ ...form, city: v })} placeholder="Raleigh" />
+          <FormField type="select" label="State" name="reg-state" required value={form.state} onChange={(v) => setForm({ ...form, state: v })} options={US_STATES} />
+        </div>
 
         <FormField type="select" label="How Did You Hear About Us?" name="reg-howHeard" required value={form.howHeard} onChange={(v) => setForm({ ...form, howHeard: v })} options={howHeardOptions} />
 

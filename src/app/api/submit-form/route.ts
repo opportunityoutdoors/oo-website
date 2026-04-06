@@ -38,14 +38,14 @@ const REQUIRED_FIELDS: Record<FormType, string[]> = {
   contact: ["firstName", "lastName", "email", "subject", "message"],
   "mentee-signup": [
     "firstName", "lastName", "dateOfBirth", "sex", "email", "phone",
-    "cityState", "outdoorInterests", "experienceLevel", "gearStatus", "howHeard",
+    "city", "state", "outdoorInterests", "experienceLevel", "gearStatus", "howHeard",
   ],
   "mentor-signup": [
     "firstName", "lastName", "dateOfBirth", "sex", "email", "phone",
-    "cityState", "outdoorSkills", "yearsExperience", "mentoredBefore", "howHeard",
+    "city", "state", "outdoorSkills", "yearsExperience", "mentoredBefore", "howHeard",
   ],
-  "event-registration": ["firstName", "lastName", "email", "phone", "cityState", "howHeard"],
-  "camp-waitlist": ["firstName", "lastName", "email", "phone", "role"],
+  "event-registration": ["firstName", "lastName", "email", "phone", "city", "state", "howHeard"],
+  "camp-waitlist": ["firstName", "lastName", "email", "phone", "city", "state", "role"],
   "camp-registration": ["email", "tshirtSize", "emergencyContactName", "emergencyContactPhone", "transportation", "waiver"],
   sponsorship: ["companyName", "contactName", "email"],
 };
@@ -114,7 +114,8 @@ async function writeToSupabase(
   if (str("firstName")) contactData.first_name = str("firstName");
   if (str("lastName")) contactData.last_name = str("lastName");
   if (str("phone")) contactData.phone = str("phone");
-  if (str("cityState")) contactData.city_state = str("cityState");
+  if (str("city")) contactData.city = str("city");
+  if (str("state")) contactData.state = str("state");
 
   // Form-specific contact fields
   if (formType === "mentee-signup") {
@@ -268,7 +269,8 @@ async function writeToSupabase(
               first_name: str("minorFirstName"),
               last_name: str("minorLastName"),
               phone: str("phone"),
-              city_state: str("cityState"),
+              city: str("city"),
+              state: str("state"),
               source: str("eventName") || "Camp Waitlist",
             })
             .select("id")
@@ -412,7 +414,7 @@ async function syncToDirectMail(
     email,
     first_name: firstName,
     last_name: lastName,
-    custom_1: str("cityState"),
+    custom_1: [str("city"), str("state")].filter(Boolean).join(", "),
     custom_2: sourceMap[formType],
     custom_3: interests,
   };

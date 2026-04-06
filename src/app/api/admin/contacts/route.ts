@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
   if (q) {
     query = query.or(
-      `email.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%,phone.ilike.%${q}%,city_state.ilike.%${q}%`
+      `email.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%,phone.ilike.%${q}%,city.ilike.%${q}%,state.ilike.%${q}%`
     );
   }
 
