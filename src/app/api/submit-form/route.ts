@@ -398,9 +398,10 @@ async function syncToDirectMail(
     sponsorship: "Sponsorship Inquiry",
   };
 
-  const interests = Array.isArray(data.interests)
-    ? (data.interests as string[]).join(", ")
-    : str("interests");
+  const rawInterests = data.outdoorInterests ?? data.interests;
+  const interests = Array.isArray(rawInterests)
+    ? (rawInterests as string[]).join(", ")
+    : str("outdoorInterests") || str("interests");
 
   const credentials = Buffer.from(`${apiKeyId}:${apiKeySecret}`).toString("base64");
   const apiHost = process.env.DIRECT_MAIL_API_HOST || "www.ethreemail.com";
