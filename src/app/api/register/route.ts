@@ -169,6 +169,27 @@ export async function POST(request: NextRequest) {
     } catch (err) {
       console.error("Registration confirmation email error:", err);
     }
+
+    // Add camp calendar invite for the registrant
+    const eventInfo = fullReg.events as { title: string; date_start: string | null; date_end: string | null; location: string | null } | null;
+    const contactEmail = (fullReg.contacts as { email: string } | null)?.email;
+
+    if (eventInfo?.date_start && contactEmail && process.env.GOOGLE_CALENDAR_ID) {
+      try {
+        const { createCalendarEvent } = await import("@/lib/google-calendar");
+        const endDate = eventInfo.date_end || new Date(new Date(eventInfo.date_start).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString();
+
+        await createCalendarEvent({
+          summary: eventInfo.title,
+          description: `You're registered for ${eventInfo.title}!${eventInfo.location ? ` Location details will be shared in your welcome packet.` : ""}`,
+          start: eventInfo.date_start,
+          end: endDate,
+          attendees: [contactEmail],
+        });
+      } catch (err) {
+        console.error("Camp calendar invite error:", err);
+      }
+    }
   }
 
   return NextResponse.json({ success: true });
