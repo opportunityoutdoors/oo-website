@@ -15,6 +15,21 @@ export async function POST(req: NextRequest) {
   // Sanity IDs may come as "drafts.xxx" — strip the prefix
   const _id = ((body._id as string) || "").replace(/^drafts\./, "");
 
+  // Check if this is a delete operation
+  // Sanity sends transition: "disappear" or operation: "delete" on deletion
+  const isDelete = body.transition === "disappear" || body.operation === "delete";
+
+  if (isDelete && _id) {
+    // Delete from Supabase
+    const supabase = createServiceClient();
+    if (_type === "event") {
+      await supabase.from("events").delete().eq("sanity_id", _id);
+    }
+    revalidatePath("/");
+    revalidatePath("/events");
+    return NextResponse.json({ revalidated: true, deleted: true });
+  }
+
   // Revalidate relevant paths based on content type
   switch (_type) {
     case "event":
