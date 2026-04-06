@@ -104,7 +104,7 @@ export default async function EventDetailPage({ params }: PageProps) {
               price: event.cost === "Free" ? "0" : event.cost.replace(/[^0-9.]/g, ""),
               priceCurrency: "USD",
               availability:
-                event.spotsRemaining === 0
+                event.status === "sold-out"
                   ? "https://schema.org/SoldOut"
                   : "https://schema.org/InStock",
             },
@@ -202,8 +202,7 @@ export default async function EventDetailPage({ params }: PageProps) {
                         Availability
                       </dt>
                       <dd className="mt-1 text-sm font-semibold text-near-black">
-                        {event.spotsRemaining ?? event.spotsTotal} of{" "}
-                        {event.spotsTotal} spots available
+                        {event.spotsTotal} spots
                       </dd>
                     </div>
                   )}

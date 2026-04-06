@@ -16,7 +16,6 @@ interface EventRegistrationProps {
     registrationCloses?: string;
     waitlistOpens?: string;
     waitlistCloses?: string;
-    spotsRemaining?: number;
     meetingSlots?: { label: string; date: string }[];
   };
 }
@@ -45,7 +44,7 @@ export default function EventRegistration({ event }: EventRegistrationProps) {
   const now = new Date();
 
   // Determine what to show based on event type + dates + status
-  if (event.status === "sold-out" || event.spotsRemaining === 0) {
+  if (event.status === "sold-out") {
     return (
       <div className="rounded-lg border border-near-black/10 bg-white p-6 text-center">
         <p className="text-lg font-bold text-near-black">This event is full</p>

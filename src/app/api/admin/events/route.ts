@@ -31,7 +31,6 @@ interface SanityEvent {
   location: string;
   cost: string | null;
   spotsTotal: number | null;
-  spotsRemaining: number | null;
   meetingSlots: MeetingSlot[] | null;
   campLocations: CampLocation[] | null;
   mentorPerks: Array<{ title: string; link?: string }> | null;
@@ -97,7 +96,6 @@ export async function GET() {
         location: se.location || null,
         cost: se.cost || null,
         spots_total: se.spotsTotal || null,
-        spots_remaining: se.spotsRemaining || null,
         meeting_slots: slots,
         camp_locations: se.campLocations || [],
         mentor_perks: se.mentorPerks || [],

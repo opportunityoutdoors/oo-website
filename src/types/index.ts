@@ -40,7 +40,6 @@ export interface Event {
   cost?: string;
   registrationFee?: number;
   spotsTotal?: number;
-  spotsRemaining?: number;
   description: string;
   image?: SanityImage;
   registrationOpens?: string;
