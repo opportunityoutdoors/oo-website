@@ -399,7 +399,7 @@ async function syncToDirectMail(
   };
 
   const credentials = Buffer.from(`${apiKeyId}:${apiKeySecret}`).toString("base64");
-  const apiHost = process.env.DIRECT_MAIL_API_HOST || "secure.directmailmac.com";
+  const apiHost = process.env.DIRECT_MAIL_API_HOST || "www.ethreemail.com";
   const url = `https://${apiHost}/api/v2/projects/${projectId}/address-groups/${groupId}/addresses`;
   const options: RequestInit = {
     method: "POST",
