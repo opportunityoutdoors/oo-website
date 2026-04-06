@@ -1,4 +1,5 @@
 import { randomBytes } from "crypto";
+import { after } from "next/server";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 
@@ -398,7 +399,8 @@ async function syncToDirectMail(
   };
 
   const credentials = Buffer.from(`${apiKeyId}:${apiKeySecret}`).toString("base64");
-  const url = `https://secure.directmailmac.com/api/v2/projects/${projectId}/address-groups/${groupId}/addresses`;
+  const apiHost = process.env.DIRECT_MAIL_API_HOST || "secure.directmailmac.com";
+  const url = `https://${apiHost}/api/v2/projects/${projectId}/address-groups/${groupId}/addresses`;
   const options: RequestInit = {
     method: "POST",
     headers: {
@@ -545,15 +547,23 @@ export async function POST(request: NextRequest) {
     // 1. Write to Supabase (source of truth)
     await writeToSupabase(formType, data);
 
-    // 2. Sync contact to Direct Mail mailing list (non-blocking)
-    syncToDirectMail(formType, data).catch((err) =>
-      console.error("Direct Mail sync error:", err)
-    );
+    // 2. Sync contact to Direct Mail mailing list (non-blocking, runs after response)
+    after(async () => {
+      try {
+        await syncToDirectMail(formType, data);
+      } catch (err) {
+        console.error("Direct Mail sync error:", err);
+      }
+    });
 
-    // 3. Send email notification (non-blocking)
-    sendNotificationEmail(formType, data).catch((err) =>
-      console.error("Email notification error:", err)
-    );
+    // 3. Send email notification (non-blocking, runs after response)
+    after(async () => {
+      try {
+        await sendNotificationEmail(formType, data);
+      } catch (err) {
+        console.error("Email notification error:", err);
+      }
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {
