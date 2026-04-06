@@ -47,6 +47,7 @@ const STATUS_STYLES: Record<string, string> = {
 export default function EventsList() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<"all" | "active" | "past">("active");
 
   useEffect(() => {
     async function fetchEvents() {
@@ -59,6 +60,13 @@ export default function EventsList() {
   }, []);
 
   const isCamp = (type: string) => type === "hunt-camp" || type === "fish-camp";
+  const pastStatuses = ["completed", "archived"];
+
+  const filteredEvents = events.filter((e) => {
+    if (filter === "active") return !pastStatuses.includes(e.status);
+    if (filter === "past") return pastStatuses.includes(e.status);
+    return true;
+  });
 
   if (loading) {
     return (
@@ -77,11 +85,31 @@ export default function EventsList() {
         <h1 className="font-heading text-3xl font-[900] uppercase tracking-tight text-near-black">
           Events
         </h1>
-        <span className="text-sm text-near-black/40">{events.length} events</span>
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1 rounded-lg border border-near-black/10 bg-white p-1">
+            {(["active", "all", "past"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`rounded px-3 py-1.5 text-xs font-bold uppercase tracking-[0.5px] transition-colors ${
+                  filter === f
+                    ? "bg-dark-green text-white"
+                    : "text-near-black/40 hover:text-near-black"
+                }`}
+              >
+                {f === "active" ? "Active" : f === "past" ? "Archived" : "All"} ({
+                  f === "active" ? events.filter((e) => !pastStatuses.includes(e.status)).length
+                  : f === "past" ? events.filter((e) => pastStatuses.includes(e.status)).length
+                  : events.length
+                })
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4">
-        {events.map((event) => (
+        {filteredEvents.map((event) => (
           <div
             key={event.id}
             className="rounded-lg border border-near-black/10 bg-white"
@@ -142,9 +170,9 @@ export default function EventsList() {
           </div>
         ))}
 
-        {events.length === 0 && (
+        {filteredEvents.length === 0 && (
           <div className="rounded-lg border border-near-black/10 bg-white px-5 py-16 text-center text-near-black/40">
-            No events found. Create one in the Content Studio.
+            {filter === "active" ? "No active events." : filter === "past" ? "No archived events." : "No events found. Create one in the Content Studio."}
           </div>
         )}
       </div>
