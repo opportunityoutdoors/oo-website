@@ -398,8 +398,7 @@ async function syncToDirectMail(
   };
 
   const credentials = Buffer.from(`${apiKeyId}:${apiKeySecret}`).toString("base64");
-  const apiHost = process.env.DIRECT_MAIL_API_HOST || "secure.directmailmac.com";
-  const url = `https://${apiHost}/api/v2/projects/${projectId}/address-groups/${groupId}/addresses`;
+  const url = `https://secure.directmailmac.com/api/v2/projects/${projectId}/address-groups/${groupId}/addresses`;
   const options: RequestInit = {
     method: "POST",
     headers: {
@@ -415,7 +414,7 @@ async function syncToDirectMail(
   };
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
+  const timeout = setTimeout(() => controller.abort(), 15000);
 
   // Retry once on connection reset (common on Vercel cold starts)
   try {
@@ -546,11 +545,10 @@ export async function POST(request: NextRequest) {
     // 1. Write to Supabase (source of truth)
     await writeToSupabase(formType, data);
 
-    // 2. Direct Mail sync disabled — both hostnames blocked from Vercel IPs.
-    //    TODO: Use ODBC sync, Zapier, or client-side approach instead.
-    // syncToDirectMail(formType, data).catch((err) =>
-    //   console.error("Direct Mail sync error:", err)
-    // );
+    // 2. Sync contact to Direct Mail mailing list (non-blocking)
+    syncToDirectMail(formType, data).catch((err) =>
+      console.error("Direct Mail sync error:", err)
+    );
 
     // 3. Send email notification (non-blocking)
     sendNotificationEmail(formType, data).catch((err) =>
