@@ -1,6 +1,6 @@
 export default {
   name: "galleryImage",
-  title: "Gallery",
+  title: "From the Field",
   type: "document",
   fields: [
     {
