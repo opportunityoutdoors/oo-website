@@ -4,48 +4,40 @@ export default {
   type: "document",
   fields: [
     {
-      name: "image",
-      title: "Photo",
-      type: "image",
-      options: { hotspot: true },
-      validation: (Rule: any) => Rule.required(),
-      fields: [
+      name: "title",
+      title: "Batch Name",
+      type: "string",
+      description: "e.g., 'Turkey Camp 2026 Photos', 'Uwharrie Deer Camp'. Just for your reference.",
+    },
+    {
+      name: "images",
+      title: "Photos",
+      type: "array",
+      description: "Upload multiple photos at once. Drag and drop or click to add.",
+      of: [
         {
-          name: "alt",
-          title: "Alt Text",
-          type: "string",
-          description: "Describe the image for accessibility.",
-        },
-        {
-          name: "caption",
-          title: "Caption (optional)",
-          type: "string",
+          type: "image",
+          options: { hotspot: true },
+          fields: [
+            {
+              name: "alt",
+              title: "Alt Text",
+              type: "string",
+            },
+          ],
         },
       ],
-    },
-    {
-      name: "event",
-      title: "Event Name (optional)",
-      type: "string",
-      description: "e.g., 'Turkey Camp 2026', 'Uwharrie Deer Camp 2025'",
-    },
-    {
-      name: "date",
-      title: "Date Taken (optional)",
-      type: "date",
+      options: {
+        layout: "grid",
+      },
     },
   ],
   preview: {
-    select: {
-      media: "image",
-      title: "image.caption",
-      subtitle: "event",
-    },
-    prepare({ media, title, subtitle }: { media: unknown; title: string; subtitle: string }) {
+    select: { title: "title", images: "images" },
+    prepare({ title, images }: { title: string; images: unknown[] }) {
       return {
-        media,
-        title: title || "Untitled",
-        subtitle: subtitle || "",
+        title: title || "Untitled Batch",
+        subtitle: `${images?.length || 0} photos`,
       };
     },
   },

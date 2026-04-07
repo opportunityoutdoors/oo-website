@@ -18,10 +18,9 @@ export const metadata: Metadata = {
 
 export const revalidate = 300; // 5 min ISR fallback
 
-interface GalleryImage {
+interface GalleryBatch {
   _id: string;
-  image: SanityImage;
-  event?: string;
+  images: SanityImage[];
 }
 
 function shuffleAndPick<T>(arr: T[], count: number): T[] {
@@ -35,9 +34,9 @@ function shuffleAndPick<T>(arr: T[], count: number): T[] {
 
 export default async function EventsPage() {
   let events: Event[] = [];
-  let galleryImages: GalleryImage[] = [];
+  let galleryBatches: GalleryBatch[] = [];
   try {
-    [events, galleryImages] = await Promise.all([
+    [events, galleryBatches] = await Promise.all([
       client.fetch(allEventsQuery),
       client.fetch(allGalleryImagesQuery),
     ]);
@@ -45,7 +44,9 @@ export default async function EventsPage() {
     // Sanity not available
   }
 
-  const displayImages = shuffleAndPick(galleryImages, 6);
+  // Flatten all batches into one pool of images
+  const allImages = galleryBatches.flatMap((batch) => batch.images || []);
+  const displayImages = shuffleAndPick(allImages, 6);
 
   return (
     <>
@@ -127,14 +128,14 @@ export default async function EventsPage() {
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             {displayImages.length > 0 ? (
-              displayImages.map((img) => (
+              displayImages.map((img, i) => (
                 <div
-                  key={img._id}
+                  key={i}
                   className="aspect-square overflow-hidden rounded-lg bg-near-black/10"
                 >
                   <Image
-                    src={urlFor(img.image).width(600).height(600).url()}
-                    alt={img.image?.alt || img.event || "In the field"}
+                    src={urlFor(img).width(600).height(600).url()}
+                    alt={img.alt || "In the field"}
                     width={600}
                     height={600}
                     className="h-full w-full object-cover"
