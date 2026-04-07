@@ -53,6 +53,9 @@ export async function POST(req: NextRequest) {
     case "teamMember":
       revalidatePath("/about");
       break;
+    case "galleryImage":
+      revalidatePath("/events");
+      break;
     default:
       revalidatePath("/");
   }

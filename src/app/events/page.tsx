@@ -6,8 +6,9 @@ import LabelTag from "@/components/ui/LabelTag";
 import NewsletterSection from "@/components/ui/NewsletterSection";
 import EventsGrid from "./EventsGrid";
 import { client } from "@/lib/sanity";
-import { allEventsQuery } from "@/lib/queries";
-import type { Event } from "@/types";
+import { urlFor } from "@/lib/sanity";
+import { allEventsQuery, allGalleryImagesQuery } from "@/lib/queries";
+import type { Event, SanityImage } from "@/types";
 
 export const metadata: Metadata = {
   title: "Events",
@@ -17,13 +18,34 @@ export const metadata: Metadata = {
 
 export const revalidate = 300; // 5 min ISR fallback
 
+interface GalleryImage {
+  _id: string;
+  image: SanityImage;
+  event?: string;
+}
+
+function shuffleAndPick<T>(arr: T[], count: number): T[] {
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled.slice(0, count);
+}
+
 export default async function EventsPage() {
   let events: Event[] = [];
+  let galleryImages: GalleryImage[] = [];
   try {
-    events = await client.fetch(allEventsQuery);
+    [events, galleryImages] = await Promise.all([
+      client.fetch(allEventsQuery),
+      client.fetch(allGalleryImagesQuery),
+    ]);
   } catch {
-    // Sanity not available — fall back to empty (EventsGrid has placeholder data)
+    // Sanity not available
   }
+
+  const displayImages = shuffleAndPick(galleryImages, 6);
 
   return (
     <>
@@ -104,16 +126,33 @@ export default async function EventsPage() {
             </h2>
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="aspect-square overflow-hidden rounded-lg bg-near-black/10"
-              >
-                <div className="flex h-full items-center justify-center text-xs text-near-black/30">
-                  Photo {i + 1}
+            {displayImages.length > 0 ? (
+              displayImages.map((img) => (
+                <div
+                  key={img._id}
+                  className="aspect-square overflow-hidden rounded-lg bg-near-black/10"
+                >
+                  <Image
+                    src={urlFor(img.image).width(600).height(600).url()}
+                    alt={img.image?.alt || img.event || "In the field"}
+                    width={600}
+                    height={600}
+                    className="h-full w-full object-cover"
+                  />
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="aspect-square overflow-hidden rounded-lg bg-near-black/10"
+                >
+                  <div className="flex h-full items-center justify-center text-xs text-near-black/30">
+                    Photo {i + 1}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </SectionContainer>
       </section>

@@ -17,15 +17,15 @@ async function AdminNav() {
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-full w-56 flex-col border-r border-near-black/10 bg-near-black">
       <div className="border-b border-white/10 px-5 py-5">
-        <Link href="/admin">
+        <a href="/" target="_blank" rel="noopener noreferrer" title="Open site in new tab">
           <Image
             src="/images/OO_Footer_white2.svg"
-            alt="Opportunity Outdoors"
+            alt="Opportunity Outdoors — Open site"
             width={180}
             height={40}
             className="h-auto w-full"
           />
-        </Link>
+        </a>
       </div>
 
       <nav className="flex-1 px-3 py-4">

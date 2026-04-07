@@ -114,3 +114,11 @@ export const blogPostBySlugQuery = `*[_type == "blogPost" && slug.current == $sl
   gallery,
   body
 }`;
+
+// ─── Gallery ───
+export const allGalleryImagesQuery = `*[_type == "galleryImage"] {
+  _id,
+  image,
+  event,
+  date
+}`;
