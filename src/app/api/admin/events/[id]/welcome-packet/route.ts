@@ -232,11 +232,20 @@ export async function POST(
       </ul>
     ` : "";
 
-    const eventDate = event.date_start
-      ? new Date(event.date_start).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
-      : null;
-    const eventEndDate = event.date_end
-      ? new Date(event.date_end).toLocaleDateString("en-US", { month: "long", day: "numeric" })
+    // Short date format: "4/17/26" — uses UTC because Sanity stores date-only
+    // values that Supabase persists as midnight UTC. Parsing without the UTC
+    // hint would shift into the server's local timezone.
+    const shortDate = (iso: string) =>
+      new Date(iso).toLocaleDateString("en-US", {
+        month: "numeric",
+        day: "numeric",
+        year: "2-digit",
+        timeZone: "UTC",
+      });
+    const eventDateStr = event.date_start
+      ? event.date_end && event.date_end !== event.date_start
+        ? `${shortDate(event.date_start)}-${shortDate(event.date_end)}`
+        : shortDate(event.date_start)
       : null;
 
     await resend.emails.send({
@@ -251,9 +260,9 @@ export async function POST(
             We're counting down to <strong>${eventTitle}</strong>! Here's everything you need to know.
           </p>
 
-          ${eventDate ? `
+          ${eventDateStr ? `
           <div style="margin: 20px 0; padding: 16px; background: #f0ebe2; border-radius: 4px;">
-            <p style="margin: 0; font-size: 14px;"><strong>When:</strong> ${eventDate}${eventEndDate ? ` – ${eventEndDate}` : ""}</p>
+            <p style="margin: 0; font-size: 14px;"><strong>When:</strong> ${eventDateStr}</p>
             ${event.location ? `<p style="margin: 4px 0 0; font-size: 14px;"><strong>Where:</strong> ${event.location}</p>` : ""}
           </div>
           ` : ""}
