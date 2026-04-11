@@ -85,9 +85,12 @@ export async function POST(
     return NextResponse.json({ error: "No eligible recipients", sent: 0 }, { status: 400 });
   }
 
-  // Check all mentees are matched
+  // Check all mentees are matched. Minors (linked to a guardian) are excluded
+  // from this check — they inherit their guardian's match state, so a minor
+  // without a mentor means their *guardian* is unmatched, which will already
+  // be caught when we count the guardian.
   const unmatchedMentees = registrations.filter(
-    (r) => r.role === "Mentee" && !r.mentor_id
+    (r) => r.role === "Mentee" && !r.mentor_id && !r.guardian_registration_id
   );
   if (unmatchedMentees.length > 0 && !specificIds) {
     return NextResponse.json(
@@ -97,9 +100,10 @@ export async function POST(
   }
 
   // Fetch all registrations for this event to resolve mentor/mentee names
+  // and guardian relationships.
   const { data: allRegs } = await supabase
     .from("registrations")
-    .select("id, role, mentor_id, contacts(first_name, last_name, email, phone)")
+    .select("id, role, mentor_id, guardian_registration_id, contacts(first_name, last_name, email, phone)")
     .eq("event_id", eventId);
 
   const regMap = new Map(allRegs?.map((r) => [r.id, r]) || []);
@@ -116,18 +120,50 @@ export async function POST(
   let sentCount = 0;
 
   for (const reg of registrations) {
+    // Skip minors explicitly — they are addressed via their guardian's email,
+    // never sent their own. This is the principled rule (not the incidental
+    // "no email on contact" check it replaces).
+    if (reg.guardian_registration_id) continue;
+
     const contact = getContact(reg);
     if (!contact?.email) continue;
 
-    const firstName = contact.first_name || "there";
     const eventTitle = event.title;
     const isMentor = reg.role === "Mentor";
+
+    // Find any minors linked to this registration — they're coming along
+    // under this guardian and should be named in the greeting.
+    const linkedMinors =
+      allRegs?.filter((r) => r.guardian_registration_id === reg.id) || [];
+    const minorFirstNames = linkedMinors
+      .map((m) => getContact(m)?.first_name)
+      .filter((n): n is string => !!n);
+
+    // Greeting: "Hey Cory," or "Hey Cory & Wesley," or "Hey Cory, Wesley, & Alex,"
+    const guardianFirst = contact.first_name || "there";
+    let greetingName: string;
+    if (minorFirstNames.length === 0) {
+      greetingName = guardianFirst;
+    } else if (minorFirstNames.length === 1) {
+      greetingName = `${guardianFirst} & ${minorFirstNames[0]}`;
+    } else {
+      const last = minorFirstNames[minorFirstNames.length - 1];
+      const rest = minorFirstNames.slice(0, -1);
+      greetingName = `${guardianFirst}, ${rest.join(", ")}, & ${last}`;
+    }
 
     // Build match info
     let matchHtml = "";
     if (isMentor) {
-      // Find assigned mentees
-      const mentees = allRegs?.filter((r) => r.mentor_id === reg.id) || [];
+      // Find assigned mentees, excluding all minors. Minors are implicit via
+      // their guardian (who is also a mentee of this mentor, or is this mentor
+      // themselves) — we don't list them as peer mentees because they have no
+      // contact info of their own and are already covered by the guardian's
+      // greeting.
+      const mentees =
+        allRegs?.filter(
+          (r) => r.mentor_id === reg.id && !r.guardian_registration_id
+        ) || [];
       if (mentees.length > 0) {
         const menteeList = mentees.map((m) => {
           const mc = getContact(m);
@@ -209,7 +245,7 @@ export async function POST(
       subject: `Welcome Packet: ${eventTitle}`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1a1a;">
-          <p style="font-size: 16px; line-height: 1.6;">Hey ${firstName},</p>
+          <p style="font-size: 16px; line-height: 1.6;">Hey ${greetingName},</p>
 
           <p style="font-size: 16px; line-height: 1.6;">
             We're counting down to <strong>${eventTitle}</strong>! Here's everything you need to know.

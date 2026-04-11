@@ -72,6 +72,11 @@ export async function POST(
       }
     }
 
+    // Enforce the guardian-minor invariant across the full event. Safety net
+    // in case any minor drifted out of sync (e.g. a guardian-mentor case that
+    // the manual cascade above doesn't cover).
+    await reconcileMinors(id, supabase);
+
     return NextResponse.json({ success: true });
   }
 
@@ -80,6 +85,47 @@ export async function POST(
   }
 
   return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+}
+
+/**
+ * Enforce the invariant: a minor (registration with a guardian_registration_id)
+ * always travels with their guardian.
+ *
+ *   - If the guardian is a Mentor, the minor's mentor_id is the guardian's own
+ *     registration id (the guardian mentors their own child).
+ *   - If the guardian is a Mentee, the minor's mentor_id equals the guardian's
+ *     mentor_id (including null if the guardian is unmatched).
+ *
+ * Safe to call repeatedly; no-ops when state is already consistent.
+ */
+async function reconcileMinors(
+  eventId: string,
+  supabase: ReturnType<typeof createServiceClient>
+) {
+  const { data: allRegs } = await supabase
+    .from("registrations")
+    .select("id, role, mentor_id, guardian_registration_id")
+    .eq("event_id", eventId);
+
+  if (!allRegs?.length) return;
+
+  const byId = new Map(allRegs.map((r) => [r.id, r]));
+
+  for (const minor of allRegs) {
+    if (!minor.guardian_registration_id) continue;
+    const guardian = byId.get(minor.guardian_registration_id);
+    if (!guardian) continue;
+
+    const expected =
+      guardian.role === "Mentor" ? guardian.id : guardian.mentor_id || null;
+
+    if (minor.mentor_id !== expected) {
+      await supabase
+        .from("registrations")
+        .update({ mentor_id: expected })
+        .eq("id", minor.id);
+    }
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -91,6 +137,12 @@ function getInterests(reg: any): string[] {
 }
 
 async function autoMatch(eventId: string, supabase: ReturnType<typeof createServiceClient>) {
+  // Enforce the guardian-minor invariant first, so any minor whose guardian
+  // is a Mentor is already matched to their guardian before the pairing
+  // logic runs. This keeps those minors out of the mentees iteration via
+  // the alreadyMatched set below.
+  await reconcileMinors(eventId, supabase);
+
   // Fetch all approved/registered participants for this event
   const { data: registrations } = await supabase
     .from("registrations")
@@ -236,6 +288,11 @@ async function autoMatch(eventId: string, supabase: ReturnType<typeof createServ
       .update({ mentor_id: update.mentor_id })
       .eq("id", update.id);
   }
+
+  // Final sweep to enforce the guardian-minor invariant. In particular this
+  // catches the case where a Mentee-guardian just got matched in this run
+  // and their linked minor needs to follow.
+  await reconcileMinors(eventId, supabase);
 
   return NextResponse.json({ matched: matchCount });
 }
