@@ -11,6 +11,7 @@ import EventRegistration from "./EventRegistration";
 import PortableTextRenderer from "@/components/ui/PortableTextRenderer";
 import { client, urlFor } from "@/lib/sanity";
 import { eventBySlugQuery } from "@/lib/queries";
+import { formatEventDateRange } from "@/lib/format-event-date";
 
 export const revalidate = 300;
 
@@ -43,22 +44,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-function formatEventDate(date: string, endDate?: string): string {
-  const start = new Date(date);
-  const opts: Intl.DateTimeFormatOptions = {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  };
-  if (endDate) {
-    const end = new Date(endDate);
-    if (start.getMonth() === end.getMonth()) {
-      return `${start.toLocaleDateString("en-US", { month: "long" })} ${start.getDate()}–${end.getDate()}, ${start.getFullYear()}`;
-    }
-    return `${start.toLocaleDateString("en-US", opts)} – ${end.toLocaleDateString("en-US", opts)}`;
-  }
-  return start.toLocaleDateString("en-US", opts);
-}
 
 function getEventTypeLabel(eventType: string): string {
   switch (eventType) {
@@ -144,7 +129,7 @@ export default async function EventDetailPage({ params }: PageProps) {
             {event.title}
           </h1>
           <p className="mt-3 text-lg text-white/70">
-            {formatEventDate(event.date, event.endDate)}
+            {formatEventDateRange(event.date, event.endDate, "long")}
           </p>
         </div>
       </section>
@@ -165,7 +150,7 @@ export default async function EventDetailPage({ params }: PageProps) {
                       Date
                     </dt>
                     <dd className="mt-1 text-sm font-semibold text-near-black">
-                      {formatEventDate(event.date, event.endDate)}
+                      {formatEventDateRange(event.date, event.endDate, "long")}
                     </dd>
                   </div>
                   <div>

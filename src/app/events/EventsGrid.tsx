@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { urlFor } from "@/lib/sanity";
+import { eventDateBadge } from "@/lib/format-event-date";
 import type { Event } from "@/types";
 
 interface EventsGridProps {
@@ -113,9 +114,7 @@ export default function EventsGrid({ events }: EventsGridProps) {
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
           {displayEvents.map((event) => {
-            const dateObj = new Date(event.date);
-            const month = dateObj.toLocaleString("en-US", { month: "short" }).toUpperCase();
-            const day = dateObj.getDate();
+            const { month, day } = eventDateBadge(event.date);
             const isDisabled = event.status === "sold-out" || event.status === "completed" || event.status === "draft";
 
             return (

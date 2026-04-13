@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import MatchingTab from "./MatchingTab";
+import { formatEventDateRange } from "@/lib/format-event-date";
 
 interface Registration {
   id: string;
@@ -200,8 +201,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
         <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm text-near-black/50">
           {event.date_start && (
             <span>
-              {new Date(event.date_start).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
-              {event.date_end && ` – ${new Date(event.date_end).toLocaleDateString("en-US", { month: "long", day: "numeric" })}`}
+              {formatEventDateRange(event.date_start, event.date_end, "long")}
             </span>
           )}
           {event.location && <span>{event.location}</span>}

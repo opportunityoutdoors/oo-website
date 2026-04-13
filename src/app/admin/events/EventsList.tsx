@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { formatEventDateRange } from "@/lib/format-event-date";
 
 interface EventItem {
   id: string;
@@ -129,8 +130,7 @@ export default function EventsList() {
                 <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-near-black/50">
                   {event.date && (
                     <span>
-                      {new Date(event.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                      {event.end_date && ` – ${new Date(event.end_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+                      {formatEventDateRange(event.date, event.end_date, "short")}
                     </span>
                   )}
                   {event.location && <span>{event.location}</span>}
