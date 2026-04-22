@@ -43,3 +43,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# claude code worktrees (local isolation dirs)
+.claude/worktrees/
+
+# memory compiler logs
+.claude-memory-compiler/scripts/*.log
+
+# internal reference docs (PII in CSVs — keep local only)
+docs/
+
+# large local-only media
+public/images/hero/podcast-hero-hires.webp
