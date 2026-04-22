@@ -55,3 +55,6 @@ docs/
 
 # large local-only media
 public/images/hero/podcast-hero-hires.webp
+
+# one-off data import scripts (historical, not part of app runtime)
+scripts/import-*.mjs
