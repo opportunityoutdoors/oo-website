@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { NOTIFICATIONS_FROM } from "@/lib/email/from";
 
 interface ContactInfo {
   first_name: string | null;
@@ -249,7 +250,7 @@ export async function POST(
       : null;
 
     await resend.emails.send({
-      from: "Opportunity Outdoors <notifications@send.opportunityoutdoors.org>",
+      from: NOTIFICATIONS_FROM,
       to: contact.email,
       subject: `Welcome Packet: ${eventTitle}`,
       html: `

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { NOTIFICATIONS_FROM } from "@/lib/email/from";
 
 // Validate a registration token and return event + contact info (including linked minor)
 export async function GET(request: NextRequest) {
@@ -248,7 +249,7 @@ async function sendRegistrationConfirmation(
   const filename = `OO-Waiver-${participantName.replace(/\s+/g, "-")}-${eventTitle.replace(/\s+/g, "-")}.pdf`;
 
   await resend.emails.send({
-    from: "Opportunity Outdoors <notifications@send.opportunityoutdoors.org>",
+    from: NOTIFICATIONS_FROM,
     to: email,
     subject: `Registration Confirmed: ${eventTitle}`,
     attachments: [

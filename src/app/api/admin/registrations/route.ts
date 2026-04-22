@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { NOTIFICATIONS_FROM } from "@/lib/email/from";
 
 // Bulk update registration statuses
 export async function PATCH(request: NextRequest) {
@@ -151,7 +152,7 @@ async function sendApprovalEmails(
     const registerUrl = `${baseUrl}/events/${slug}/register?token=${reg.token}`;
 
     await resend.emails.send({
-      from: "Opportunity Outdoors <notifications@send.opportunityoutdoors.org>",
+      from: NOTIFICATIONS_FROM,
       to: email,
       subject: `You're In! Complete Your ${eventTitle} Registration`,
       html: `
@@ -213,7 +214,7 @@ async function sendDenialEmails(
     const eventTitle = reg.events?.title || "our upcoming event";
 
     await resend.emails.send({
-      from: "Opportunity Outdoors <notifications@send.opportunityoutdoors.org>",
+      from: NOTIFICATIONS_FROM,
       to: email,
       subject: `Update on Your ${eventTitle} Registration`,
       html: `

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { NOTIFICATIONS_FROM } from "@/lib/email/from";
 
 export async function GET(request: NextRequest) {
   // Verify cron secret to prevent unauthorized access
@@ -122,7 +123,7 @@ export async function GET(request: NextRequest) {
 
       try {
         await resend.emails.send({
-          from: "Opportunity Outdoors <notifications@send.opportunityoutdoors.org>",
+          from: NOTIFICATIONS_FROM,
           to: contact.email,
           subject: `Reminder: Your ${event.title} Meeting is Coming Up`,
           html: `

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { apiRequireAdmin } from "@/lib/admin/auth";
+import { isLastAdminError } from "@/lib/admin/errors";
 
 // Change a member's role.
 export async function PATCH(
@@ -21,7 +22,7 @@ export async function PATCH(
 
   const { data: target } = await svc
     .from("admin_users")
-    .select("id, role")
+    .select("id")
     .eq("id", id)
     .maybeSingle();
 
@@ -29,26 +30,19 @@ export async function PATCH(
     return NextResponse.json({ error: "Member not found" }, { status: 404 });
   }
 
-  // Block demoting the last admin.
-  if (target.role === "admin" && role === "editor") {
-    const { count } = await svc
-      .from("admin_users")
-      .select("id", { count: "exact", head: true })
-      .eq("role", "admin");
-    if ((count ?? 0) <= 1) {
-      return NextResponse.json(
-        { error: "Cannot demote the last admin" },
-        { status: 409 }
-      );
-    }
-  }
-
+  // Last-admin guard enforced by enforce_last_admin trigger (migration 015).
   const { error: updateError } = await svc
     .from("admin_users")
     .update({ role })
     .eq("id", id);
 
   if (updateError) {
+    if (isLastAdminError(updateError)) {
+      return NextResponse.json(
+        { error: "Cannot demote the last admin" },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
   return NextResponse.json({ ok: true });
@@ -67,7 +61,7 @@ export async function DELETE(
 
   const { data: target } = await svc
     .from("admin_users")
-    .select("id, user_id, role")
+    .select("id, user_id")
     .eq("id", id)
     .maybeSingle();
 
@@ -77,22 +71,17 @@ export async function DELETE(
   if (target.user_id === member.user_id) {
     return NextResponse.json({ error: "You cannot remove yourself" }, { status: 409 });
   }
-  if (target.role === "admin") {
-    const { count } = await svc
-      .from("admin_users")
-      .select("id", { count: "exact", head: true })
-      .eq("role", "admin");
-    if ((count ?? 0) <= 1) {
+
+  // Delete the auth user — admin_users row cascades via FK, which fires the
+  // last-admin trigger from migration 015.
+  const { error: authError } = await svc.auth.admin.deleteUser(target.user_id);
+  if (authError) {
+    if (isLastAdminError(authError)) {
       return NextResponse.json(
         { error: "Cannot remove the last admin" },
         { status: 409 }
       );
     }
-  }
-
-  // Delete the auth user — admin_users row cascades via FK.
-  const { error: authError } = await svc.auth.admin.deleteUser(target.user_id);
-  if (authError) {
     return NextResponse.json({ error: authError.message }, { status: 500 });
   }
 

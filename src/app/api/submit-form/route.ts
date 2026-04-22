@@ -2,6 +2,7 @@ import { randomBytes } from "crypto";
 import { after } from "next/server";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { NOTIFICATIONS_FROM } from "@/lib/email/from";
 
 /* ─── Types ─── */
 
@@ -508,7 +509,7 @@ async function sendNotificationEmail(
   const resend = new Resend(apiKey);
 
   await resend.emails.send({
-    from: "Opportunity Outdoors <notifications@send.opportunityoutdoors.org>",
+    from: NOTIFICATIONS_FROM,
     to,
     subject,
     html,
@@ -642,7 +643,7 @@ async function sendWaitlistConfirmation({
     : meetingLabel;
 
   await resend.emails.send({
-    from: "Opportunity Outdoors <notifications@send.opportunityoutdoors.org>",
+    from: NOTIFICATIONS_FROM,
     to: email,
     subject: `You're on the Waitlist: ${eventTitle}`,
     html: `

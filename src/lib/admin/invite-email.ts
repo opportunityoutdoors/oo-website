@@ -1,3 +1,5 @@
+import { NOTIFICATIONS_FROM } from "@/lib/email/from";
+
 export async function sendInviteEmail({
   to,
   role,
@@ -24,7 +26,7 @@ export async function sendInviteEmail({
     : "You&rsquo;ve been invited";
 
   await resend.emails.send({
-    from: "Opportunity Outdoors <notifications@send.opportunityoutdoors.org>",
+    from: NOTIFICATIONS_FROM,
     to,
     subject: "You're invited to the Opportunity Outdoors admin dashboard",
     html: `
