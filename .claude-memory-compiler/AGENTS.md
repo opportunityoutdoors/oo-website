@@ -3,6 +3,7 @@
 > Adapted from [Andrej Karpathy's LLM Knowledge Base](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) architecture.
 > Instead of ingesting external articles, this system compiles knowledge from your own AI conversations.
 
+<!-- CMC:LOCAL_NOTE_START -->
 ## Installation Note (read this first)
 
 This install uses the **git-common-dir** pattern to share one knowledge base across all worktrees of this project.
@@ -13,6 +14,11 @@ This install uses the **git-common-dir** pattern to share one knowledge base acr
 - **After a fresh clone or worktree checkout**: run `uv sync` inside `.claude-memory-compiler/`. `.venv/` is not tracked, so every local copy builds its own.
 - **Do not delete `.claude-memory-compiler/` from any worktree**: the compiler code is meant to live on every branch (the hooks need `hooks/*.py` and `pyproject.toml` on disk wherever the session runs). Only the data directories are centralized, and those won't exist on worktrees — that's expected, not a bug.
 - **SessionStart, SessionEnd, PreCompact** are all configured. Empty `matcher` catches all events. Timeouts: 15s for SessionStart (pure local I/O), 10s each for SessionEnd and PreCompact (also local I/O — flush.py runs detached in the background).
+
+Content within the `<!-- CMC:LOCAL_NOTE_START -->` / `<!-- CMC:LOCAL_NOTE_END -->` sentinels is preserved verbatim across `/install-memory-compiler` and `/upgrade-memory-compiler` runs. Content outside the sentinels is overwritten from the fork on every upgrade. Customize freely within.
+<!-- CMC:LOCAL_NOTE_END -->
+
+---
 
 ## The Compiler Analogy
 
@@ -387,7 +393,7 @@ This ensures flush.py survives after Claude Code's hook process exits.
 5. Claude decides what's worth saving - returns structured bullet points or `FLUSH_OK`
 6. Appends result to `daily/YYYY-MM-DD.md`
 7. Cleans up temp context file
-8. **End-of-day auto-compilation:** If it's past 6 PM local time (`COMPILE_AFTER_HOUR = 18`) and today's daily log has changed since its last compilation (hash comparison against `state.json`), spawns `compile.py` as another detached background process. This means compilation happens automatically once a day without needing a cron job or manual trigger.
+8. **Stale auto-compilation:** If today's daily log has changed since its last compilation and the most recent successful compile recorded in `state.json` is older than 24 hours or missing, `flush.py` spawns `compile.py` as another detached background process. `last-flush.json` also stores a recent auto-compile trigger timestamp so repeated flushes do not fan out into overlapping compile processes.
 
 ### JSONL Transcript Format
 
@@ -483,7 +489,7 @@ Reports saved to `reports/lint-YYYY-MM-DD.md`.
 - `last_lint` - timestamp of most recent lint
 - `total_cost` - cumulative API cost
 
-`scripts/last-flush.json` tracks flush deduplication (session_id + timestamp).
+`scripts/last-flush.json` tracks flush deduplication (`session_id` + `timestamp`) plus `auto_compile_triggered_at`, a cooldown timestamp used to suppress duplicate background compile triggers.
 
 Both are gitignored and regenerated automatically.
 

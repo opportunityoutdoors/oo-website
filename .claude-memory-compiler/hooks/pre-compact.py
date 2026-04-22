@@ -17,6 +17,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -97,7 +98,7 @@ def main() -> None:
         try:
             hook_input: dict = json.loads(raw_input)
         except json.JSONDecodeError:
-            fixed_input = re.sub(r'(?<!\\)\\(?!["\\])', r'\\\\', raw_input)
+            fixed_input = re.sub(r'(?<!\\)\\(?!["\\])', r"\\\\", raw_input)
             hook_input = json.loads(fixed_input)
     except (json.JSONDecodeError, ValueError, EOFError) as e:
         logging.error("Failed to parse stdin: %s", e)
@@ -115,8 +116,14 @@ def main() -> None:
 
     transcript_path = Path(transcript_path_str)
     if not transcript_path.exists():
-        logging.info("SKIP: transcript missing: %s", transcript_path_str)
-        return
+        for attempt in range(10):
+            time.sleep(0.5)
+            if transcript_path.exists():
+                logging.info("Transcript found after %d retries", attempt + 1)
+                break
+        else:
+            logging.info("SKIP: transcript missing after retries: %s", transcript_path_str)
+            return
 
     # Extract conversation context in the hook
     try:
@@ -161,7 +168,12 @@ def main() -> None:
             stderr=subprocess.DEVNULL,
             creationflags=creation_flags,
         )
-        logging.info("Spawned flush.py for session %s (%d turns, %d chars)", session_id, turn_count, len(context))
+        logging.info(
+            "Spawned flush.py for session %s (%d turns, %d chars)",
+            session_id,
+            turn_count,
+            len(context),
+        )
     except Exception as e:
         logging.error("Failed to spawn flush.py: %s", e)
 
