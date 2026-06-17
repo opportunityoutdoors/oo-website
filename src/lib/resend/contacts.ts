@@ -9,9 +9,9 @@
 // no dedicated key is required.
 import { Resend } from "resend";
 
-// The "General" segment created in the Resend account. Override via env.
+// The OO account's "General" audience/segment. Override via env.
 const GENERAL_SEGMENT_ID =
-  process.env.RESEND_SEGMENT_ID || "96b839bf-f170-4faa-9d9d-e31675fe2bd5";
+  process.env.RESEND_SEGMENT_ID || "90f52db3-8069-4970-9fe2-e882727219e9";
 
 export interface ResendContactInput {
   email: string;
