@@ -15,7 +15,19 @@ const nextSteps = [
   { href: "/events", label: "Browse Upcoming Events" },
 ];
 
-export default function ThankYouPage() {
+export default async function ThankYouPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string }>;
+}) {
+  const { type } = await searchParams;
+  const isEvent = type === "event";
+
+  const heading = isEvent ? "You're Registered." : "You're In.";
+  const message = isEvent
+    ? "We've got your spot. We'll send any final details before the event, and a confirmation is on its way to your inbox. In the meantime, here are a few ways to stay connected:"
+    : "Thanks for reaching out. We've got your info and a board member will follow up within 48 hours. In the meantime, here are a few ways to stay connected:";
+
   return (
     <>
       {/* Confirmation */}
@@ -25,12 +37,10 @@ export default function ThankYouPage() {
           &#10003;
         </div>
         <h1 className="mb-5 text-[56px] tracking-[2px] text-near-black md:text-[56px]">
-          You&apos;re In.
+          {heading}
         </h1>
         <p className="mb-12 max-w-[600px] text-[17px] leading-[1.8] text-near-black/50">
-          Thanks for reaching out. We&apos;ve got your info and a board member
-          will follow up within 48 hours. In the meantime, here are a few ways
-          to stay connected:
+          {message}
         </p>
         <div className="mb-16 flex flex-col gap-5">
           {nextSteps.map((step) => (

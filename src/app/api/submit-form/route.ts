@@ -5,6 +5,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM } from "@/lib/email/from";
 import {
   renderAdminNotification,
+  renderEventRegistrationConfirmation,
   renderWaitlistConfirmation,
 } from "@/emails";
 import { upsertResendContact } from "@/lib/resend/contacts";
@@ -429,6 +430,58 @@ async function syncToResend(
   await upsertResendContact({ email, firstName, lastName, properties });
 }
 
+/* ─── Event registration confirmation (community / workshop events) ─── */
+
+async function sendEventRegistrationConfirmation(
+  data: Record<string, string | string[] | boolean>
+): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+
+  const str = (key: string) => (typeof data[key] === "string" ? (data[key] as string) : "");
+  const email = str("email");
+  const eventName = str("eventName");
+  if (!email || !eventName) return;
+
+  // Pull public event details for the email (date, location, cost, slug).
+  const supabase = createServiceClient();
+  const { data: event } = await supabase
+    .from("events")
+    .select("title, date_start, location, cost, slug")
+    .eq("title", eventName)
+    .single();
+
+  const eventTitle = event?.title || eventName;
+  const eventDate = event?.date_start
+    ? new Date(event.date_start).toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "UTC",
+      })
+    : null;
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.opportunityoutdoors.org";
+  const eventUrl = event?.slug ? `${baseUrl}/events/${event.slug}` : `${baseUrl}/events`;
+
+  const { Resend } = await import("resend");
+  const resend = new Resend(apiKey);
+
+  await resend.emails.send({
+    from: NOTIFICATIONS_FROM,
+    to: email,
+    subject: `You're registered: ${eventTitle}`,
+    html: await renderEventRegistrationConfirmation({
+      firstName: str("firstName"),
+      eventTitle,
+      eventDate,
+      location: event?.location ?? null,
+      cost: event?.cost ?? null,
+      eventUrl,
+    }),
+  });
+}
+
 /* ─── Email notifications ─── */
 
 async function sendNotificationEmail(
@@ -544,6 +597,16 @@ export async function POST(request: NextRequest) {
         await syncToResend(formType, data);
       } catch (err) {
         console.error("Resend contact sync error:", err);
+      }
+    });
+
+    // 2c. Send registrant confirmation for community/workshop event sign-ups.
+    after(async () => {
+      if (formType !== "event-registration") return;
+      try {
+        await sendEventRegistrationConfirmation(data);
+      } catch (err) {
+        console.error("Event registration confirmation error:", err);
       }
     });
 

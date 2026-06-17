@@ -376,7 +376,7 @@ function CommunityRegistrationForm({
       });
 
       if (res.ok) {
-        router.push("/thank-you");
+        router.push("/thank-you?type=event");
       } else {
         setStatus("error");
       }

@@ -27,6 +27,14 @@ import {
   WelcomePacket,
   type WelcomePacketProps,
 } from "./templates/WelcomePacket";
+import {
+  EventAnnouncement,
+  type EventAnnouncementProps,
+} from "./templates/EventAnnouncement";
+import {
+  EventRegistrationConfirmation,
+  type EventRegistrationConfirmationProps,
+} from "./templates/EventRegistrationConfirmation";
 
 export function renderWaitlistReminder(
   props: WaitlistReminderProps
@@ -68,4 +76,16 @@ export function renderWelcomePacket(
   props: WelcomePacketProps
 ): Promise<string> {
   return render(<WelcomePacket {...props} />);
+}
+
+export function renderEventAnnouncement(
+  props: EventAnnouncementProps
+): Promise<string> {
+  return render(<EventAnnouncement {...props} />);
+}
+
+export function renderEventRegistrationConfirmation(
+  props: EventRegistrationConfirmationProps
+): Promise<string> {
+  return render(<EventRegistrationConfirmation {...props} />);
 }
