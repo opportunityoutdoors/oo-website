@@ -49,7 +49,7 @@ export default function PrivacyPolicyPage() {
             Email Communications
           </h2>
           <p className="mb-5 text-[17px] leading-[1.8] text-near-black/60">
-            We use Direct Mail to send periodic updates about events, the
+            We use Resend to send periodic updates about events, the
             podcast, and community news. You can unsubscribe at any time using
             the link at the bottom of any email.
           </p>

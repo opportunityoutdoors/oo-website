@@ -370,101 +370,6 @@ async function writeToSupabase(
   }
 }
 
-/* ─── Direct Mail: sync contact to mailing list ─── */
-
-async function syncToDirectMail(
-  formType: FormType,
-  data: Record<string, string | string[] | boolean>
-): Promise<void> {
-  const apiKeyId = process.env.DIRECT_MAIL_API_KEY_ID;
-  const apiKeySecret = process.env.DIRECT_MAIL_API_KEY_SECRET;
-  const projectId = process.env.DIRECT_MAIL_PROJECT_ID;
-  const groupId = process.env.DIRECT_MAIL_ADDRESS_GROUP_ID;
-
-  if (!apiKeyId || !apiKeySecret || !projectId || !groupId) {
-    console.warn("Direct Mail credentials not configured, skipping sync");
-    return;
-  }
-
-  const str = (key: string) => sanitize(data[key]);
-
-  const firstName = formType === "sponsorship"
-    ? str("contactName").split(" ")[0]
-    : str("firstName");
-  const lastName = formType === "sponsorship"
-    ? str("contactName").split(" ").slice(1).join(" ")
-    : str("lastName");
-
-  const sourceMap: Record<FormType, string> = {
-    newsletter: "Newsletter Signup",
-    contact: "Contact Form",
-    "mentee-signup": "Mentee Application",
-    "mentor-signup": "Mentor Application",
-    "event-registration": str("eventName") || "Event Registration",
-    "camp-waitlist": str("eventName") || "Camp Waitlist",
-    "camp-registration": str("eventName") || "Camp Registration",
-    sponsorship: "Sponsorship Inquiry",
-  };
-
-  const rawInterests = data.outdoorInterests ?? data.interests;
-  const interests = Array.isArray(rawInterests)
-    ? (rawInterests as string[]).join(", ")
-    : str("outdoorInterests") || str("interests");
-
-  const credentials = Buffer.from(`${apiKeyId}:${apiKeySecret}`).toString("base64");
-  const apiHost = process.env.DIRECT_MAIL_API_HOST || "www.ethreemail.com";
-  const baseUrl = `https://${apiHost}/api/v2/projects/${projectId}/address-groups/${groupId}/addresses`;
-  const email = str("email");
-
-  const addressData = {
-    email,
-    first_name: firstName,
-    last_name: lastName,
-    custom_1: str("city"),
-    custom_2: str("state"),
-    custom_3: sourceMap[formType],
-    custom_4: interests,
-  };
-
-  const headers = {
-    Authorization: `Basic ${credentials}`,
-    "Content-Type": "application/json; charset=utf-8",
-  };
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
-
-  try {
-    // Try PATCH first (updates existing contact by email)
-    const patchUrl = `${baseUrl}?email=${encodeURIComponent(email)}`;
-    const patchRes = await fetch(patchUrl, {
-      method: "PATCH",
-      headers,
-      body: JSON.stringify(addressData),
-      signal: controller.signal,
-    });
-
-    if (patchRes.status === 404) {
-      // Contact doesn't exist yet — create via POST
-      const postRes = await fetch(baseUrl, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(addressData),
-        signal: controller.signal,
-      });
-      if (!postRes.ok) {
-        const text = await postRes.text();
-        console.error("Direct Mail POST error:", postRes.status, text);
-      }
-    } else if (!patchRes.ok) {
-      const text = await patchRes.text();
-      console.error("Direct Mail PATCH error:", patchRes.status, text);
-    }
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
 /* ─── Resend: sync contact to marketing list ─── */
 
 async function syncToResend(
@@ -472,7 +377,7 @@ async function syncToResend(
   data: Record<string, string | string[] | boolean>
 ): Promise<void> {
   // Runs whenever a Resend key is available (RESEND_CONTACTS_API_KEY or the
-  // full-access RESEND_API_KEY). Parallel-run with Direct Mail during migration.
+  // full-access RESEND_API_KEY).
   if (!process.env.RESEND_CONTACTS_API_KEY && !process.env.RESEND_API_KEY) return;
 
   const str = (key: string) => sanitize(data[key]);
@@ -630,18 +535,7 @@ export async function POST(request: NextRequest) {
     // 1. Write to Supabase (source of truth)
     await writeToSupabase(formType, data);
 
-    // 2. Sync contact to Direct Mail mailing list (non-blocking, runs after response)
-    after(async () => {
-      try {
-        await syncToDirectMail(formType, data);
-      } catch (err) {
-        console.error("Direct Mail sync error:", err);
-      }
-    });
-
-    // 2b. Sync contact to Resend marketing list (non-blocking). Dormant until
-    // RESEND_CONTACTS_API_KEY is set; runs in parallel with Direct Mail during
-    // the migration, then Direct Mail is removed.
+    // 2. Sync contact to the Resend marketing list (non-blocking, runs after response)
     after(async () => {
       try {
         await syncToResend(formType, data);
