@@ -61,3 +61,7 @@ scripts/import-*.mjs
 
 # Local PII export (Direct Mail), do not commit
 main-list.csv
+
+# Email preview artifacts
+campaign-preview.html
+email-previews.html
