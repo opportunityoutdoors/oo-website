@@ -7,6 +7,7 @@ import {
   renderAdminNotification,
   renderWaitlistConfirmation,
 } from "@/emails";
+import { upsertResendContact } from "@/lib/resend/contacts";
 
 /* ─── Types ─── */
 
@@ -464,6 +465,62 @@ async function syncToDirectMail(
   }
 }
 
+/* ─── Resend: sync contact to marketing list ─── */
+
+async function syncToResend(
+  formType: FormType,
+  data: Record<string, string | string[] | boolean>
+): Promise<void> {
+  // Runs whenever a Resend key is available (RESEND_CONTACTS_API_KEY or the
+  // full-access RESEND_API_KEY). Parallel-run with Direct Mail during migration.
+  if (!process.env.RESEND_CONTACTS_API_KEY && !process.env.RESEND_API_KEY) return;
+
+  const str = (key: string) => sanitize(data[key]);
+  const joinArr = (key: string) =>
+    Array.isArray(data[key]) ? (data[key] as string[]).join(", ") : "";
+
+  const email = str("email");
+  if (!email) return; // e.g. minors created without an email
+
+  const firstName =
+    formType === "sponsorship"
+      ? str("contactName").split(" ")[0]
+      : str("firstName");
+  const lastName =
+    formType === "sponsorship"
+      ? str("contactName").split(" ").slice(1).join(" ")
+      : str("lastName");
+
+  const sourceMap: Record<FormType, string> = {
+    newsletter: "Newsletter Signup",
+    contact: "Contact Form",
+    "mentee-signup": "Mentee Application",
+    "mentor-signup": "Mentor Application",
+    "event-registration": str("eventName") || "Event Registration",
+    "camp-waitlist": str("eventName") || "Camp Waitlist",
+    "camp-registration": str("eventName") || "Camp Registration",
+    sponsorship: "Sponsorship Inquiry",
+  };
+
+  // Only include the properties relevant to this form. Resend merges properties
+  // on update, so omitting a key leaves it untouched — keeping is_mentee /
+  // is_mentor "sticky" once set, even when the person later submits other forms.
+  const properties: Record<string, string | number | null> = {
+    source: sourceMap[formType],
+  };
+  if (str("city")) properties.city = str("city");
+  if (str("state")) properties.state = str("state");
+  if (formType === "mentee-signup") {
+    properties.is_mentee = 1;
+    if (joinArr("outdoorInterests")) properties.interests = joinArr("outdoorInterests");
+  } else if (formType === "mentor-signup") {
+    properties.is_mentor = 1;
+    if (joinArr("outdoorSkills")) properties.interests = joinArr("outdoorSkills");
+  }
+
+  await upsertResendContact({ email, firstName, lastName, properties });
+}
+
 /* ─── Email notifications ─── */
 
 async function sendNotificationEmail(
@@ -579,6 +636,17 @@ export async function POST(request: NextRequest) {
         await syncToDirectMail(formType, data);
       } catch (err) {
         console.error("Direct Mail sync error:", err);
+      }
+    });
+
+    // 2b. Sync contact to Resend marketing list (non-blocking). Dormant until
+    // RESEND_CONTACTS_API_KEY is set; runs in parallel with Direct Mail during
+    // the migration, then Direct Mail is removed.
+    after(async () => {
+      try {
+        await syncToResend(formType, data);
+      } catch (err) {
+        console.error("Resend contact sync error:", err);
       }
     });
 
