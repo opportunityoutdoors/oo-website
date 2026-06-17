@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM } from "@/lib/email/from";
+import { renderWelcomePacket } from "@/emails";
 
 interface ContactInfo {
   first_name: string | null;
@@ -153,85 +154,57 @@ export async function POST(
       greetingName = `${guardianFirst}, ${rest.join(", ")}, & ${last}`;
     }
 
-    // Build match info
-    let matchHtml = "";
+    // Build match info (structured for the email template).
+    let mentees: Array<{ name: string; email: string; phone?: string | null }> = [];
+    let mentor: { name: string; email: string; phone?: string | null } | null = null;
     if (isMentor) {
       // Find assigned mentees, excluding all minors. Minors are implicit via
       // their guardian (who is also a mentee of this mentor, or is this mentor
       // themselves) — we don't list them as peer mentees because they have no
       // contact info of their own and are already covered by the guardian's
       // greeting.
-      const mentees =
+      const menteeRegs =
         allRegs?.filter(
           (r) => r.mentor_id === reg.id && !r.guardian_registration_id
         ) || [];
-      if (mentees.length > 0) {
-        const menteeList = mentees.map((m) => {
+      mentees = menteeRegs
+        .map((m) => {
           const mc = getContact(m);
-          if (!mc) return "";
+          if (!mc) return null;
           const name = [mc.first_name, mc.last_name].filter(Boolean).join(" ");
-          return `<li><strong>${name}</strong> — ${mc.email}${mc.phone ? ` — ${mc.phone}` : ""}</li>`;
-        }).join("");
-        matchHtml = `
-          <p style="font-size: 16px; line-height: 1.6;"><strong>Your assigned mentee${mentees.length > 1 ? "s" : ""}:</strong></p>
-          <ul style="font-size: 15px; line-height: 1.8; padding-left: 20px;">${menteeList}</ul>
-          <p style="font-size: 14px; line-height: 1.6; color: #666;">
-            We encourage you to reach out to your mentee${mentees.length > 1 ? "s" : ""} before camp to introduce yourself. A quick text or email goes a long way.
-          </p>
-        `;
-      }
-    } else {
+          return { name, email: mc.email, phone: mc.phone };
+        })
+        .filter((m): m is { name: string; email: string; phone: string | null } => !!m);
+    } else if (reg.mentor_id) {
       // Find assigned mentor
-      if (reg.mentor_id) {
-        const mentor = regMap.get(reg.mentor_id);
-        if (mentor) {
-          const mc = getContact(mentor);
-          if (!mc) continue;
-          const mentorName = [mc.first_name, mc.last_name].filter(Boolean).join(" ");
-          matchHtml = `
-            <p style="font-size: 16px; line-height: 1.6;"><strong>Your assigned mentor:</strong></p>
-            <p style="font-size: 15px; line-height: 1.6; padding-left: 20px;">
-              <strong>${mentorName}</strong> — ${mc.email}${mc.phone ? ` — ${mc.phone}` : ""}
-            </p>
-            <p style="font-size: 14px; line-height: 1.6; color: #666;">
-              Your mentor is a volunteer who will be your buddy at camp. Feel free to reach out before the event to introduce yourself.
-            </p>
-          `;
-        }
+      const mentorReg = regMap.get(reg.mentor_id);
+      if (mentorReg) {
+        const mc = getContact(mentorReg);
+        if (!mc) continue;
+        const mentorName = [mc.first_name, mc.last_name].filter(Boolean).join(" ");
+        mentor = { name: mentorName, email: mc.email, phone: mc.phone };
       }
     }
 
-    // Build camp locations HTML
-    const locationsHtml = campLocations.map((loc) => {
+    // Build camp locations (structured for the email template).
+    const campLocationViews = campLocations.map((loc) => {
       const coords = parseCoords(loc);
       const coordStr = coords ? `${coords.lat}, ${coords.lng}` : (loc.coordinates || "");
       const googleMapsUrl = coords
         ? `https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`
         : null;
-      return `
-        <div style="margin-bottom: 12px; padding: 12px; background: #f0ebe2; border-radius: 4px;">
-          <p style="margin: 0; font-size: 14px; font-weight: 600;">${loc.label || "Camp Location"}</p>
-          ${coordStr ? `<p style="margin: 4px 0 0; font-size: 13px; color: #666;">${coordStr}</p>` : ""}
-          <p style="margin: 8px 0 0; font-size: 13px;">
-            ${googleMapsUrl ? `<a href="${googleMapsUrl}" style="color: #2D5016; font-weight: 600;">Google Maps Directions</a>` : ""}
-            ${loc.onxLink ? `${googleMapsUrl ? " · " : ""}<a href="${loc.onxLink}" style="color: #2D5016; font-weight: 600;">View on OnX</a>` : ""}
-          </p>
-        </div>
-      `;
-    }).join("");
+      return {
+        label: loc.label || "Camp Location",
+        coordStr: coordStr || undefined,
+        googleMapsUrl,
+        onxLink: loc.onxLink || null,
+      };
+    });
 
-    // Build perks HTML (role-specific)
+    // Perks (role-specific)
     const perks: Array<{ title: string; link?: string }> = isMentor
       ? (event.mentor_perks || [])
       : (event.mentee_perks || []);
-
-    const perksHtml = perks.length > 0 ? `
-      <hr style="border: none; border-top: 1px solid #e8e3db; margin: 24px 0;" />
-      <p style="font-size: 16px; line-height: 1.6; font-weight: 600;">Your Perks</p>
-      <ul style="font-size: 15px; line-height: 1.8; padding-left: 20px;">
-        ${perks.map((p) => `<li>${p.link ? `<a href="${p.link}" style="color: #2D5016; font-weight: 600;">${p.title}</a>` : p.title}</li>`).join("")}
-      </ul>
-    ` : "";
 
     // Short date format: "4/17/26" — uses UTC because Sanity stores date-only
     // values that Supabase persists as midnight UTC. Parsing without the UTC
@@ -253,55 +226,18 @@ export async function POST(
       from: NOTIFICATIONS_FROM,
       to: contact.email,
       subject: `Welcome Packet: ${eventTitle}`,
-      html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1a1a;">
-          <p style="font-size: 16px; line-height: 1.6;">Hey ${greetingName},</p>
-
-          <p style="font-size: 16px; line-height: 1.6;">
-            We're counting down to <strong>${eventTitle}</strong>! Here's everything you need to know.
-          </p>
-
-          ${eventDateStr ? `
-          <div style="margin: 20px 0; padding: 16px; background: #f0ebe2; border-radius: 4px;">
-            <p style="margin: 0; font-size: 14px;"><strong>When:</strong> ${eventDateStr}</p>
-            ${event.location ? `<p style="margin: 4px 0 0; font-size: 14px;"><strong>Where:</strong> ${event.location}</p>` : ""}
-          </div>
-          ` : ""}
-
-          ${matchHtml}
-
-          <hr style="border: none; border-top: 1px solid #e8e3db; margin: 24px 0;" />
-
-          <p style="font-size: 16px; line-height: 1.6; font-weight: 600;">Camp Location${campLocations.length > 1 ? "s" : ""}</p>
-          <p style="font-size: 14px; line-height: 1.6; color: #666; margin-bottom: 12px;">
-            Please keep these coordinates private and do not share publicly.
-          </p>
-          ${locationsHtml}
-
-          ${perksHtml}
-
-          <hr style="border: none; border-top: 1px solid #e8e3db; margin: 24px 0;" />
-
-          <p style="font-size: 16px; line-height: 1.6;">
-            Check the event page for the full schedule, gear list, and other details:
-          </p>
-          <div style="margin: 16px 0; text-align: center;">
-            <a href="${baseUrl}/events/${event.slug}" style="display: inline-block; background-color: #2D5016; color: #ffffff; padding: 12px 28px; border-radius: 4px; text-decoration: none; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;">
-              View Event Details
-            </a>
-          </div>
-
-          <p style="font-size: 16px; line-height: 1.6;">
-            Questions? Reply to this email or reach out at
-            <a href="mailto:info@opportunityoutdoors.org" style="color: #2D5016; font-weight: 600;">info@opportunityoutdoors.org</a>.
-          </p>
-
-          <p style="font-size: 16px; line-height: 1.6;">
-            See you in the field!<br/>
-            — The Opportunity Outdoors Team
-          </p>
-        </div>
-      `,
+      html: await renderWelcomePacket({
+        greetingName,
+        eventTitle,
+        eventDateStr,
+        location: event.location ?? null,
+        isMentor,
+        mentees,
+        mentor,
+        campLocations: campLocationViews,
+        perks,
+        eventUrl: `${baseUrl}/events/${event.slug}`,
+      }),
     });
 
     // Mark as sent

@@ -3,6 +3,10 @@ import { after } from "next/server";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM } from "@/lib/email/from";
+import {
+  renderAdminNotification,
+  renderWaitlistConfirmation,
+} from "@/emails";
 
 /* ─── Types ─── */
 
@@ -480,27 +484,30 @@ async function sendNotificationEmail(
   if (formType === "contact") {
     to = "john.trice@opportunityoutdoors.org";
     subject = `New Contact Form: ${str("subject")}`;
-    html = `
-      <h2>New Contact Form Submission</h2>
-      <p><strong>From:</strong> ${str("firstName")} ${str("lastName")}</p>
-      <p><strong>Email:</strong> ${str("email")}</p>
-      <p><strong>Subject:</strong> ${str("subject")}</p>
-      <hr />
-      <p>${str("message")}</p>
-    `;
+    html = await renderAdminNotification({
+      heading: "New Contact Form Submission",
+      rows: [
+        { label: "From", value: `${str("firstName")} ${str("lastName")}` },
+        { label: "Email", value: str("email") },
+        { label: "Subject", value: str("subject") },
+      ],
+      body: str("message"),
+    });
   } else if (formType === "sponsorship") {
     to = "evan.weiss@opportunityoutdoors.org";
     subject = `New Sponsorship Inquiry: ${str("companyName")}`;
-    html = `
-      <h2>New Sponsorship Inquiry</h2>
-      <p><strong>Company:</strong> ${str("companyName")}</p>
-      <p><strong>Contact:</strong> ${str("contactName")}</p>
-      <p><strong>Email:</strong> ${str("email")}</p>
-      <p><strong>Phone:</strong> ${str("phone")}</p>
-      <p><strong>Budget Range:</strong> ${str("budgetRange")}</p>
-      <p><strong>Interests:</strong> ${arr("opportunityInterest")}</p>
-      ${str("aboutCompany") ? `<hr /><p>${str("aboutCompany")}</p>` : ""}
-    `;
+    html = await renderAdminNotification({
+      heading: "New Sponsorship Inquiry",
+      rows: [
+        { label: "Company", value: str("companyName") },
+        { label: "Contact", value: str("contactName") },
+        { label: "Email", value: str("email") },
+        { label: "Phone", value: str("phone") },
+        { label: "Budget Range", value: str("budgetRange") },
+        { label: "Interests", value: arr("opportunityInterest") },
+      ],
+      body: str("aboutCompany") || undefined,
+    });
   }
 
   if (!to) return;
@@ -646,47 +653,12 @@ async function sendWaitlistConfirmation({
     from: NOTIFICATIONS_FROM,
     to: email,
     subject: `You're on the Waitlist: ${eventTitle}`,
-    html: `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1a1a;">
-        <p style="font-size: 16px; line-height: 1.6;">Hey ${firstName},</p>
-
-        <p style="font-size: 16px; line-height: 1.6;">
-          Thanks for signing up for the <strong>${eventTitle}</strong> waitlist! We're glad you're interested.
-        </p>
-
-        <p style="font-size: 16px; line-height: 1.6;">
-          Here's what happens next:
-        </p>
-
-        <ol style="font-size: 15px; line-height: 1.8; padding-left: 20px;">
-          <li><strong>Attend your pre-camp virtual meeting</strong> (required)</li>
-          <li>We review the waitlist and send invitations</li>
-          <li>Complete your registration if invited</li>
-        </ol>
-
-        <div style="margin: 24px 0; padding: 16px; background: #f0ebe2; border-radius: 4px;">
-          <p style="margin: 0 0 4px; font-size: 14px; font-weight: 600;">Your Meeting</p>
-          <p style="margin: 0; font-size: 14px;">${meetingDate}</p>
-          ${meetLink ? `<p style="margin: 8px 0 0; font-size: 14px;"><a href="${meetLink}" style="color: #2D5016; font-weight: 600;">Join Meeting</a></p>` : ""}
-        </div>
-
-        <p style="font-size: 14px; line-height: 1.6; color: #666;">
-          <strong>Important:</strong> Attending a pre-camp meeting is required for all participants. This is where we cover safety protocols, camp logistics, what to expect, and answer your questions.
-        </p>
-
-        <p style="font-size: 14px; line-height: 1.6; color: #666;">
-          Need to switch to a different meeting date? <a href="${meetingChangeUrl}" style="color: #2D5016; font-weight: 600;">Change your meeting</a>.
-        </p>
-
-        <p style="font-size: 16px; line-height: 1.6;">
-          Questions? Reply to this email or reach out at
-          <a href="mailto:info@opportunityoutdoors.org" style="color: #2D5016; font-weight: 600;">info@opportunityoutdoors.org</a>.
-        </p>
-
-        <p style="font-size: 16px; line-height: 1.6;">
-          — The Opportunity Outdoors Team
-        </p>
-      </div>
-    `,
+    html: await renderWaitlistConfirmation({
+      firstName,
+      eventTitle,
+      meetingDate,
+      meetLink,
+      meetingChangeUrl,
+    }),
   });
 }

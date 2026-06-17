@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM } from "@/lib/email/from";
+import { renderWaitlistReminder } from "@/emails";
 
 export async function GET(request: NextRequest) {
   // Verify cron secret to prevent unauthorized access
@@ -126,40 +127,13 @@ export async function GET(request: NextRequest) {
           from: NOTIFICATIONS_FROM,
           to: contact.email,
           subject: `Reminder: Your ${event.title} Meeting is Coming Up`,
-          html: `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1a1a;">
-              <p style="font-size: 16px; line-height: 1.6;">Hey ${firstName},</p>
-
-              <p style="font-size: 16px; line-height: 1.6;">
-                Just a quick reminder that your pre-camp meeting for <strong>${event.title}</strong> is coming up. Attending a meeting is required for all camp participants.
-              </p>
-
-              <div style="margin: 24px 0; padding: 16px; background: #f0ebe2; border-radius: 4px;">
-                <p style="margin: 0 0 4px; font-size: 14px; font-weight: 600;">Your Meeting</p>
-                <p style="margin: 0; font-size: 14px;">${meetingDate}</p>
-                ${meetLink ? `<p style="margin: 8px 0 0; font-size: 14px;"><a href="${meetLink}" style="color: #2D5016; font-weight: 600;">Join Meeting</a></p>` : ""}
-              </div>
-
-              <p style="font-size: 16px; line-height: 1.6;">
-                During the meeting, we'll cover safety protocols, camp logistics, what to expect, and answer any questions you have. It's an important step before camp, so please make sure to attend.
-              </p>
-
-              ${changeUrl ? `
-              <p style="font-size: 14px; line-height: 1.6; color: #666;">
-                Can't make this date? <a href="${changeUrl}" style="color: #2D5016; font-weight: 600;">Switch to a different meeting</a>.
-              </p>
-              ` : ""}
-
-              <p style="font-size: 16px; line-height: 1.6;">
-                Questions? Reply to this email or reach out at
-                <a href="mailto:info@opportunityoutdoors.org" style="color: #2D5016; font-weight: 600;">info@opportunityoutdoors.org</a>.
-              </p>
-
-              <p style="font-size: 16px; line-height: 1.6;">
-                — The Opportunity Outdoors Team
-              </p>
-            </div>
-          `,
+          html: await renderWaitlistReminder({
+            firstName,
+            eventTitle: event.title,
+            meetingDate,
+            meetLink,
+            changeUrl,
+          }),
         });
         totalSent++;
       } catch (err) {

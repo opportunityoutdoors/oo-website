@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM } from "@/lib/email/from";
+import { renderRegistrationConfirmation } from "@/emails";
 
 // Validate a registration token and return event + contact info (including linked minor)
 export async function GET(request: NextRequest) {
@@ -258,39 +259,13 @@ async function sendRegistrationConfirmation(
         content: pdfBuffer.toString("base64"),
       },
     ],
-    html: `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; color: #1a1a1a;">
-        <p style="font-size: 16px; line-height: 1.6;">Hey ${firstName},</p>
-
-        <p style="font-size: 16px; line-height: 1.6;">
-          Your registration for <strong>${eventTitle}</strong> is confirmed${hasMinor ? " for you and your minor" : ""}! We're looking forward to having you${registration.role === "Mentor" ? " as a mentor" : ""}.
-        </p>
-
-        ${eventDate || registration.events?.location ? `
-        <div style="margin: 20px 0; padding: 16px; background: #f0ebe2; border-radius: 4px;">
-          ${eventDate ? `<p style="margin: 0; font-size: 14px;"><strong>When:</strong> ${eventDate}</p>` : ""}
-          ${registration.events?.location ? `<p style="margin: 4px 0 0; font-size: 14px;"><strong>Where:</strong> ${registration.events.location}</p>` : ""}
-        </div>
-        ` : ""}
-
-        <p style="font-size: 16px; line-height: 1.6;">
-          A copy of your signed waiver is attached to this email for your records.
-        </p>
-
-        <p style="font-size: 16px; line-height: 1.6;">
-          We'll send you a welcome packet closer to the event with your mentor/mentee assignment, camp schedule, gear list, and everything else you need.
-        </p>
-
-        <p style="font-size: 16px; line-height: 1.6;">
-          If you have any questions in the meantime, reach out at
-          <a href="mailto:info@opportunityoutdoors.org" style="color: #2D5016; font-weight: 600;">info@opportunityoutdoors.org</a>.
-        </p>
-
-        <p style="font-size: 16px; line-height: 1.6;">
-          See you in the field!<br/>
-          — The Opportunity Outdoors Team
-        </p>
-      </div>
-    `,
+    html: await renderRegistrationConfirmation({
+      firstName,
+      eventTitle,
+      hasMinor,
+      isMentor: registration.role === "Mentor",
+      eventDate,
+      location: registration.events?.location ?? null,
+    }),
   });
 }
