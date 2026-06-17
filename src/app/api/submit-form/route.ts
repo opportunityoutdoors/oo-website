@@ -376,8 +376,11 @@ async function syncToResend(
   formType: FormType,
   data: Record<string, string | string[] | boolean>
 ): Promise<void> {
-  // Runs whenever a Resend key is available (RESEND_CONTACTS_API_KEY or the
-  // full-access RESEND_API_KEY).
+  // DISABLED until the correct Opportunity Outdoors Resend account + segment ID
+  // are confirmed (the connector was pointing at a different project's account).
+  // Re-enable by setting RESEND_SYNC_ENABLED=true in Vercel once verified.
+  // Note: signups are always saved in Supabase regardless, so nothing is lost.
+  if (process.env.RESEND_SYNC_ENABLED !== "true") return;
   if (!process.env.RESEND_CONTACTS_API_KEY && !process.env.RESEND_API_KEY) return;
 
   const str = (key: string) => sanitize(data[key]);
