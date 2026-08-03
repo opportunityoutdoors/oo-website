@@ -19,6 +19,27 @@ export const allEventsQuery = `*[_type == "event" && status != "draft" && status
   waitlistCloses
 }`;
 
+// Genuinely upcoming events, for the monthly newsletter.
+// Unlike allEventsQuery this filters on the date rather than trusting `status`, because
+// a past event whose status was never moved to "completed" must not be promoted as if
+// it were still coming up. Compares against endDate when there is one so a multi-day
+// event stays "upcoming" until its last day. $today is a "YYYY-MM-DD" string.
+export const upcomingEventsQuery = `*[_type == "event"
+  && status != "draft" && status != "archived" && status != "completed"
+  && coalesce(endDate, date) >= $today
+] | order(date asc) [0...5] {
+  _id,
+  title,
+  slug,
+  eventType,
+  status,
+  date,
+  endDate,
+  location,
+  cost,
+  description
+}`;
+
 export const eventBySlugQuery = `*[_type == "event" && slug.current == $slug][0] {
   _id,
   title,

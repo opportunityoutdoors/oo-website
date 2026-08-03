@@ -8,69 +8,10 @@ import type { Event } from "@/types";
 
 interface EventsGridProps {
   events?: Event[];
+  /** "past" dims the cards and relabels the action, since nothing is joinable. */
+  variant?: "upcoming" | "past";
 }
 
-// Placeholder events until Sanity content is populated
-const placeholderEvents: {
-  _id: string;
-  title: string;
-  slug: { current: string };
-  eventType: string;
-  date: string;
-  endDate?: string;
-  location: string;
-  description: string;
-  cost?: string;
-  status?: string;
-  image?: Event["image"];
-}[] = [
-  {
-    _id: "1",
-    title: "Turkey Camp 2026",
-    slug: { current: "turkey-camp-2026" },
-    eventType: "hunt-camp",
-    date: "2026-04-17T00:00:00Z",
-    endDate: "2026-04-19T00:00:00Z",
-    location: "Nantahala National Forest, NC",
-    description: "3-day turkey hunting camp for mentees and mentors. All experience levels welcome.",
-    cost: "$75",
-    status: "waitlist-open",
-  },
-  {
-    _id: "2",
-    title: "Fishing Camp 2026",
-    slug: { current: "fishing-camp-2026" },
-    eventType: "fish-camp",
-    date: "2026-06-15T00:00:00Z",
-    endDate: "2026-06-17T00:00:00Z",
-    location: "Location TBD",
-    description: "Weekend fishing camp with freshwater and fly fishing instruction from experienced mentors.",
-    cost: "$75",
-    status: "draft",
-  },
-  {
-    _id: "3",
-    title: "Spring Cookout & Range Day",
-    slug: { current: "spring-cookout-2026" },
-    eventType: "community",
-    date: "2026-05-03T00:00:00Z",
-    location: "Raleigh, NC",
-    description: "Casual cookout and range day. Great way to meet the OO community. No experience needed.",
-    cost: "Free",
-    status: "registration-open",
-  },
-  {
-    _id: "4",
-    title: "Intro to Archery Workshop",
-    slug: { current: "intro-archery-2026" },
-    eventType: "workshop",
-    date: "2026-05-17T00:00:00Z",
-    location: "Durham, NC",
-    description: "Half-day archery fundamentals workshop. Equipment provided.",
-    cost: "Free",
-    status: "registration-open",
-  },
-];
 
 
 function getEventTypeLabel(eventType: string): string {
@@ -88,7 +29,14 @@ function getEventTypeLabel(eventType: string): string {
   }
 }
 
-function getButtonLabel(eventType: string, status?: string): string {
+function getButtonLabel(
+  eventType: string,
+  status?: string,
+  isPast?: boolean
+): string {
+  // Date wins over status. An event whose last day has passed is over regardless of
+  // whether anyone remembered to change its status in Sanity.
+  if (isPast) return "Past Event";
   if (status === "sold-out") return "Full";
   if (status === "completed") return "Past Event";
   if (eventType === "hunt-camp" || eventType === "fish-camp") {
@@ -100,22 +48,32 @@ function getButtonLabel(eventType: string, status?: string): string {
   return "Learn More";
 }
 
-export default function EventsGrid({ events }: EventsGridProps) {
-  const displayEvents = events && events.length > 0 ? events : placeholderEvents;
+export default function EventsGrid({
+  events,
+  variant = "upcoming",
+}: EventsGridProps) {
+  const isPast = variant === "past";
+  const displayEvents = events ?? [];
 
   return (
     <>
       {displayEvents.length === 0 ? (
         <div className="py-16 text-center">
           <p className="text-lg text-near-black/40">
-            No events right now. Check back soon!
+            {isPast
+              ? "Nothing in the last six months."
+              : "No events on the calendar right now. Check back soon!"}
           </p>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2">
           {displayEvents.map((event) => {
             const { month, day } = eventDateBadge(event.date);
-            const isDisabled = event.status === "sold-out" || event.status === "completed" || event.status === "draft";
+            const isDisabled =
+              isPast ||
+              event.status === "sold-out" ||
+              event.status === "completed" ||
+              event.status === "draft";
 
             return (
               <Link
@@ -164,7 +122,7 @@ export default function EventsGrid({ events }: EventsGridProps) {
                         : "bg-white text-near-black"
                     }`}
                   >
-                    {getButtonLabel(event.eventType, event.status)}
+                    {getButtonLabel(event.eventType, event.status, isPast)}
                   </span>
                 </div>
               </Link>

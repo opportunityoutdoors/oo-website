@@ -5,6 +5,8 @@ import SectionContainer from "@/components/ui/SectionContainer";
 import LabelTag from "@/components/ui/LabelTag";
 import NewsletterSection from "@/components/ui/NewsletterSection";
 import EventsGrid from "./EventsGrid";
+import PartnerEventsGrid from "./PartnerEventsGrid";
+import { getApprovedPartnerEvents } from "@/lib/partner-events/public";
 import { client } from "@/lib/sanity";
 import { urlFor } from "@/lib/sanity";
 import { allEventsQuery, allGalleryImagesQuery } from "@/lib/queries";
@@ -32,6 +34,40 @@ function shuffleAndPick<T>(arr: T[], count: number): T[] {
   return shuffled.slice(0, count);
 }
 
+/** Past events stay visible for six months, then drop off the page. */
+const PAST_WINDOW_MONTHS = 6;
+
+/**
+ * Split our own events by date rather than by the `status` field.
+ *
+ * Status is set by hand in Sanity and drifts: an event that finished in April is still
+ * marked "waitlist-closed" today, which is why past camps were showing up as though they
+ * were still coming. The calendar is the one thing that cannot be forgotten to update.
+ */
+function splitByDate(events: Event[]) {
+  const now = Date.now();
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - PAST_WINDOW_MONTHS);
+
+  const upcoming: Event[] = [];
+  const past: Event[] = [];
+
+  for (const event of events) {
+    // Multi-day events count as upcoming until their last day is over.
+    const endsAt = new Date(event.endDate || event.date).getTime();
+    if (Number.isNaN(endsAt)) continue;
+
+    if (endsAt >= now) upcoming.push(event);
+    else if (endsAt >= cutoff.getTime()) past.push(event);
+  }
+
+  upcoming.sort((a, b) => +new Date(a.date) - +new Date(b.date));
+  // Most recent first, so the last thing that happened is at the top.
+  past.sort((a, b) => +new Date(b.date) - +new Date(a.date));
+
+  return { upcoming, past };
+}
+
 export default async function EventsPage() {
   let events: Event[] = [];
   let galleryBatches: GalleryBatch[] = [];
@@ -43,6 +79,9 @@ export default async function EventsPage() {
   } catch {
     // Sanity not available
   }
+
+  const { upcoming, past } = splitByDate(events);
+  const partnerEvents = await getApprovedPartnerEvents();
 
   // Flatten all batches into one pool of images
   const allImages = galleryBatches.flatMap((batch) => batch.images || []);
@@ -57,16 +96,34 @@ export default async function EventsPage() {
         backgroundImage="/images/hero/events-hero.webp"
       />
 
-      {/* Events Grid */}
-      <section className="bg-cream py-20">
+      {/* Upcoming: our own events, still to come */}
+      <section id="upcoming" className="bg-cream py-20">
         <SectionContainer>
           <div className="mb-10">
             <LabelTag>Upcoming</LabelTag>
             <h2 className="mt-5 text-[clamp(2rem,5vw,48px)] leading-none text-near-black">
-              Calendar
+              Our Events
             </h2>
           </div>
-          <EventsGrid events={events} />
+          <EventsGrid events={upcoming} />
+        </SectionContainer>
+      </section>
+
+      {/* Partner Events: approved in the admin queue, run by other organizations */}
+      <section id="partner-events" className="bg-warm-gray py-20">
+        <SectionContainer>
+          <div className="mb-4">
+            <LabelTag>Partner Events</LabelTag>
+            <h2 className="mt-5 text-[clamp(2rem,5vw,48px)] leading-none text-near-black">
+              Around North Carolina
+            </h2>
+          </div>
+          <p className="mb-10 max-w-[640px] text-[15px] leading-relaxed text-near-black/60">
+            Events run by other conservation and outdoors organizations across
+            the state. These are not Opportunity Outdoors events, so register
+            through the organizer.
+          </p>
+          <PartnerEventsGrid events={partnerEvents} />
         </SectionContainer>
       </section>
 
@@ -117,11 +174,29 @@ export default async function EventsPage() {
         </SectionContainer>
       </section>
 
-      {/* Past Events Gallery */}
+      {/* Past: our events from the last six months */}
+      {past.length > 0 && (
+        <section id="past" className="bg-cream py-20">
+          <SectionContainer>
+            <div className="mb-10">
+              <LabelTag>Past</LabelTag>
+              <h2 className="mt-5 text-[clamp(2rem,5vw,48px)] leading-none text-near-black">
+                Recently Out There
+              </h2>
+              <p className="mt-4 max-w-[640px] text-[15px] leading-relaxed text-near-black/60">
+                What we have run over the last six months.
+              </p>
+            </div>
+            <EventsGrid events={past} variant="past" />
+          </SectionContainer>
+        </section>
+      )}
+
+      {/* Photo gallery */}
       <section className="bg-warm-gray py-20">
         <SectionContainer>
           <div className="mb-10 text-center">
-            <LabelTag>Past Events</LabelTag>
+            <LabelTag>Gallery</LabelTag>
             <h2 className="mt-5 text-[clamp(2rem,5vw,48px)] leading-none text-near-black">
               In the Field
             </h2>
