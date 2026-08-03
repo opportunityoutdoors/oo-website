@@ -36,16 +36,34 @@ export async function POST(req: NextRequest) {
     // Deliberately NOT gated on _type. A delete payload frequently omits it, and deleting
     // by sanity_id is harmless for any other document type because no events row will
     // match. Requiring _type here was the second reason deletes silently did nothing.
-    const { error } = await supabase
+    const { data: removed, error } = await supabase
       .from("events")
       .delete()
-      .eq("sanity_id", _id);
+      .eq("sanity_id", _id)
+      .select("id, title");
 
     if (error) console.error("Event delete via webhook failed:", error);
 
+    // Report the row count rather than a bare success. The previous version answered
+    // "deleted: true" whether or not anything matched, so a delivery that did nothing
+    // looked identical to one that worked, in the logs and in Sanity's delivery history.
+    // A non-event document legitimately matches zero rows; an event that matches zero
+    // means something is wrong and should be visible.
+    const deletedRows = removed?.length ?? 0;
+    if (deletedRows === 0) {
+      console.log(
+        `Sanity delete for ${_id} matched no events row (expected for non-event documents)`
+      );
+    }
+
     revalidatePath("/");
     revalidatePath("/events");
-    return NextResponse.json({ revalidated: true, deleted: true, id: _id });
+    return NextResponse.json({
+      revalidated: true,
+      id: _id,
+      deletedRows,
+      deleted: removed?.map((r) => r.title) ?? [],
+    });
   }
 
   // Revalidate relevant paths based on content type
