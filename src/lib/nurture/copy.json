@@ -1,0 +1,62 @@
+{
+  "mentee": [
+    {
+      "key": "mentee-01-received",
+      "dayOffset": 0,
+      "body": {
+        "subject": "Mentee Application Recieved",
+        "heading": "Your application is in!",
+        "paragraphs": [
+          "Thanks for putting your name in the hat. We'll review everything and reach out with any questions.",
+          "In the meantime, look out for a follow-up email from us with more info about who we are and how to get involved."
+        ]
+      }
+    },
+    {
+      "key": "mentee-02-follow-up",
+      "dayOffset": 8,
+      "body": {
+        "subject": "A bit more about Opportunity Outdoors",
+        "heading": "Here's how this works",
+        "paragraphs": [
+          "Opportunity Outdoors is a North Carolina nonprofit that pairs new hunters and anglers with experienced mentors. Our mentors are volunteers who donate their time to pass on the skills, ethics, and conservation mindset.",
+          "Camps are the core of what we do, but we also run community days and workshops that anyone can join. Take a look at what's coming up and come out and meet us."
+        ],
+        "cta": {
+          "label": "See Upcoming Events",
+          "path": "/events"
+        }
+      }
+    }
+  ],
+  "mentor": [
+    {
+      "key": "mentor-01-received",
+      "dayOffset": 0,
+      "body": {
+        "subject": "Mentor Application Received",
+        "heading": "Your application is in!",
+        "paragraphs": [
+          "Thanks for stepping up. We'll review everything and reach out with any questions.",
+          "In the meantime, look out for a follow-up email from us with more info about how we run things."
+        ]
+      }
+    },
+    {
+      "key": "mentor-02-follow-up",
+      "dayOffset": 8,
+      "body": {
+        "subject": "A bit more about Opportunity Outdoors",
+        "heading": "Here's how this works",
+        "paragraphs": [
+          "Opportunity Outdoors is a North Carolina nonprofit that pairs new hunters and anglers with experienced mentors. Camps are the core of it: a few days in the field where a mentor takes one or two mentees through a hunt or a fishing trip start to finish.  That said, we're not guides and we don't expect you to be either.",
+          "We also run community days and workshops, which are a lower commitment than a full camp and a good place to meet the crew. Take a look at what's coming up and let us know if something works for you."
+        ],
+        "cta": {
+          "label": "See Upcoming Events",
+          "path": "/events"
+        }
+      }
+    }
+  ]
+}
