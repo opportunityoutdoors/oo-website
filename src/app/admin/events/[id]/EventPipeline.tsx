@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import MatchingTab from "./MatchingTab";
+import StatsTab from "./StatsTab";
 import { formatEventDateRange } from "@/lib/format-event-date";
 
 interface Registration {
@@ -48,7 +49,7 @@ interface EventDetail {
   registrations: Registration[];
 }
 
-type PipelineTab = "waitlist" | "approved" | "denied" | "registered" | "matching" | "all";
+type PipelineTab = "waitlist" | "approved" | "denied" | "registered" | "matching" | "stats" | "all";
 
 const STATUS_STYLES: Record<string, string> = {
   waitlist: "bg-gold/15 text-gold",
@@ -182,6 +183,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
     denied: event.registrations.filter((r) => r.status === "denied").length,
     registered: event.registrations.filter((r) => r.status === "registered" || r.status === "attended").length,
     matching: approvedAndRegistered.length,
+    stats: event.registrations.length,
     all: event.registrations.length,
   };
 
@@ -327,32 +329,39 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
 
         {/* Pipeline */}
         <div className="lg:col-span-3">
-          {/* Tabs */}
-          {isCamp && (
-            <div className="mb-4 flex gap-1 rounded-lg border border-near-black/10 bg-white p-1">
-              {(["all", "waitlist", "approved", "denied", "registered", "matching"] as PipelineTab[]).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => { setActiveTab(tab); setSelected(new Set()); }}
-                  className={`flex-1 rounded px-3 py-2 text-xs font-bold uppercase tracking-[0.5px] transition-colors ${
-                    activeTab === tab
-                      ? "bg-dark-green text-white"
-                      : "text-near-black/40 hover:text-near-black"
-                  }`}
-                >
-                  {tab === "all" ? "All" : tab.charAt(0).toUpperCase() + tab.slice(1)} ({counts[tab]})
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Tabs. Community and workshop events skip the camp pipeline stages but still
+              get survey results, so they get a reduced bar rather than none. */}
+          <div className="mb-4 flex gap-1 rounded-lg border border-near-black/10 bg-white p-1">
+            {((isCamp
+              ? ["all", "waitlist", "approved", "denied", "registered", "matching", "stats"]
+              : ["all", "stats"]) as PipelineTab[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => { setActiveTab(tab); setSelected(new Set()); }}
+                className={`flex-1 rounded px-3 py-2 text-xs font-bold uppercase tracking-[0.5px] transition-colors ${
+                  activeTab === tab
+                    ? "bg-dark-green text-white"
+                    : "text-near-black/40 hover:text-near-black"
+                }`}
+              >
+                {tab === "all"
+                  ? "All"
+                  : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {tab === "stats" ? "" : ` (${counts[tab]})`}
+              </button>
+            ))}
+          </div>
 
           {/* Matching Tab */}
           {activeTab === "matching" && (
             <MatchingTab eventId={eventId} />
           )}
 
+          {/* Stats Tab */}
+          {activeTab === "stats" && <StatsTab eventId={eventId} />}
+
           {/* Bulk Actions Bar */}
-          {activeTab !== "matching" && selected.size > 0 && (
+          {activeTab !== "matching" && activeTab !== "stats" && selected.size > 0 && (
             <div className="mb-3 flex items-center gap-3 rounded-lg border border-dark-green/20 bg-dark-green/5 px-4 py-2.5">
               <span className="text-xs font-semibold text-dark-green">
                 {selected.size} selected
@@ -406,7 +415,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
           )}
 
           {/* Registrations Table */}
-          {activeTab !== "matching" && <div className="rounded-lg border border-near-black/10 bg-white">
+          {activeTab !== "matching" && activeTab !== "stats" && <div className="rounded-lg border border-near-black/10 bg-white">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>

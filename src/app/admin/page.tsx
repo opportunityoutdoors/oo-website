@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/server";
+import ImpactRollup from "./ImpactRollup";
 
 export default async function AdminDashboardPage() {
   const supabase = createServiceClient();
@@ -50,6 +51,9 @@ export default async function AdminDashboardPage() {
           </Link>
         ))}
       </div>
+
+      {/* Year-to-date impact from the pre/post surveys */}
+      <ImpactRollup />
 
       {/* Recent Contacts */}
       <div className="rounded-lg border border-near-black/10 bg-white">
