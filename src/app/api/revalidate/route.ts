@@ -12,22 +12,40 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const { _type, slug } = body;
-  // Sanity IDs may come as "drafts.xxx" — strip the prefix
-  const _id = ((body._id as string) || "").replace(/^drafts\./, "");
 
-  // Check if this is a delete operation
-  // Sanity sends transition: "disappear" or operation: "delete" on deletion
-  const isDelete = body.transition === "disappear" || body.operation === "delete";
+  // Sanity IDs may come as "drafts.xxx" — strip the prefix. On a delete the body may
+  // carry nothing useful, so fall back to the document id header.
+  const rawId =
+    (body._id as string) || req.headers.get("sanity-document-id") || "";
+  const _id = rawId.replace(/^drafts\./, "");
+
+  // `sanity-operation` is a documented header on every GROQ webhook delivery and takes
+  // create | update | delete. Reading it beats inspecting the body: on a delete the
+  // projection often carries little or nothing, so the previous checks for
+  // body.transition and body.operation only fired if the webhook happened to be
+  // configured to project those fields. That is why deleted events kept surviving here.
+  const operation = req.headers.get("sanity-operation");
+  const isDelete =
+    operation === "delete" ||
+    body.transition === "disappear" ||
+    body.operation === "delete";
 
   if (isDelete && _id) {
-    // Delete from Supabase
     const supabase = createServiceClient();
-    if (_type === "event") {
-      await supabase.from("events").delete().eq("sanity_id", _id);
-    }
+
+    // Deliberately NOT gated on _type. A delete payload frequently omits it, and deleting
+    // by sanity_id is harmless for any other document type because no events row will
+    // match. Requiring _type here was the second reason deletes silently did nothing.
+    const { error } = await supabase
+      .from("events")
+      .delete()
+      .eq("sanity_id", _id);
+
+    if (error) console.error("Event delete via webhook failed:", error);
+
     revalidatePath("/");
     revalidatePath("/events");
-    return NextResponse.json({ revalidated: true, deleted: true });
+    return NextResponse.json({ revalidated: true, deleted: true, id: _id });
   }
 
   // Revalidate relevant paths based on content type
