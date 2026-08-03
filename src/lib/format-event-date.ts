@@ -44,29 +44,42 @@ export function formatEventDateRange(
 ): string | null {
   if (!dateStart) return null;
 
-  const hasRange = dateEnd && dateEnd !== dateStart;
+  // Compare calendar days, not raw strings. Sanity stores date-only values so string
+  // equality happened to work, but partner events carry real timestamps: a single-day
+  // event running 09:00 to 17:00 has a different end string and used to render as the
+  // nonsense range "August 22-22, 2026".
+  const sameDay = (a: string, b: string) => {
+    const x = utc(a);
+    const y = utc(b);
+    return x.year === y.year && x.month === y.month && x.day === y.day;
+  };
+
+  // Kept as the string (or null) rather than a boolean so TypeScript still narrows it to
+  // a defined value inside the branches below.
+  const rangeEnd: string | null =
+    dateEnd && !sameDay(dateStart, dateEnd) ? dateEnd : null;
 
   if (style === "compact") {
     const opts: Intl.DateTimeFormatOptions = { month: "numeric", day: "numeric", year: "2-digit" };
-    return hasRange
-      ? `${fmt(dateStart, opts)}-${fmt(dateEnd, opts)}`
+    return rangeEnd
+      ? `${fmt(dateStart, opts)}-${fmt(rangeEnd, opts)}`
       : fmt(dateStart, opts);
   }
 
   if (style === "short") {
     const startOpts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" };
     const endOpts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
-    return hasRange
-      ? `${fmt(dateStart, startOpts)} – ${fmt(dateEnd, endOpts)}`
+    return rangeEnd
+      ? `${fmt(dateStart, startOpts)} – ${fmt(rangeEnd, endOpts)}`
       : fmt(dateStart, startOpts);
   }
 
   // style === "long"
   const full: Intl.DateTimeFormatOptions = { month: "long", day: "numeric", year: "numeric" };
-  if (!hasRange) return fmt(dateStart, full);
+  if (!rangeEnd) return fmt(dateStart, full);
 
   const s = utc(dateStart);
-  const e = utc(dateEnd);
+  const e = utc(rangeEnd);
 
   if (s.month === e.month && s.year === e.year) {
     // Same month: "April 17–19, 2026"
@@ -75,7 +88,7 @@ export function formatEventDateRange(
   }
 
   // Different months: "April 17, 2026 – May 1, 2026"
-  return `${fmt(dateStart, full)} – ${fmt(dateEnd, full)}`;
+  return `${fmt(dateStart, full)} – ${fmt(rangeEnd, full)}`;
 }
 
 /**

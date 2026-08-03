@@ -41,6 +41,20 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.5px;
 }
 
+/* Opt-out for headings carrying copy we did not write.
+   The rule above is unlayered, so it beats Tailwind's layered utilities: a
+   `font-body normal-case` class on a heading silently loses. Partner event titles are
+   long and sentence-case ("TN & NC BHA Chapters - Great Smokey Mtn Nat'l Park Fishing
+   Day"), and condensed 900 uppercase renders them as an unreadable wall. This class is
+   unlayered too, and later in the file, so it wins. */
+h1.title-plain, h2.title-plain, h3.title-plain,
+h4.title-plain, h5.title-plain, h6.title-plain {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
 /* ─── Focus Indicators ─── */
 :focus-visible {
   outline: 2px solid var(--color-gold);
