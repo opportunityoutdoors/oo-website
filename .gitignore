@@ -65,3 +65,7 @@ main-list.csv
 # Email preview artifacts
 campaign-preview.html
 email-previews.html
+nurture-previews.html
+
+resend-import.csv
+resend-unsubscribed.txt

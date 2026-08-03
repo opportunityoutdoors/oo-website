@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "Project-scoped MCP servers. Checked into git so this repo always talks to the",
+    "Opportunity Outdoors accounts, never whichever account happens to be authorized",
+    "globally on the machine. Project scope beats user scope, so these override any",
+    "same-named server in ~/.claude.json.",
+    "",
+    "No credentials live here. Each server shells out to read its key from ./.env.local,",
+    "which is gitignored, so the config is shareable and the secrets stay local.",
+    "Required in .env.local: SUPABASE_ACCESS_TOKEN (a Supabase personal access token from",
+    "the account that owns project ffivubkouyqzvebuxflf) and RESEND_API_KEY."
+  ],
+  "mcpServers": {
+    "supabase": {
+      "type": "stdio",
+      "command": "sh",
+      "args": [
+        "-c",
+        "if [ -f ./.env.local ]; then export SUPABASE_ACCESS_TOKEN=\"$(grep -E '^SUPABASE_ACCESS_TOKEN=' ./.env.local | head -1 | cut -d= -f2- | sed -e 's/^\"//' -e 's/\"$//')\"; fi; exec npx -y @supabase/mcp-server-supabase@latest --project-ref=ffivubkouyqzvebuxflf"
+      ]
+    },
+    "resend": {
+      "type": "stdio",
+      "command": "sh",
+      "args": [
+        "-c",
+        "if [ -f ./.env.local ]; then export RESEND_API_KEY=\"$(grep -E '^RESEND_API_KEY=' ./.env.local | head -1 | cut -d= -f2- | sed -e 's/^\"//' -e 's/\"$//')\"; fi; exec npx -y resend-mcp"
+      ]
+    }
+  }
+}
