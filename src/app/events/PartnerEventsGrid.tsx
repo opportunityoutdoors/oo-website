@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { formatEventDateRange, eventDateBadge } from "@/lib/format-event-date";
 import type { PublicPartnerEvent } from "@/lib/partner-events/public";
 
@@ -40,19 +41,35 @@ export default function PartnerEventsGrid({
   }
 
   return (
-    <div className="grid items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3">
+    // auto-rows-fr makes every row the same height, so cards match across the whole grid
+    // rather than only within their own row.
+    <div className="grid auto-rows-fr items-stretch gap-4 md:grid-cols-2 lg:grid-cols-3">
       {events.map((event) => {
         const badge = event.startsAt ? eventDateBadge(event.startsAt) : null;
         const when = formatEventDateRange(event.startsAt, event.endsAt, "long");
         const title = trimLocationSuffix(event.title, event.city);
         const where = event.city || event.location;
 
+        const meta: [string, string][] = [];
+        if (when) meta.push(["When", when]);
+        if (where) meta.push(["Where", where]);
+        if (event.cost) meta.push(["Cost", event.cost]);
+
         const body = (
           // Column layout with the link pushed down by mt-auto, so the call to action
           // sits on the card's bottom edge whatever the title length or whether the
           // source gave us a description.
           <div className="flex h-full flex-col p-5">
-            <div className="flex items-start gap-4">
+            {/* Organizer runs full width above everything: it labels the whole card, not
+                just the title, and keeping it out of the title column stops it competing
+                with the date badge for horizontal space. */}
+            {event.organizer && (
+              <p className="mb-3 border-b border-near-black/10 pb-2 text-[10px] font-bold uppercase tracking-[1.5px] text-near-black/40">
+                {event.organizer}
+              </p>
+            )}
+
+            <div className="flex items-center gap-3">
               {badge && (
                 <div className="shrink-0 rounded bg-dark-green px-3 py-2 text-center text-white">
                   <div className="font-heading text-[10px] font-bold uppercase tracking-[1px]">
@@ -64,49 +81,31 @@ export default function PartnerEventsGrid({
                 </div>
               )}
 
-              <div className="min-w-0">
-                {event.organizer && (
-                  <p className="text-[10px] font-bold uppercase tracking-[1.5px] text-near-black/40">
-                    {event.organizer}
-                  </p>
-                )}
-                {/* globals.css forces every heading to Barlow Condensed 900 uppercase.
-                    That suits our own short titles ("Turkey Camp") but turns a partner's
-                    sentence-case name into an unreadable wall, so this one opts out and
-                    uses the body face at normal case. */}
-                <h3 className="title-plain mt-1 text-[17px] leading-snug text-near-black">
-                  {title}
-                </h3>
-              </div>
+              {/* globals.css forces every heading to Barlow Condensed 900 uppercase.
+                  That suits our own short titles ("Turkey Camp") but turns a partner's
+                  sentence-case name into an unreadable wall, so this one opts out and
+                  uses the body face at normal case. */}
+              <h3 className="title-plain min-w-0 text-[17px] leading-snug text-near-black">
+                {title}
+              </h3>
             </div>
 
-            {/* One standardized meta block: full date on its own line, then place. */}
-            <dl className="mt-4 space-y-1 text-sm">
-              {when && (
-                <div className="flex gap-2">
-                  <dt className="w-14 shrink-0 text-[11px] font-bold uppercase tracking-[1px] text-near-black/35">
-                    When
-                  </dt>
-                  <dd className="text-near-black/70">{when}</dd>
-                </div>
-              )}
-              {where && (
-                <div className="flex gap-2">
-                  <dt className="w-14 shrink-0 text-[11px] font-bold uppercase tracking-[1px] text-near-black/35">
-                    Where
-                  </dt>
-                  <dd className="text-near-black/70">{where}</dd>
-                </div>
-              )}
-              {event.cost && (
-                <div className="flex gap-2">
-                  <dt className="w-14 shrink-0 text-[11px] font-bold uppercase tracking-[1px] text-near-black/35">
-                    Cost
-                  </dt>
-                  <dd className="text-near-black/70">{event.cost}</dd>
-                </div>
-              )}
-            </dl>
+            {/* Grid rather than flex rows: the label column sizes itself to the widest
+                label and every value starts on the same x, which a per-row flex with a
+                fixed width could not guarantee. items-baseline lines the small uppercase
+                label up with the larger value text instead of floating above it. */}
+            {meta.length > 0 && (
+              <dl className="mt-4 grid grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-1.5 text-sm">
+                {meta.map(([label, value]) => (
+                  <Fragment key={label}>
+                    <dt className="text-[10px] font-bold uppercase tracking-[1px] text-near-black/35">
+                      {label}
+                    </dt>
+                    <dd className="text-near-black/70">{value}</dd>
+                  </Fragment>
+                ))}
+              </dl>
+            )}
 
             {event.description && (
               <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-near-black/55">
@@ -116,7 +115,7 @@ export default function PartnerEventsGrid({
 
             {event.url && (
               <span className="mt-auto flex items-center gap-1 pt-5 text-xs font-bold uppercase tracking-[1px] text-dark-green">
-                Details at organizer
+                More Info
                 <span aria-hidden="true">&rarr;</span>
               </span>
             )}
