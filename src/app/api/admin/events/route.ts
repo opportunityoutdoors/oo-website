@@ -139,6 +139,11 @@ export async function GET() {
     return {
       id: dbEvent.id,
       sanity_id: dbEvent.sanity_id,
+      // No matching Sanity document. Either it was deleted in the Studio and the delete
+      // webhook never fired, or the webhook is not configured to send delete events at
+      // all. Either way the row is stranded here: invisible to editors, still counted in
+      // admin lists, and still holding its registrations.
+      orphaned: !se,
       title: dbEvent.title,
       slug: se?.slug?.current || null,
       event_type: dbEvent.event_type,
