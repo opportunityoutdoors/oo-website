@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import FormField from "@/components/forms/FormField";
+import SurveyQuestions, { EMPTY_ANSWERS } from "@/components/forms/SurveyQuestions";
 import { US_STATES } from "@/lib/constants/us-states";
+import type { SurveyAnswers } from "@/lib/surveys/questions";
 
 interface EventRegistrationProps {
   event: {
@@ -349,6 +351,10 @@ function CommunityRegistrationForm({
     howHeard: "",
     honeypot: "",
   });
+  // Baseline survey, collected at registration rather than emailed later. Capturing it
+  // here is what guarantees a pre response for every participant to pair the post
+  // response against.
+  const [survey, setSurvey] = useState<SurveyAnswers>(EMPTY_ANSWERS);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -371,6 +377,7 @@ function CommunityRegistrationForm({
             howHeard: form.howHeard,
             eventName: event.title,
             eventType: event.eventType === "workshop" ? "Workshop" : "Community",
+            survey,
           },
         }),
       });
@@ -413,6 +420,23 @@ function CommunityRegistrationForm({
         </div>
 
         <FormField type="select" label="How Did You Hear About Us?" name="reg-howHeard" required value={form.howHeard} onChange={(v) => setForm({ ...form, howHeard: v })} options={howHeardOptions} />
+
+        <div className="border-t border-near-black/10 pt-6">
+          <h4 className="mb-1 text-base font-extrabold text-near-black">
+            Before You Go
+          </h4>
+          <p className="mb-5 text-sm text-near-black/50">
+            A few quick questions so we can tailor the day and measure how we
+            are doing. We ask the same ones afterward.
+          </p>
+          <SurveyQuestions
+            kind="pre"
+            eventKind={event.eventType}
+            namePrefix="reg-survey"
+            value={survey}
+            onChange={setSurvey}
+          />
+        </div>
 
         {status === "error" && (
           <p className="text-sm text-red-500">Something went wrong. Please try again.</p>

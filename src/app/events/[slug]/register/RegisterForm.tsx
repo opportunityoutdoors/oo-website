@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import SurveyQuestions, { EMPTY_ANSWERS } from "@/components/forms/SurveyQuestions";
+import type { SurveyAnswers } from "@/lib/surveys/questions";
 
 interface EventInfo {
   title: string;
@@ -120,6 +122,8 @@ export default function RegisterForm() {
   const [contactShareConsent, setContactShareConsent] = useState(false);
   const [minorTshirtSize, setMinorTshirtSize] = useState("");
   const [minorDietaryMedical, setMinorDietaryMedical] = useState("");
+  const [survey, setSurvey] = useState<SurveyAnswers>(EMPTY_ANSWERS);
+  const [minorSurvey, setMinorSurvey] = useState<SurveyAnswers>(EMPTY_ANSWERS);
   const waiverRef = useRef<HTMLDivElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -178,6 +182,8 @@ export default function RegisterForm() {
         signature_name: signatureName,
         minor_tshirt_size: minorTshirtSize || null,
         minor_dietary_medical: minorDietaryMedical || null,
+        survey,
+        minor_survey: registration?.linked_minor ? minorSurvey : null,
       }),
     });
 
@@ -414,6 +420,46 @@ export default function RegisterForm() {
                 />
               </div>
             </div>
+          </section>
+        )}
+
+        {/* Baseline survey. Asked once per participant, so a guardian registering a minor
+            answers twice: their own set and one on the minor's behalf. Keeping it
+            per-participant is what makes the confidence delta meaningful per person
+            rather than per household. */}
+        <section>
+          <h2 className="mb-2 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
+            {minor ? "Before Camp: You" : "Before Camp"}
+          </h2>
+          <p className="mb-5 text-sm text-near-black/50">
+            A few quick questions so we know where you are starting from. We
+            ask the same ones after camp to see how it went.
+          </p>
+          <SurveyQuestions
+            kind="pre"
+            eventKind={registration!.events.event_type}
+            namePrefix="survey-self"
+            value={survey}
+            onChange={setSurvey}
+          />
+        </section>
+
+        {minor && (
+          <section>
+            <h2 className="mb-2 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
+              Before Camp: {minor.contacts.first_name}
+            </h2>
+            <p className="mb-5 text-sm text-near-black/50">
+              Answer these for {minor.contacts.first_name}, or have them answer
+              with you.
+            </p>
+            <SurveyQuestions
+              kind="pre"
+              eventKind={registration!.events.event_type}
+              namePrefix="survey-minor"
+              value={minorSurvey}
+              onChange={setMinorSurvey}
+            />
           </section>
         )}
 

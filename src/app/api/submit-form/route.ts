@@ -9,6 +9,11 @@ import {
   renderWaitlistConfirmation,
 } from "@/emails";
 import { upsertResendContact } from "@/lib/resend/contacts";
+import {
+  toResponseRow,
+  validateSurveyAnswers,
+  type SurveyAnswers,
+} from "@/lib/surveys/questions";
 
 /* ─── Types ─── */
 
@@ -24,7 +29,7 @@ type FormType =
 
 interface SubmitPayload {
   formType: FormType;
-  data: Record<string, string | string[] | boolean>;
+  data: Record<string, unknown>;
 }
 
 /* ─── Validation helpers ─── */
@@ -89,8 +94,8 @@ function isRateLimited(ip: string): boolean {
 
 async function writeToSupabase(
   formType: FormType,
-  data: Record<string, string | string[] | boolean>
-): Promise<void> {
+  data: Record<string, unknown>
+): Promise<string> {
   const supabase = createServiceClient();
   const str = (key: string) => sanitize(data[key]);
   const arr = (key: string) =>
@@ -231,13 +236,34 @@ async function writeToSupabase(
         eventId = event?.id || null;
       }
       if (eventId) {
-        const { error } = await supabase.from("registrations").insert({
-          contact_id: contactId,
-          event_id: eventId,
-          status: "registered",
-          role: "attendee",
-        });
+        const { data: reg, error } = await supabase
+          .from("registrations")
+          .insert({
+            contact_id: contactId,
+            event_id: eventId,
+            status: "registered",
+            role: "attendee",
+          })
+          .select("id")
+          .single();
         if (error) console.error("Supabase event registration error:", error);
+
+        // Baseline survey, collected on the registration form itself. Validated in the
+        // POST handler before we get here, so anything present is already well formed.
+        if (reg && data.survey) {
+          const row = toResponseRow("pre", data.survey as SurveyAnswers);
+          const { error: surveyError } = await supabase
+            .from("survey_responses")
+            .insert({
+              registration_id: reg.id,
+              contact_id: contactId,
+              event_id: eventId,
+              ...row,
+            });
+          if (surveyError) {
+            console.error("Supabase pre-survey insert error:", surveyError);
+          }
+        }
       }
       break;
     }
@@ -369,13 +395,15 @@ async function writeToSupabase(
     case "contact":
       break;
   }
+
+  return contactId;
 }
 
 /* ─── Resend: sync contact to marketing list ─── */
 
 async function syncToResend(
   formType: FormType,
-  data: Record<string, string | string[] | boolean>
+  data: Record<string, unknown>
 ): Promise<void> {
   // DISABLED until the correct Opportunity Outdoors Resend account + segment ID
   // are confirmed (the connector was pointing at a different project's account).
@@ -433,7 +461,7 @@ async function syncToResend(
 /* ─── Event registration confirmation (community / workshop events) ─── */
 
 async function sendEventRegistrationConfirmation(
-  data: Record<string, string | string[] | boolean>
+  data: Record<string, unknown>
 ): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return;
@@ -486,7 +514,7 @@ async function sendEventRegistrationConfirmation(
 
 async function sendNotificationEmail(
   formType: FormType,
-  data: Record<string, string | string[] | boolean>
+  data: Record<string, unknown>
 ): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return;
@@ -588,8 +616,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
     }
 
+    // The pre-event survey is mandatory, so enforce it here rather than trusting the
+    // form's required attributes. A registration without a baseline has no post response
+    // to pair with and would quietly drag the confidence delta toward nothing.
+    if (formType === "event-registration") {
+      // eventType is sent by the form as a display label ("Workshop" / "Community"), so
+      // map it back to the schema value that drives question wording.
+      const eventKind =
+        sanitize(data.eventType).toLowerCase() === "workshop"
+          ? "workshop"
+          : "community";
+      const problem = validateSurveyAnswers("pre", data.survey, eventKind);
+      if (problem) {
+        return NextResponse.json({ error: problem }, { status: 400 });
+      }
+    }
+
     // 1. Write to Supabase (source of truth)
-    await writeToSupabase(formType, data);
+    const contactId = await writeToSupabase(formType, data);
 
     // 2. Sync contact to the Resend marketing list (non-blocking, runs after response)
     after(async () => {
@@ -607,6 +651,25 @@ export async function POST(request: NextRequest) {
         await sendEventRegistrationConfirmation(data);
       } catch (err) {
         console.error("Event registration confirmation error:", err);
+      }
+    });
+
+    // 2d. Enroll mentee/mentor applicants in their nurture sequence and send the day-0
+    // acknowledgment right away. Without this an applicant hears nothing at all until a
+    // board member happens to reach out.
+    after(async () => {
+      if (formType !== "mentee-signup" && formType !== "mentor-signup") return;
+      try {
+        const { enrollAndSendFirstStep } = await import("@/lib/nurture/send");
+        await enrollAndSendFirstStep({
+          supabase: createServiceClient(),
+          contactId,
+          track: formType === "mentee-signup" ? "mentee" : "mentor",
+          email,
+          firstName: sanitize(data.firstName) || null,
+        });
+      } catch (err) {
+        console.error("Nurture enrollment error:", err);
       }
     });
 

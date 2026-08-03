@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM } from "@/lib/email/from";
 import { renderRegistrationConfirmation } from "@/emails";
+import {
+  toResponseRow,
+  validateSurveyAnswers,
+  type SurveyAnswers,
+} from "@/lib/surveys/questions";
 
 // Validate a registration token and return event + contact info (including linked minor)
 export async function GET(request: NextRequest) {
@@ -60,6 +65,8 @@ export async function POST(request: NextRequest) {
     // Minor fields
     minor_tshirt_size,
     minor_dietary_medical,
+    survey,
+    minor_survey,
   } = body;
 
   if (!token) {
@@ -70,6 +77,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Waiver must be signed" }, { status: 400 });
   }
 
+  // Survey validation happens after the token lookup below, because the question wording
+  // (and therefore the error messages) depends on the event type.
+
   // Get client IP
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
@@ -79,7 +89,7 @@ export async function POST(request: NextRequest) {
   // Verify token and status
   const { data: registration } = await supabase
     .from("registrations")
-    .select("id, contact_id, event_id, role, status")
+    .select("id, contact_id, event_id, role, status, events(event_type)")
     .eq("token", token)
     .single();
 
@@ -89,6 +99,36 @@ export async function POST(request: NextRequest) {
 
   if (registration.status !== "approved") {
     return NextResponse.json({ error: "Not eligible for registration" }, { status: 403 });
+  }
+
+  const eventRel = registration.events as { event_type: string } | { event_type: string }[] | null;
+  const eventKind =
+    (Array.isArray(eventRel) ? eventRel[0]?.event_type : eventRel?.event_type) ||
+    "community";
+
+  // The baseline survey is mandatory. Enforced server side so it cannot be skipped by a
+  // hand-crafted request: a registration with no baseline has nothing to pair its post
+  // response against. Validated before any write so a bad payload cannot leave a
+  // half-registered state.
+  const surveyProblem = validateSurveyAnswers("pre", survey, eventKind);
+  if (surveyProblem) {
+    return NextResponse.json({ error: surveyProblem }, { status: 400 });
+  }
+
+  const { data: minorPreCheck } = await supabase
+    .from("registrations")
+    .select("id")
+    .eq("guardian_registration_id", registration.id)
+    .maybeSingle();
+
+  if (minorPreCheck) {
+    const minorProblem = validateSurveyAnswers("pre", minor_survey, eventKind);
+    if (minorProblem) {
+      return NextResponse.json(
+        { error: `For the minor: ${minorProblem}` },
+        { status: 400 }
+      );
+    }
   }
 
   const now = new Date().toISOString();
@@ -156,6 +196,36 @@ export async function POST(request: NextRequest) {
         .update({ tshirt_size: minor_tshirt_size })
         .eq("id", linkedMinor.contact_id);
     }
+  }
+
+  // Store the baselines. One row per participant, so a guardian and their minor each get
+  // their own pre response to pair against their own post response later.
+  const preRows = [
+    {
+      registration_id: registration.id,
+      contact_id: registration.contact_id,
+      event_id: registration.event_id,
+      ...toResponseRow("pre", survey as SurveyAnswers),
+    },
+  ];
+
+  if (linkedMinor && minor_survey) {
+    preRows.push({
+      registration_id: linkedMinor.id,
+      contact_id: linkedMinor.contact_id,
+      event_id: registration.event_id,
+      ...toResponseRow("pre", minor_survey as SurveyAnswers),
+    });
+  }
+
+  // upsert on the (registration_id, kind) unique constraint so a resubmit updates rather
+  // than erroring out and blocking the rest of the flow.
+  const { error: surveyError } = await supabase
+    .from("survey_responses")
+    .upsert(preRows, { onConflict: "registration_id,kind" });
+
+  if (surveyError) {
+    console.error("Pre-survey insert error:", surveyError);
   }
 
   // Fetch full info for confirmation email
