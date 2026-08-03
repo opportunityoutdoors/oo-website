@@ -17,6 +17,7 @@ function AdminNav({ user }: { user: NavUser }) {
     { href: "/admin/contacts", label: "Contacts" },
     { href: "/admin/events", label: "Events" },
     { href: "/admin/partner-events", label: "Local Events" },
+    { href: "/admin/impact", label: "Impact" },
     { href: "/admin/studio", label: "Content Studio" },
   ];
   if (user.role === "admin") {

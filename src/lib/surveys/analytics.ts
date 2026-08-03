@@ -37,7 +37,7 @@ export type ResponseRow = {
   registration_id: string;
   contact_id: string;
   event_id: string;
-  kind: "pre" | "post";
+  kind: "pre" | "post" | "followup";
   comfort_solo: number | null;
   comfort_finding_spots: number | null;
   comfort_public_land: number | null;

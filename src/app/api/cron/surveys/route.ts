@@ -21,6 +21,11 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const SEND_AFTER_DAYS = 1;
 const REMIND_AFTER_DAYS = 5;
 
+// Six months. R3 evaluation guidance puts the behavioural follow-up at six to twelve
+// months after the event; six is the earlier bound and keeps the event recent enough that
+// people remember it, while being long enough for a season to have come and gone.
+const FOLLOWUP_AFTER_DAYS = 180;
+
 // Events that ended before this date are never surveyed.
 //
 // Without it, the first production run would mail every historically 'attended'
@@ -104,6 +109,7 @@ async function sendInvite(params: {
   eventTitle: string;
   token: string;
   isReminder: boolean;
+  isFollowup?: boolean;
 }): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return false;
@@ -112,9 +118,14 @@ async function sendInvite(params: {
   const resend = new Resend(apiKey);
 
   const who = params.participantName ? ` for ${params.participantName}` : "";
-  const subject = params.isReminder
-    ? `One more ask: how was ${params.eventTitle}?`
-    : `How was ${params.eventTitle}${who}?`;
+
+  const subject = params.isFollowup
+    ? params.isReminder
+      ? `Still meaning to ask about ${params.eventTitle}`
+      : `Six months on from ${params.eventTitle}${who}`
+    : params.isReminder
+      ? `One more ask: how was ${params.eventTitle}?`
+      : `How was ${params.eventTitle}${who}?`;
 
   try {
     await resend.emails.send({
@@ -127,6 +138,7 @@ async function sendInvite(params: {
         surveyUrl: `${baseUrl()}/survey/${params.token}`,
         participantName: params.participantName,
         isReminder: params.isReminder,
+        isFollowup: params.isFollowup,
       }),
     });
     return true;
@@ -294,11 +306,73 @@ export async function GET(request: NextRequest) {
     await sleep(SEND_SPACING_MS);
   }
 
+  // ── Job 3: six-month follow-up ───────────────────────────────────────
+  // The stage that carries the actual outcome. Goes to the same attended registrations,
+  // 180 days after the event, whether or not they answered the post survey: somebody who
+  // skipped the immediate survey can still tell us they are still going out.
+  const followupCutoff = new Date(
+    now - FOLLOWUP_AFTER_DAYS * MS_PER_DAY
+  ).toISOString();
+
+  let followupSent = 0;
+
+  for (const raw of candidates) {
+    const event = one(raw.events);
+    const ended = event?.date_end || event?.date_start;
+    if (!ended || ended > followupCutoff) continue;
+    if (ended < SURVEY_CUTOFF_DATE) continue;
+    if (!hasBaseline.has(raw.id)) continue;
+
+    const { data: existing } = await supabase
+      .from("survey_invites")
+      .select("id")
+      .eq("registration_id", raw.id)
+      .eq("kind", "followup")
+      .maybeSingle();
+
+    if (existing) continue;
+
+    const recipient = await resolveRecipient(supabase, raw);
+    if (!recipient) continue;
+
+    const token = randomBytes(24).toString("hex");
+
+    const { data: invite, error: inviteError } = await supabase
+      .from("survey_invites")
+      .insert({ registration_id: raw.id, kind: "followup", token })
+      .select("id")
+      .single();
+
+    if (inviteError || !invite) continue;
+
+    const ok = await sendInvite({
+      ...recipient,
+      eventTitle: event?.title || "the event",
+      token,
+      isReminder: false,
+      isFollowup: true,
+    });
+
+    if (!ok) {
+      await supabase.from("survey_invites").delete().eq("id", invite.id);
+      continue;
+    }
+
+    await supabase
+      .from("survey_invites")
+      .update({ sent_at: new Date().toISOString() })
+      .eq("id", invite.id);
+
+    followupSent++;
+    await sleep(SEND_SPACING_MS);
+  }
+
   // Skips are reported rather than silent, so a run that mails nobody is explainable.
   return NextResponse.json({
     message: "Surveys processed",
     sent,
     reminded,
+    followupSent,
     skippedTooOld,
     skippedNoBaseline,
     cutoff: SURVEY_CUTOFF_DATE,

@@ -1,0 +1,11 @@
+-- Adds the third assessment stage.
+--
+-- R3 evaluation guidance is explicit that pre and post alone measure how someone felt on
+-- the drive home. The outcome that matters is behaviour six to twelve months later: are
+-- they still going out, and did they take anyone with them. Without this stage the whole
+-- impact tier stays permanently empty.
+--
+-- Kept as a third value on survey_kind rather than a separate table so the existing
+-- token, invite, cron, and analytics machinery all work unchanged, and so a participant's
+-- three responses sit in one place and pair on registration_id.
+alter type survey_kind add value if not exists 'followup';

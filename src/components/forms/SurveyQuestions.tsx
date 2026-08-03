@@ -4,6 +4,7 @@ import FormField from "@/components/forms/FormField";
 import { INTEREST_GROUPS } from "@/lib/constants/interests";
 import {
   EXPECTATIONS_QUESTION,
+  followupQuestions,
   FAVORITE_PART_QUESTION,
   FOLLOW_UP_OPTIONS,
   INTERESTS_QUESTION,
@@ -156,6 +157,59 @@ export default function SurveyQuestions({
           value={value.expectations ?? ""}
           onChange={(v) => set("expectations", v)}
         />
+      )}
+
+      {kind === "followup" && (
+        <>
+          {(() => {
+            const q = followupQuestions(eventKind);
+            return (
+              <>
+                <FormField
+                  type="radio"
+                  label={q.wentOut.label}
+                  name={`${namePrefix}-wentOut`}
+                  required
+                  value={value.wentOut ?? ""}
+                  onChange={(v) => set("wentOut", v)}
+                  options={q.wentOut.options}
+                />
+                <FormField
+                  type="radio"
+                  label={q.tookSomeoneOut.label}
+                  name={`${namePrefix}-tookSomeoneOut`}
+                  required
+                  value={value.tookSomeoneOut ?? ""}
+                  onChange={(v) => set("tookSomeoneOut", v)}
+                  options={q.tookSomeoneOut.options}
+                />
+                <FormField
+                  type="radio"
+                  label={q.boughtLicense.label}
+                  name={`${namePrefix}-boughtLicense`}
+                  value={value.boughtLicense ?? ""}
+                  onChange={(v) => set("boughtLicense", v)}
+                  options={q.boughtLicense.options}
+                />
+                <FormField
+                  type="radio"
+                  label={q.wouldMentor.label}
+                  name={`${namePrefix}-wouldMentor`}
+                  value={value.wouldMentor ?? ""}
+                  onChange={(v) => set("wouldMentor", v)}
+                  options={q.wouldMentor.options}
+                />
+                <FormField
+                  type="textarea"
+                  label={q.whatWouldHelp.label}
+                  name={`${namePrefix}-whatWouldHelp`}
+                  value={value.whatWouldHelp ?? ""}
+                  onChange={(v) => set("whatWouldHelp", v)}
+                />
+              </>
+            );
+          })()}
+        </>
       )}
 
       {kind === "post" && (

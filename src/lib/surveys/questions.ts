@@ -23,7 +23,7 @@
 
 import { ALL_INTEREST_VALUES } from "@/lib/constants/interests";
 
-export type SurveyKind = "pre" | "post";
+export type SurveyKind = "pre" | "post" | "followup";
 
 /** Matches the event_type enum in Supabase; anything else falls back to generic wording. */
 export type EventKind = "hunt-camp" | "fish-camp" | "community" | "workshop" | string;
@@ -52,6 +52,17 @@ export type SurveyAnswers = Record<ScaleKey, number> & {
   favoritePart?: string;
   recommend?: number;
   followUp?: string[];
+  /**
+   * Follow-up only. These are the Tier 3 behaviour measures: the R3 standard treats
+   * continued participation, not attendance or immediate confidence, as the outcome.
+   * `wentOut` and `tookSomeoneOut` are the two that matter most, the second being the
+   * recruitment multiplier that Opportunity Outdoors' whole theory of change rests on.
+   */
+  wentOut?: string;
+  tookSomeoneOut?: string;
+  boughtLicense?: string;
+  wouldMentor?: string;
+  whatWouldHelp?: string;
 };
 
 export type ScaleQuestion = {
@@ -159,6 +170,76 @@ export const RECOMMEND_QUESTION = {
   highLabel: "Very likely",
 };
 
+/* ─── Follow-up only: the Tier 3 behaviour questions ─── */
+
+/**
+ * Wording swaps by event type the same way the scales do. "Since camp, have you been
+ * hunting on your own?" is a question somebody can answer without thinking; a generic
+ * version is not.
+ */
+export function followupQuestions(eventKind: EventKind) {
+  const w = wordingFor(eventKind);
+  const activity =
+    eventKind === "hunt-camp"
+      ? "hunting"
+      : eventKind === "fish-camp"
+        ? "fishing"
+        : "out";
+
+  return {
+    wentOut: {
+      key: "wentOut" as const,
+      label: `Since the event, have you been ${activity} on your own?`,
+      options: [
+        { label: "Yes, several times", value: "several" },
+        { label: "Yes, once or twice", value: "once_or_twice" },
+        { label: "Not yet, but I plan to", value: "planning" },
+        { label: "No", value: "no" },
+      ],
+    },
+    tookSomeoneOut: {
+      key: "tookSomeoneOut" as const,
+      label: `Have you taken someone else ${activity} since then?`,
+      options: [
+        { label: "Yes", value: "yes" },
+        { label: "Not yet, but I'd like to", value: "would_like" },
+        { label: "No", value: "no" },
+      ],
+    },
+    boughtLicense: {
+      key: "boughtLicense" as const,
+      label: "Have you bought a hunting or fishing license since the event?",
+      options: [
+        { label: "Yes", value: "yes" },
+        { label: "I already had one", value: "already_had" },
+        { label: "No", value: "no" },
+      ],
+    },
+    wouldMentor: {
+      key: "wouldMentor" as const,
+      label: "Would you be interested in mentoring someone yourself?",
+      options: [
+        { label: "Yes", value: "yes" },
+        { label: "Maybe, not yet", value: "maybe" },
+        { label: "No", value: "no" },
+      ],
+    },
+    whatWouldHelp: {
+      key: "whatWouldHelp" as const,
+      label: `What would help you get ${activity} more often?`,
+    },
+    // Unused by the form but kept alongside so the wording stays in one place.
+    _solo: w.solo,
+  };
+}
+
+const FOLLOWUP_VALUE_SETS: Record<string, string[]> = {
+  wentOut: ["several", "once_or_twice", "planning", "no"],
+  tookSomeoneOut: ["yes", "would_like", "no"],
+  boughtLicense: ["yes", "already_had", "no"],
+  wouldMentor: ["yes", "maybe", "no"],
+};
+
 export const FOLLOW_UP_OPTIONS = [
   { label: "I'd like to attend another event", value: "another_event" },
   { label: "I'd like to apply to a camp", value: "camp" },
@@ -233,6 +314,20 @@ export function validateSurveyAnswers(
     }
   }
 
+  if (kind === "followup") {
+    const q = followupQuestions(eventKind);
+    // The two behaviour questions are required: they are the entire point of this stage.
+    if (!a.wentOut) return `Please answer: ${q.wentOut.label}`;
+    if (!a.tookSomeoneOut) return `Please answer: ${q.tookSomeoneOut.label}`;
+
+    for (const [key, allowed] of Object.entries(FOLLOWUP_VALUE_SETS)) {
+      const value = a[key as keyof SurveyAnswers];
+      if (value !== undefined && !allowed.includes(value as string)) {
+        return `Unrecognized answer for ${key}`;
+      }
+    }
+  }
+
   return null;
 }
 
@@ -242,13 +337,19 @@ export function toResponseRow(kind: SurveyKind, a: SurveyAnswers) {
 
   if (kind === "pre") {
     if (a.expectations?.trim()) answers.expectations = a.expectations.trim();
-  } else {
+  } else if (kind === "post") {
     if (a.metExpectations !== undefined) {
       answers.metExpectations = a.metExpectations;
     }
     if (a.favoritePart?.trim()) answers.favoritePart = a.favoritePart.trim();
     if (a.recommend !== undefined) answers.recommend = a.recommend;
     if (a.followUp?.length) answers.followUp = a.followUp;
+  } else {
+    if (a.wentOut) answers.wentOut = a.wentOut;
+    if (a.tookSomeoneOut) answers.tookSomeoneOut = a.tookSomeoneOut;
+    if (a.boughtLicense) answers.boughtLicense = a.boughtLicense;
+    if (a.wouldMentor) answers.wouldMentor = a.wouldMentor;
+    if (a.whatWouldHelp?.trim()) answers.whatWouldHelp = a.whatWouldHelp.trim();
   }
 
   return {
