@@ -1,10 +1,13 @@
 import Image from "next/image";
-import LabelTag from "@/components/ui/LabelTag";
+
+// No eyebrow label here by design. Every page carried one ("Events", "About Us",
+// "Contact"), which restated the nav item the visitor had just clicked and the H1 they
+// were already reading. The prop is removed rather than left optional so it cannot drift
+// back in one page at a time.
 
 interface PageHeroProps {
   title: string;
   subtitle?: string;
-  label?: string;
   backgroundImage?: string;
   imagePosition?: string;
   flipImage?: boolean;
@@ -13,7 +16,6 @@ interface PageHeroProps {
 export default function PageHero({
   title,
   subtitle,
-  label,
   backgroundImage,
   imagePosition,
   flipImage,
@@ -37,8 +39,7 @@ export default function PageHero({
         </>
       )}
       <div className="relative z-10 mx-auto w-full max-w-[1200px] px-10 pb-[60px] pt-32">
-        {label && <LabelTag variant="warm-gold">{label}</LabelTag>}
-        <h1 className="mt-5 whitespace-pre-line text-[72px] leading-[0.95] tracking-[-1px] text-white">
+        <h1 className="whitespace-pre-line text-[72px] leading-[0.95] tracking-[-1px] text-white">
           {title}
         </h1>
         {subtitle && (

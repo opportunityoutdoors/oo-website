@@ -91,7 +91,6 @@ export default async function EventsPage() {
     <>
       <PageHero
         title="Get in the Field"
-        label="Events"
         subtitle="From multi-day camps to casual community meetups, find your next opportunity to connect, learn, and grow."
         backgroundImage="/images/hero/events-hero.webp"
       />

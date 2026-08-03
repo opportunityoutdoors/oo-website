@@ -15,10 +15,10 @@ function AdminNav({ user }: { user: NavUser }) {
   const items = [
     { href: "/admin", label: "Dashboard" },
     { href: "/admin/contacts", label: "Contacts" },
-    { href: "/admin/events", label: "Events" },
-    { href: "/admin/partner-events", label: "Local Events" },
-    { href: "/admin/impact", label: "Impact" },
     { href: "/admin/studio", label: "Content Studio" },
+    { href: "/admin/events", label: "Our Events" },
+    { href: "/admin/partner-events", label: "Partner Events" },
+    { href: "/admin/impact", label: "Impact" },
   ];
   if (user.role === "admin") {
     items.push({ href: "/admin/users", label: "Users" });

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <>
-      <PageHero title="Get in Touch" label="Contact" subtitle="Questions, ideas, or partnership inquiries. We'd love to hear from you." backgroundImage="/images/hero/contact-hero.webp" />
+      <PageHero title="Get in Touch" subtitle="Questions, ideas, or partnership inquiries. We'd love to hear from you." backgroundImage="/images/hero/contact-hero.webp" />
 
       <section className="bg-cream py-20">
         <SectionContainer>

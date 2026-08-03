@@ -73,7 +73,6 @@ export default function GetInvolvedPage() {
     <>
       <PageHero
         title="Find Your Path"
-        label="Get Involved"
         subtitle="Whether you're brand new to the outdoors or a lifelong sportsman ready to give back, there's a place for you here."
         backgroundImage="/images/hero/get-involved-hero.jpg"
       />

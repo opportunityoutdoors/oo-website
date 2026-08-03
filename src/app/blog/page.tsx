@@ -25,7 +25,7 @@ export default async function BlogPage() {
 
   return (
     <>
-      <PageHero title="From the Field" label="Blog" subtitle="Stories, tips, camp recaps, and conservation insights from the OO community." backgroundImage="/images/hero/blog-hero.webp" imagePosition="center bottom" />
+      <PageHero title="From the Field" subtitle="Stories, tips, camp recaps, and conservation insights from the OO community." backgroundImage="/images/hero/blog-hero.webp" imagePosition="center bottom" />
 
       <section className="bg-cream py-20">
         <SectionContainer>

@@ -63,7 +63,6 @@ export default async function AboutPage() {
       {/* Hero */}
       <PageHero
         title={"We Build People\nWho Build Conservation"}
-        label="About Us"
         subtitle="A North Carolina nonprofit turning curious newcomers into ethical, conservation-minded sportsmen and women through mentorship, community, and time in the field."
         backgroundImage="/images/hero/about-hero.webp"
       />
