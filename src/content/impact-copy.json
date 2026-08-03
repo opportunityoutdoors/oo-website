@@ -1,0 +1,14 @@
+{
+  "pageIntro": "Structured as outputs, outcomes, and impact. Outputs are what we delivered; outcomes are what changed in people; impact is whether behaviour changed six months later. Only the third is evidence the programme works.",
+  "tier1Name": "Outputs",
+  "tier1Gloss": "What we delivered. Necessary for reporting, not evidence of impact.",
+  "tier2Name": "Outcomes",
+  "tier2Gloss": "What changed in people, matched per participant. Mentors excluded: experienced volunteers start near the top and would flatten the result.",
+  "tier2Empty": "No matched pre/post pairs yet. Numbers appear once participants have completed both the registration survey and the post-event survey.",
+  "tier3Name": "Impact",
+  "tier3Gloss": "Whether behaviour actually changed, six months on. This is what R3 evaluation exists to measure, and the only tier that answers whether the programme works.",
+  "tier3Empty": "No six-month follow-ups returned yet. These send automatically 180 days after an event, so the first results arrive six months after your first event held under the new survey system.",
+  "byEventHeading": "By Event",
+  "byEventNote": "Attendance counts include mentors, shown as (Nm). Survey counts exclude them.",
+  "barriersHeading": "What would help them get out more"
+}

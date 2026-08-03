@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { formatEventDateRange } from "@/lib/format-event-date";
+import copy from "@/content/impact-copy.json";
+
+// Explanatory text lives in src/content/impact-copy.json, editable without touching
+// code at http://localhost:3000/copy-editor (dev only). Numbers stay computed here.
 
 // The full impact report, structured as the three tiers of the R3 evaluation standard.
 // Every derived figure shows the sample it rests on: with single-digit cohorts, a mean
@@ -111,10 +115,7 @@ export default function ImpactReport() {
             Impact
           </h1>
           <p className="mt-1 max-w-[60ch] text-sm text-near-black/50">
-            Structured as outputs, outcomes, and impact. Outputs are what we
-            delivered; outcomes are what changed in people; impact is whether
-            behaviour changed six months later. Only the third is evidence the
-            programme works.
+{copy.pageIntro}
           </p>
         </div>
         <select
@@ -132,7 +133,7 @@ export default function ImpactReport() {
       </div>
 
       {/* ── Tier 1 ── */}
-      <Tier n="Tier 1" name="Outputs" gloss="What we delivered. Necessary for reporting, not evidence of impact.">
+      <Tier n="Tier 1" name={copy.tier1Name} gloss={copy.tier1Gloss}>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Stat value={outputs.peopleServed} label="People served" sub={`${outputs.uniquePeople} unique`} />
           <Stat value={outputs.youthServed} label="Youth served" sub="under 18" />
@@ -148,13 +149,12 @@ export default function ImpactReport() {
       {/* ── Tier 2 ── */}
       <Tier
         n="Tier 2"
-        name="Outcomes"
-        gloss="What changed in people, matched per participant. Mentors excluded: experienced volunteers start near the top and would flatten the result."
+        name={copy.tier2Name}
+        gloss={copy.tier2Gloss}
       >
         {outcomes.scales.every((s) => s.delta === null) ? (
           <Empty>
-            No matched pre/post pairs yet. Numbers appear once participants have
-            completed both the registration survey and the post-event survey.
+{copy.tier2Empty}
           </Empty>
         ) : (
           <div className="overflow-x-auto rounded-lg border border-near-black/10 bg-white">
@@ -209,14 +209,12 @@ export default function ImpactReport() {
       {/* ── Tier 3 ── */}
       <Tier
         n="Tier 3"
-        name="Impact"
-        gloss="Whether behaviour actually changed, six months on. This is what R3 evaluation exists to measure, and the only tier that answers whether the programme works."
+        name={copy.tier3Name}
+        gloss={copy.tier3Gloss}
       >
         {impact.responded === 0 ? (
           <Empty>
-            No six-month follow-ups returned yet. These send automatically 180
-            days after an event, so the first results arrive six months after
-            your first event held under the new survey system.
+{copy.tier3Empty}
           </Empty>
         ) : (
           <>
@@ -229,7 +227,7 @@ export default function ImpactReport() {
             {impact.barriers.length > 0 && (
               <div className="mt-3 rounded-lg border border-near-black/10 bg-white">
                 <div className="border-b border-near-black/10 px-5 py-3 text-xs font-bold uppercase tracking-[1px] text-near-black/50">
-                  What would help them get out more
+{copy.barriersHeading}
                 </div>
                 <ul className="divide-y divide-near-black/5">
                   {impact.barriers.map((b, i) => (
@@ -255,7 +253,7 @@ export default function ImpactReport() {
       {/* ── Per event ── */}
       <section className="mt-10">
         <h2 className="mb-3 text-sm font-bold uppercase tracking-[1px] text-near-black">
-          By Event
+{copy.byEventHeading}
         </h2>
         <div className="overflow-x-auto rounded-lg border border-near-black/10 bg-white">
           <table className="w-full text-left text-sm">
@@ -313,8 +311,7 @@ export default function ImpactReport() {
           </table>
         </div>
         <p className="mt-2 text-xs text-near-black/40">
-          Attendance counts include mentors, shown as (Nm). Survey counts exclude
-          them.
+{copy.byEventNote}
         </p>
       </section>
     </>
