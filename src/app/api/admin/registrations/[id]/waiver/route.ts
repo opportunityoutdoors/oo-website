@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { generateWaiverPdf } from "@/lib/waiver-pdf";
+import { apiRequireMember } from "@/lib/admin/auth";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Admin surface: reject anyone without an admin_users row. Middleware only matches
+  // /admin/:path*, so it never protected these API routes.
+  const { error: authError } = await apiRequireMember();
+  if (authError) return authError;
+
+
   const { id } = await params;
   const supabase = createServiceClient();
 

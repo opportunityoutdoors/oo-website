@@ -3,6 +3,7 @@ import { client, writeClient } from "@/lib/sanity";
 import { adminAllEventsQuery } from "@/lib/queries";
 import { createServiceClient } from "@/lib/supabase/server";
 import { createCalendarEvent } from "@/lib/google-calendar";
+import { apiRequireMember } from "@/lib/admin/auth";
 
 interface MeetingSlot {
   _key?: string;
@@ -38,6 +39,12 @@ interface SanityEvent {
 }
 
 export async function GET() {
+  // Admin surface: reject anyone without an admin_users row. Middleware only matches
+  // /admin/:path*, so it never protected these API routes.
+  const { error: authError } = await apiRequireMember();
+  if (authError) return authError;
+
+
   const supabase = createServiceClient();
 
   // Fetch all events from Sanity

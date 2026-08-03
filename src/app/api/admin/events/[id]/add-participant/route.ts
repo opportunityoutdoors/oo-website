@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { apiRequireMember } from "@/lib/admin/auth";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Admin surface: reject anyone without an admin_users row. Middleware only matches
+  // /admin/:path*, so it never protected these API routes.
+  const { error: authError } = await apiRequireMember();
+  if (authError) return authError;
+
+
   const { id: eventId } = await params;
   const supabase = createServiceClient();
   const body = await request.json();

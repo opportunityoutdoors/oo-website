@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { apiRequireMember } from "@/lib/admin/auth";
 
 export async function GET(request: NextRequest) {
+  // Admin surface: reject anyone without an admin_users row. Middleware only matches
+  // /admin/:path*, so it never protected these API routes.
+  const { error: authError } = await apiRequireMember();
+  if (authError) return authError;
+
+
   const supabase = createServiceClient();
   const { searchParams } = new URL(request.url);
 
@@ -53,6 +60,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  // Admin surface: reject anyone without an admin_users row. Middleware only matches
+  // /admin/:path*, so it never protected these API routes.
+  const { error: authError } = await apiRequireMember();
+  if (authError) return authError;
+
+
   const supabase = createServiceClient();
   const body = await request.json();
   const { ids } = body as { ids: string[] };
@@ -74,6 +87,12 @@ export async function DELETE(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  // Admin surface: reject anyone without an admin_users row. Middleware only matches
+  // /admin/:path*, so it never protected these API routes.
+  const { error: authError } = await apiRequireMember();
+  if (authError) return authError;
+
+
   const supabase = createServiceClient();
   const body = await request.json();
   const { id, ...updates } = body;

@@ -3,9 +3,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM } from "@/lib/email/from";
 import { renderApproval, renderDenial } from "@/emails";
+import { apiRequireMember } from "@/lib/admin/auth";
 
 // Bulk update registration statuses
 export async function PATCH(request: NextRequest) {
+  // Admin surface: reject anyone without an admin_users row. Middleware only matches
+  // /admin/:path*, so it never protected these API routes.
+  const { error: authError } = await apiRequireMember();
+  if (authError) return authError;
+
+
   const supabase = createServiceClient();
   const body = await request.json();
   const { ids, status } = body as { ids: string[]; status: string };
@@ -106,6 +113,12 @@ export async function PATCH(request: NextRequest) {
 
 // Bulk delete registrations
 export async function DELETE(request: NextRequest) {
+  // Admin surface: reject anyone without an admin_users row. Middleware only matches
+  // /admin/:path*, so it never protected these API routes.
+  const { error: authError } = await apiRequireMember();
+  if (authError) return authError;
+
+
   const supabase = createServiceClient();
   const body = await request.json();
   const { ids } = body as { ids: string[] };
