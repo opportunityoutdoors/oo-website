@@ -99,7 +99,7 @@ export function BrandButton({ href, children }: { href: string; children: React.
   );
 }
 
-/** "— The Opportunity Outdoors Team" sign-off. */
+/** "-The Opportunity Outdoors Team" sign-off. Hyphen, never an em-dash. */
 export function Signoff() {
-  return <P>— The Opportunity Outdoors Team</P>;
+  return <P>-The Opportunity Outdoors Team</P>;
 }

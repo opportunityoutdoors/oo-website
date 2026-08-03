@@ -27,12 +27,14 @@ export function emailLogoUrl(): string | null {
   return process.env.EMAIL_LOGO_URL || null;
 }
 
-// CAN-SPAM requires a valid physical postal address in marketing email.
-// Set EMAIL_MAILING_ADDRESS to a full street/PO-box address before sending campaigns.
+// CAN-SPAM requires a valid physical postal address in marketing email. This default is
+// the real registered address, so the footer is compliant with no env config. Override
+// with EMAIL_MAILING_ADDRESS if the address ever changes (for example, moving to a
+// USPS-registered PO box) without needing a code change.
 export function mailingAddress(): string {
   return (
     process.env.EMAIL_MAILING_ADDRESS ||
-    "Opportunity Outdoors · Fuquay-Varina, NC"
+    "Opportunity Outdoors · 4701 Bentcreek Drive · Fuquay-Varina, NC 27526"
   );
 }
 

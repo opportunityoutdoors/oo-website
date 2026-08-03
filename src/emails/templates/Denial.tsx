@@ -1,7 +1,7 @@
 import { Link } from "@react-email/components";
 import * as React from "react";
 import { EmailLayout } from "../Layout";
-import { Greeting, P } from "../components";
+import { Greeting, P, Signoff } from "../components";
 import { colors, fontFamily, siteUrl } from "../theme";
 
 export interface DenialProps {
@@ -64,7 +64,7 @@ export function Denial({ firstName, eventTitle, instagramUrl }: DenialProps) {
       </ul>
 
       <P>Thanks for being part of the OO community. We&apos;ll see you out there.</P>
-      <P>— The Opportunity Outdoors Team</P>
+      <Signoff />
     </EmailLayout>
   );
 }

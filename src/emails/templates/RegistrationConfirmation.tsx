@@ -1,6 +1,6 @@
 import * as React from "react";
 import { EmailLayout } from "../Layout";
-import { Callout, CalloutLine, Greeting, P } from "../components";
+import { Callout, CalloutLine, Greeting, P, Signoff } from "../components";
 
 export interface RegistrationConfirmationProps {
   firstName?: string;
@@ -50,7 +50,7 @@ export function RegistrationConfirmation({
         you need.
       </P>
       <P>See you in the field!</P>
-      <P>— The Opportunity Outdoors Team</P>
+      <Signoff />
     </EmailLayout>
   );
 }

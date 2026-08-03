@@ -35,6 +35,14 @@ import {
   EventRegistrationConfirmation,
   type EventRegistrationConfirmationProps,
 } from "./templates/EventRegistrationConfirmation";
+import {
+  NurtureEmail,
+  type NurtureEmailProps,
+} from "./templates/NurtureEmail";
+import {
+  SurveyInvite,
+  type SurveyInviteProps,
+} from "./templates/SurveyInvite";
 
 export function renderWaitlistReminder(
   props: WaitlistReminderProps
@@ -88,4 +96,12 @@ export function renderEventRegistrationConfirmation(
   props: EventRegistrationConfirmationProps
 ): Promise<string> {
   return render(<EventRegistrationConfirmation {...props} />);
+}
+
+export function renderNurtureEmail(props: NurtureEmailProps): Promise<string> {
+  return render(<NurtureEmail {...props} />);
+}
+
+export function renderSurveyInvite(props: SurveyInviteProps): Promise<string> {
+  return render(<SurveyInvite {...props} />);
 }

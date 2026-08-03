@@ -28,7 +28,7 @@ interface EmailLayoutProps {
   children: React.ReactNode;
   /**
    * "marketing" adds the CAN-SPAM mailing address + unsubscribe link.
-   * "transactional" (default) omits them — receipts must always deliver.
+   * "transactional" (default) omits them, because receipts must always deliver.
    */
   variant?: Variant;
   /**
@@ -83,6 +83,7 @@ const content: React.CSSProperties = {
 
 const footer: React.CSSProperties = {
   padding: "0 32px 28px",
+  textAlign: "center",
 };
 
 const footerText: React.CSSProperties = {
@@ -90,6 +91,9 @@ const footerText: React.CSSProperties = {
   fontSize: "12px",
   lineHeight: "1.6",
   margin: "4px 0",
+  // Repeated on the Text elements, not just the parent Section, because several email
+  // clients (Outlook in particular) drop inherited alignment on table cells.
+  textAlign: "center",
 };
 
 const footerLink: React.CSSProperties = {
@@ -132,15 +136,13 @@ export function EmailLayout({
 
           <Section style={footer}>
             <Text style={footerText}>
-              A North Carolina 501(c)(3) nonprofit building the next generation of
-              ethical, conservation-minded hunters and anglers.
-            </Text>
-            <Text style={footerText}>
-              Questions? Email us at{" "}
+              <Link href={siteUrl()} style={footerLink}>
+                opportunityoutdoors.org
+              </Link>
+              {" · "}
               <Link href={`mailto:${contactEmail}`} style={footerLink}>
                 {contactEmail}
-              </Link>{" "}
-              · <Link href={siteUrl()} style={footerLink}>opportunityoutdoors.org</Link>
+              </Link>
             </Text>
             {variant === "marketing" && (
               <>

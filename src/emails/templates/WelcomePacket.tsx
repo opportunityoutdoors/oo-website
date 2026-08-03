@@ -1,7 +1,7 @@
 import { Hr, Link, Section, Text } from "@react-email/components";
 import * as React from "react";
 import { EmailLayout } from "../Layout";
-import { BrandButton, Callout, CalloutLabel, CalloutLine, P } from "../components";
+import { BrandButton, Callout, CalloutLabel, CalloutLine, P, Signoff } from "../components";
 import { colors, fontFamily } from "../theme";
 
 interface Person {
@@ -44,7 +44,7 @@ const muted: React.CSSProperties = {
 };
 
 function personLine(p: Person) {
-  return `${p.name} — ${p.email}${p.phone ? ` — ${p.phone}` : ""}`;
+  return `${p.name} · ${p.email}${p.phone ? ` · ${p.phone}` : ""}`;
 }
 
 export function WelcomePacket({
@@ -101,9 +101,9 @@ export function WelcomePacket({
             {mentees.map((m) => (
               <li key={m.email}>
                 <strong>{m.name}</strong>
-                {" — "}
+                {" · "}
                 {m.email}
-                {m.phone ? ` — ${m.phone}` : ""}
+                {m.phone ? ` · ${m.phone}` : ""}
               </li>
             ))}
           </ul>
@@ -225,7 +225,7 @@ export function WelcomePacket({
       <BrandButton href={eventUrl}>View Event Details</BrandButton>
 
       <P>See you in the field!</P>
-      <P>— The Opportunity Outdoors Team</P>
+      <Signoff />
     </EmailLayout>
   );
 }

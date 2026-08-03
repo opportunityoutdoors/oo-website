@@ -35,7 +35,7 @@ export function EventAnnouncement({
 }: EventAnnouncementProps) {
   return (
     <EmailLayout
-      preview={`${title} — ${dateStr}${cost ? ` · ${cost}` : ""}`}
+      preview={`${title} · ${dateStr}${cost ? ` · ${cost}` : ""}`}
       variant="marketing"
       unsubscribeUrl={unsubscribeUrl}
     >
@@ -105,7 +105,7 @@ export function EventAnnouncement({
             margin: "0 0 8px",
           }}
         >
-          Registration closes {registrationClosesStr} — spots are limited.
+          Registration closes {registrationClosesStr}. Spots are limited.
         </Text>
       ) : null}
 

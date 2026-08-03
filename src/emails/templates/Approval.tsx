@@ -1,6 +1,6 @@
 import * as React from "react";
 import { EmailLayout } from "../Layout";
-import { BrandButton, Greeting, P } from "../components";
+import { BrandButton, Greeting, P, Signoff } from "../components";
 import { colors } from "../theme";
 
 export interface ApprovalProps {
@@ -31,7 +31,7 @@ export function Approval({ firstName, eventTitle, cost, registerUrl }: ApprovalP
       </P>
 
       <P>See you in the field!</P>
-      <P>— The Opportunity Outdoors Team</P>
+      <Signoff />
     </EmailLayout>
   );
 }

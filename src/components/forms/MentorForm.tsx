@@ -4,6 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import FormField from "@/components/forms/FormField";
 import { US_STATES } from "@/lib/constants/us-states";
+import {
+  HUNTING_INTERESTS as huntingSkills,
+  FISHING_INTERESTS as fishingSkills,
+  OUTDOOR_INTERESTS as outdoorSkillsList,
+} from "@/lib/constants/interests";
 
 const sexOptions = [
   { label: "Male", value: "Male" },
@@ -36,32 +41,6 @@ const howHeardOptions = [
   { label: "Podcast", value: "Podcast" },
   { label: "Website", value: "Website" },
   { label: "Other", value: "Other" },
-];
-
-const huntingSkills = [
-  { label: "Turkey", value: "Turkey" },
-  { label: "Deer", value: "Deer" },
-  { label: "Bear", value: "Bear" },
-  { label: "Waterfowl", value: "Waterfowl" },
-  { label: "Small game", value: "Small game" },
-  { label: "Upland", value: "Upland" },
-  { label: "Trapping", value: "Trapping" },
-];
-
-const fishingSkills = [
-  { label: "Freshwater", value: "Freshwater" },
-  { label: "Fly fishing", value: "Fly fishing" },
-  { label: "Saltwater", value: "Saltwater" },
-];
-
-const outdoorSkillsList = [
-  { label: "Hiking", value: "Hiking" },
-  { label: "Camping/Backpacking", value: "Camping/Backpacking" },
-  { label: "Birding", value: "Birding" },
-  { label: "Archery", value: "Archery" },
-  { label: "Shooting sports (clay/skeet/trap)", value: "Shooting sports" },
-  { label: "Foraging", value: "Foraging" },
-  { label: "Wildlife photography", value: "Wildlife photography" },
 ];
 
 function calculateAge(dob: string): number {
