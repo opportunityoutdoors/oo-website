@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
   const { data: registration } = await supabase
     .from("registrations")
-    .select("*, contacts(id, email, first_name, last_name, phone, city, state, tshirt_size), events(id, title, slug, event_type, date_start, date_end, location, cost)")
+    .select("*, contacts(id, email, first_name, last_name, phone, city, state, tshirt_size), events(id, title, slug, event_type, date_start, date_end, location, cost, registration_fee)")
     .eq("token", token)
     .single();
 
@@ -264,7 +264,32 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ success: true });
+  // Payment comes last, and deliberately does NOT gate the registration.
+  //
+  // By this point the waiver is signed and stored, the surveys are recorded, and the
+  // confirmation has gone out. Making any of that conditional on a card clearing would mean
+  // a declined card throws away a signed legal document and a completed baseline survey,
+  // and the person has to do it all again. Instead the registration stands, payment_status
+  // stays 'pending', and they get a link back to checkout.
+  //
+  // A failure here is therefore logged, not returned as an error: the registration
+  // succeeded even when the handoff to Stripe did not.
+  let checkoutUrl: string | null = null;
+  try {
+    const { createCampCheckoutSession } = await import("@/lib/stripe/camp-checkout");
+    const origin =
+      process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? request.nextUrl.origin;
+
+    const result = await createCampCheckoutSession({
+      registrationId: registration.id,
+      origin,
+    });
+    if (result.kind === "checkout") checkoutUrl = result.url;
+  } catch (err) {
+    console.error("Camp checkout session creation failed (registration stands):", err);
+  }
+
+  return NextResponse.json({ success: true, checkoutUrl });
 }
 
 // Send registration confirmation with waiver PDF attachment

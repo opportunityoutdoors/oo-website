@@ -31,6 +31,8 @@ interface SanityEvent {
   endDate: string | null;
   location: string;
   cost: string | null;
+  /** Numeric amount charged per paying participant. `cost` is display copy, not a price. */
+  registrationFee: number | null;
   spotsTotal: number | null;
   meetingSlots: MeetingSlot[] | null;
   campLocations: CampLocation[] | null;
@@ -102,6 +104,8 @@ export async function GET() {
         date_end: se.endDate || null,
         location: se.location || null,
         cost: se.cost || null,
+        // Numeric price. Kept distinct from `cost`, which is display copy.
+        registration_fee: se.registrationFee ?? null,
         spots_total: se.spotsTotal || null,
         meeting_slots: slots,
         camp_locations: se.campLocations || [],

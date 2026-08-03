@@ -116,7 +116,8 @@ async function updateEventInSupabase(sanityId: string) {
     const event = await sanityClient.fetch(
       `*[_type == "event" && _id == $id][0] {
         _id, title, slug, eventType, status, date, endDate, location, cost,
-        spotsTotal, meetingSlots, campLocations, mentorPerks, menteePerks
+        registrationFee, spotsTotal, meetingSlots, campLocations, mentorPerks,
+        menteePerks
       }`,
       { id: sanityId }
     );
@@ -197,6 +198,8 @@ async function updateEventInSupabase(sanityId: string) {
         date_end: event.endDate || null,
         location: event.location || null,
         cost: event.cost || null,
+        // Numeric price. Kept distinct from `cost`, which is display copy.
+        registration_fee: event.registrationFee ?? null,
         spots_total: event.spotsTotal || null,
         meeting_slots: meetingSlots,
         camp_locations: event.campLocations || [],

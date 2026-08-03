@@ -5,6 +5,11 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import SurveyQuestions, { EMPTY_ANSWERS } from "@/components/forms/SurveyQuestions";
 import type { SurveyAnswers } from "@/lib/surveys/questions";
+import {
+  MENTOR_TSHIRT_CENTS,
+  computeCampCharge,
+  formatFee,
+} from "@/lib/stripe/camp-fees";
 
 interface EventInfo {
   title: string;
@@ -13,7 +18,10 @@ interface EventInfo {
   date_start: string | null;
   date_end: string | null;
   location: string | null;
+  /** Display copy only ("Free", "$75"). Never parse this for a price. */
   cost: string | null;
+  /** Authoritative numeric fee per paying participant, in dollars. */
+  registration_fee: number | null;
 }
 
 interface ContactInfo {
@@ -188,6 +196,16 @@ export default function RegisterForm() {
     });
 
     if (res.ok) {
+      const data = await res.json();
+      // The registration is already saved at this point. If there is a balance, the server
+      // hands back a Checkout URL and we send them straight there rather than showing a
+      // success screen they would have to click past. If checkout could not be created,
+      // checkoutUrl is null and they still land on the success screen: the registration
+      // stands either way, and the balance is chaseable from the admin.
+      if (data.checkoutUrl) {
+        window.location.assign(data.checkoutUrl);
+        return;
+      }
       setSuccess(true);
     } else {
       const data = await res.json();
@@ -303,7 +321,7 @@ export default function RegisterForm() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-[1px] text-near-black/70">
-                T-Shirt Size{registration!.role === "Mentor" ? " ($25, optional)" : ""} {registration!.role !== "Mentor" && <span className="text-red-500">*</span>}
+                T-Shirt Size{registration!.role === "Mentor" ? ` (${formatFee(MENTOR_TSHIRT_CENTS)}, optional)` : ""} {registration!.role !== "Mentor" && <span className="text-red-500">*</span>}
               </label>
               <select
                 required={registration!.role !== "Mentor"}
@@ -582,50 +600,66 @@ export default function RegisterForm() {
               Payment
             </h2>
             <div className="rounded border border-near-black/10 bg-white p-6">
-              <div className="mb-3 space-y-2">
-                {registration!.role === "Mentor" && (
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-near-black">Your Registration (Mentor)</p>
-                    <p className="text-sm font-semibold text-near-black">Free</p>
-                  </div>
-                )}
-                {registration!.role === "Mentor" && tshirtSize && (
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-near-black">Your T-Shirt</p>
-                    <p className="text-sm font-semibold text-near-black">$25</p>
-                  </div>
-                )}
-                {registration!.role !== "Mentor" && (
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-near-black">{minor ? "Your Registration" : "Registration Fee"}</p>
-                    <p className="text-sm font-semibold text-near-black">{event.cost || "Free"}</p>
-                  </div>
-                )}
-                {minor && (
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-near-black">{minor.contacts.first_name}&apos;s Registration (Mentee)</p>
-                    <p className="text-sm font-semibold text-near-black">{event.cost || "Free"}</p>
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center justify-between border-t border-near-black/10 pt-3">
-                <p className="text-sm font-bold text-near-black">Total</p>
-                <p className="text-2xl font-extrabold text-dark-green">
-                  {(() => {
-                    let total = 0;
-                    const campFee = parseInt((event.cost || "0").replace(/[^0-9]/g, ""), 10);
-                    if (registration!.role === "Mentor" && tshirtSize) total += 25;
-                    if (registration!.role !== "Mentor") total += campFee;
-                    if (minor) total += campFee;
-                    return total > 0 ? `$${total}` : "Free";
-                  })()}
-                </p>
-              </div>
-              {/* Stripe Elements will go here */}
-              <div className="mt-5 rounded border border-dashed border-near-black/15 bg-cream/50 px-5 py-8 text-center">
-                <p className="text-sm font-medium text-near-black/50">Payment processing coming soon</p>
-                <p className="mt-1 text-xs text-near-black/30">You can complete your registration now. Payment will be collected separately.</p>
-              </div>
+              {/* Same function the server uses to build the Stripe line items, so the total
+                  shown here cannot drift from the total charged. It reads the numeric
+                  registration_fee rather than parsing the `cost` display string. */}
+              {(() => {
+                const charge = computeCampCharge({
+                  role: registration!.role,
+                  registrationFee: event.registration_fee,
+                  wantsTshirt: Boolean(tshirtSize),
+                  minorName: minor?.contacts.first_name ?? null,
+                });
+
+                return (
+                  <>
+                    <div className="mb-3 space-y-2">
+                      {registration!.role === "Mentor" && (
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-near-black">
+                            Your Registration (Mentor)
+                          </p>
+                          <p className="text-sm font-semibold text-near-black">Free</p>
+                        </div>
+                      )}
+                      {charge.lines.map((line) => (
+                        <div
+                          key={line.label}
+                          className="flex items-center justify-between"
+                        >
+                          <p className="text-sm text-near-black">{line.label}</p>
+                          <p className="text-sm font-semibold text-near-black">
+                            {formatFee(line.cents)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between border-t border-near-black/10 pt-3">
+                      <p className="text-sm font-bold text-near-black">Total</p>
+                      <p className="text-2xl font-extrabold text-dark-green">
+                        {charge.totalCents > 0 ? formatFee(charge.totalCents) : "Free"}
+                      </p>
+                    </div>
+                    <div className="mt-5 rounded border border-near-black/10 bg-cream/50 px-5 py-4 text-center">
+                      {charge.totalCents > 0 ? (
+                        <>
+                          <p className="text-sm font-medium text-near-black/70">
+                            You will be taken to Stripe to pay after you submit.
+                          </p>
+                          <p className="mt-1 text-xs text-near-black/50">
+                            Your registration is saved either way. Card details are
+                            entered on Stripe and never touch this site.
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-sm font-medium text-near-black/70">
+                          Nothing to pay. Submitting completes your registration.
+                        </p>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </section>
         )}

@@ -88,7 +88,8 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * One-time gifts (Checkout mode=payment).
+ * One-time gifts (Checkout mode=payment) and camp registration payments, which are
+ * indistinguishable at this event except by metadata.
  *
  * Subscriptions are deliberately ignored here. Stripe fires this event AND invoice.paid
  * for the first charge of a subscription; recording both would double-count the gift and
@@ -97,6 +98,14 @@ export async function POST(req: NextRequest) {
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (session.mode !== "payment") return;
   if (session.payment_status !== "paid") return;
+
+  // Camp fees are NOT donations. Booking one as a gift would overstate fundraising totals
+  // and, worse, send a tax receipt claiming no goods or services were provided in exchange
+  // for a payment that bought a place at a camp. That is a false statement to the IRS.
+  if (session.metadata?.kind === "camp_registration") {
+    await handleCampPayment(session);
+    return;
+  }
 
   const paymentIntentId = idOf(session.payment_intent);
   const email = session.customer_details?.email ?? session.customer_email ?? null;
@@ -169,6 +178,75 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
     customerId: idOf(invoice.customer),
     campaign: "website",
   });
+}
+
+/**
+ * Marks a camp registration paid, and the linked minor with it.
+ *
+ * No receipt email is sent here. The registration confirmation, with the signed waiver
+ * attached, already went out when the form was submitted, and Stripe emails its own payment
+ * receipt for camp fees. A second "thank you for your payment" mail would be noise, and the
+ * donation receipt template must not be reused because its "no goods or services were
+ * provided" language is false for a camp fee.
+ */
+async function handleCampPayment(session: Stripe.Checkout.Session) {
+  const registrationId = session.metadata?.registration_id;
+  if (!registrationId) {
+    console.error(`Camp payment session ${session.id} has no registration_id metadata`);
+    return;
+  }
+
+  const supabase = createServiceClient();
+  const paymentIntentId = idOf(session.payment_intent);
+  const paidAt = new Date().toISOString();
+
+  // Guarded on payment_status so a replayed delivery cannot re-stamp paid_at with a later
+  // time. The unique index on stripe_payment_id backs this up at the storage layer.
+  const { data: updated, error } = await supabase
+    .from("registrations")
+    .update({
+      payment_status: "paid",
+      paid_at: paidAt,
+      stripe_payment_id: paymentIntentId,
+      payment_amount: (session.amount_total ?? 0) / 100,
+    })
+    .eq("id", registrationId)
+    .neq("payment_status", "paid")
+    .select("id");
+
+  if (error) {
+    if (error.code === "23505") {
+      console.log(`Camp payment ${paymentIntentId} already recorded; skipping replay`);
+      return;
+    }
+    throw new Error(`Failed to mark registration paid: ${error.message}`);
+  }
+
+  if (!updated?.length) {
+    console.log(`Registration ${registrationId} was already paid; skipping replay`);
+    return;
+  }
+
+  // One payment covers the guardian and their minor. The minor gets no stripe_payment_id:
+  // the unique index would reject the second row, and the money is genuinely attached to
+  // the guardian's registration. payment_amount stays null there for the same reason, so
+  // summing payment_amount across registrations does not double-count the family.
+  const minorId = session.metadata?.minor_registration_id;
+  if (minorId) {
+    const { error: minorError } = await supabase
+      .from("registrations")
+      .update({ payment_status: "paid", paid_at: paidAt })
+      .eq("id", minorId);
+    if (minorError) {
+      // Not fatal: the guardian's payment is recorded, which is the money question. A
+      // stranded minor row is visible in the admin as unpaid and fixable by hand.
+      console.error(`Failed to mark linked minor ${minorId} paid:`, minorError);
+    }
+  }
+
+  console.log(
+    `Camp payment recorded: registration ${registrationId}, ${session.amount_total} cents`
+  );
 }
 
 type DonationInput = {

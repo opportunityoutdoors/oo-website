@@ -92,6 +92,7 @@ export const adminAllEventsQuery = `*[_type == "event"] | order(date desc) {
   endDate,
   location,
   cost,
+  registrationFee,
   spotsTotal,
   registrationOpens,
   registrationCloses,
