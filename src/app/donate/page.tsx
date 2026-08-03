@@ -4,6 +4,7 @@ import PageHero from "@/components/ui/PageHero";
 import SectionContainer from "@/components/ui/SectionContainer";
 import LabelTag from "@/components/ui/LabelTag";
 import PartnerLogos from "@/components/ui/PartnerLogos";
+import DonateForm from "./DonateForm";
 
 export const metadata: Metadata = {
   title: "Donate",
@@ -11,29 +12,8 @@ export const metadata: Metadata = {
     "Support Opportunity Outdoors. Your donation funds mentorship camps, gear for new hunters and anglers, and conservation education across North Carolina.",
 };
 
-const tiers = [
-  {
-    name: "Supporter",
-    amount: "$25",
-    description:
-      "Covers camp supplies, range fees, or educational materials for one participant.",
-    badge: null,
-  },
-  {
-    name: "Sponsor a Mentee",
-    amount: "$100",
-    description:
-      "Fully funds one mentee's camp experience, including registration, meals, and gear lending.",
-    badge: "Most Popular",
-  },
-  {
-    name: "Camp Sponsor",
-    amount: "$500",
-    description:
-      "Underwrites an entire camp weekend: venue, meals, insurance, and supplies for all participants.",
-    badge: null,
-  },
-];
+// The amount tiers moved into DonateForm, which needs them as interactive state rather
+// than static markup.
 
 const budgetItems = [
   { label: "Programs & Camps", pct: 85, color: "bg-dark-green" },
@@ -44,9 +24,9 @@ const budgetItems = [
 const otherWays = [
   {
     title: "Monthly Giving",
-    desc: "Set up a recurring gift and provide steady support for mentorship programs year-round. Reach out to get started.",
-    href: "/contact",
-    linkText: "Contact Us",
+    desc: "A recurring gift is the single most useful thing a small nonprofit can receive. It lets us plan a season ahead instead of a camp at a time. Choose Monthly above.",
+    href: null,
+    linkText: null,
   },
   {
     title: "Matching Gifts",
@@ -62,7 +42,15 @@ const otherWays = [
   },
 ];
 
-export default function DonatePage() {
+export default async function DonatePage({
+  searchParams,
+}: {
+  // Next 16 hands searchParams over as a Promise. Used only to detect a return trip from
+  // an abandoned Stripe Checkout so the page can say plainly that nothing was charged.
+  searchParams: Promise<{ canceled?: string }>;
+}) {
+  const { canceled } = await searchParams;
+
   return (
     <>
       <PageHero
@@ -86,57 +74,11 @@ export default function DonatePage() {
               mentorship, camps, and conservation education.
             </p>
           </div>
-          <div className="grid gap-6 md:grid-cols-3">
-            {tiers.map((tier) => (
-              <div
-                key={tier.name}
-                className={`relative rounded-lg border-2 p-8 text-center ${
-                  tier.badge
-                    ? "border-gold bg-gold/5"
-                    : "border-near-black/10 bg-white"
-                }`}
-              >
-                {tier.badge && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded bg-gold px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-near-black">
-                    {tier.badge}
-                  </span>
-                )}
-                <h3 className="text-2xl font-extrabold text-near-black">
-                  {tier.name}
-                </h3>
-                <p className="mt-2 text-[48px] font-black leading-none text-dark-green">
-                  {tier.amount}
-                </p>
-                <p className="mt-4 text-sm leading-relaxed text-near-black/60">
-                  {tier.description}
-                </p>
-                <div className="mt-6">
-                  {/* Give Lively coming soon placeholder */}
-                  <span className="inline-block rounded bg-dark-green/10 px-6 py-3 text-[13px] font-bold uppercase tracking-[1px] text-dark-green/50">
-                    Coming Soon
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Coming soon message */}
-          <div className="mt-10 rounded-lg border border-gold/30 bg-gold/5 px-6 py-5 text-center">
-            <p className="text-sm leading-relaxed text-near-black/70">
-              Online donations coming soon. In the meantime, contact us at{" "}
-              <a
-                href="mailto:info@opportunityoutdoors.org"
-                className="font-semibold text-dark-green hover:underline"
-              >
-                info@opportunityoutdoors.org
-              </a>{" "}
-              to make a donation.
-            </p>
-          </div>
+          <DonateForm canceled={canceled === "1"} />
         </SectionContainer>
       </section>
 
-      {/* Where Your Money Goes — commented out until we have real data
+      {/* Where Your Money Goes, commented out until we have real data
       <section className="bg-cream py-20">
         <SectionContainer>
           <div className="mx-auto max-w-2xl">

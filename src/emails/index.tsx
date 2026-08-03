@@ -43,6 +43,10 @@ import {
   SurveyInvite,
   type SurveyInviteProps,
 } from "./templates/SurveyInvite";
+import {
+  DonationReceipt,
+  type DonationReceiptProps,
+} from "./templates/DonationReceipt";
 
 export function renderWaitlistReminder(
   props: WaitlistReminderProps
@@ -104,4 +108,10 @@ export function renderNurtureEmail(props: NurtureEmailProps): Promise<string> {
 
 export function renderSurveyInvite(props: SurveyInviteProps): Promise<string> {
   return render(<SurveyInvite {...props} />);
+}
+
+export function renderDonationReceipt(
+  props: DonationReceiptProps
+): Promise<string> {
+  return render(<DonationReceipt {...props} />);
 }

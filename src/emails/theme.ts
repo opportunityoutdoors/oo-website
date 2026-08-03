@@ -39,3 +39,13 @@ export function mailingAddress(): string {
 }
 
 export const contactEmail = "info@opportunityoutdoors.org";
+
+// Federal EIN, shown on donation receipts. Donors need it to substantiate a deduction and
+// most will look for it on the acknowledgment.
+//
+// Env-backed with no default on purpose: a wrong EIN on a tax receipt is worse than a
+// missing one, so this stays blank until the real number is set rather than shipping a
+// plausible-looking placeholder. The receipt renders without the line when unset.
+export function orgEin(): string | null {
+  return process.env.ORG_EIN || null;
+}

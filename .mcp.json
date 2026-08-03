@@ -7,8 +7,18 @@
     "",
     "No credentials live here. Each server shells out to read its key from ./.env.local,",
     "which is gitignored, so the config is shareable and the secrets stay local.",
-    "Required in .env.local: SUPABASE_ACCESS_TOKEN (a Supabase personal access token from",
-    "the account that owns project ffivubkouyqzvebuxflf) and RESEND_API_KEY."
+    "Required in .env.local:",
+    "  SUPABASE_ACCESS_TOKEN  personal access token from the account owning ffivubkouyqzvebuxflf",
+    "  RESEND_API_KEY",
+    "  STRIPE_MCP_KEY         see below",
+    "",
+    "On the stripe server: it reads STRIPE_MCP_KEY, deliberately NOT the STRIPE_SECRET_KEY",
+    "the app itself uses. The app needs write access to create checkout sessions; an agent",
+    "driving this server does not, and keeping them separate means one can be narrowed",
+    "without breaking the other. Put a TEST MODE restricted key here (rk_test_...). Stripe",
+    "derives tool permissions from the key, so the key IS the sandbox: a read-only test key",
+    "cannot move money regardless of what any tool asks for. Never put sk_live_ in this slot.",
+    "Create one at https://dashboard.stripe.com/test/apikeys under Restricted keys."
   ],
   "mcpServers": {
     "supabase": {
@@ -25,6 +35,14 @@
       "args": [
         "-c",
         "if [ -f ./.env.local ]; then export RESEND_API_KEY=\"$(grep -E '^RESEND_API_KEY=' ./.env.local | head -1 | cut -d= -f2- | sed -e 's/^\"//' -e 's/\"$//')\"; fi; exec npx -y resend-mcp"
+      ]
+    },
+    "stripe": {
+      "type": "stdio",
+      "command": "sh",
+      "args": [
+        "-c",
+        "if [ -f ./.env.local ]; then export STRIPE_SECRET_KEY=\"$(grep -E '^STRIPE_MCP_KEY=' ./.env.local | head -1 | cut -d= -f2- | sed -e 's/^\"//' -e 's/\"$//')\"; fi; exec npx -y @stripe/mcp --tools=all"
       ]
     }
   }
