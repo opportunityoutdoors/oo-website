@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { NOTIFICATIONS_FROM } from "@/lib/email/from";
+import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { renderRegistrationConfirmation } from "@/emails";
 import {
   toResponseRow,
@@ -346,6 +346,7 @@ async function sendRegistrationConfirmation(
 
   await resend.emails.send({
     from: NOTIFICATIONS_FROM,
+    replyTo: REPLY_TO,
     to: email,
     subject: `Registration Confirmed: ${eventTitle}`,
     attachments: [

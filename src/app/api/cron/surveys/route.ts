@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { NOTIFICATIONS_FROM } from "@/lib/email/from";
+import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { renderSurveyInvite } from "@/emails";
 
 // Daily driver for post-event surveys.
@@ -130,6 +130,7 @@ async function sendInvite(params: {
   try {
     await resend.emails.send({
       from: NOTIFICATIONS_FROM,
+      replyTo: REPLY_TO,
       to: params.email,
       subject,
       html: await renderSurveyInvite({

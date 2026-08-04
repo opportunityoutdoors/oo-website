@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { MARKETING_FROM } from "@/lib/email/from";
+import { MARKETING_FROM, REPLY_TO } from "@/lib/email/from";
 import { renderNurtureEmail } from "@/emails";
 import {
   stepsFor,
@@ -79,6 +79,7 @@ export async function sendNurtureStep(params: {
 
     const { data, error } = await resend.emails.send({
       from: MARKETING_FROM,
+      replyTo: REPLY_TO,
       to: email,
       subject: body.subject,
       html,

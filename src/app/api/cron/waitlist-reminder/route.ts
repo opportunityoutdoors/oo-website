@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { NOTIFICATIONS_FROM } from "@/lib/email/from";
+import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { renderWaitlistReminder } from "@/emails";
 
 export async function GET(request: NextRequest) {
@@ -125,6 +125,7 @@ export async function GET(request: NextRequest) {
       try {
         await resend.emails.send({
           from: NOTIFICATIONS_FROM,
+          replyTo: REPLY_TO,
           to: contact.email,
           subject: `Reminder: Your ${event.title} Meeting is Coming Up`,
           html: await renderWaitlistReminder({

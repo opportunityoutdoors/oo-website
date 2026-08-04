@@ -2,7 +2,7 @@ import { randomBytes } from "crypto";
 import { after } from "next/server";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { NOTIFICATIONS_FROM } from "@/lib/email/from";
+import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import {
   renderAdminNotification,
   renderEventRegistrationConfirmation,
@@ -497,6 +497,7 @@ async function sendEventRegistrationConfirmation(
 
   await resend.emails.send({
     from: NOTIFICATIONS_FROM,
+    replyTo: REPLY_TO,
     to: email,
     subject: `You're registered: ${eventTitle}`,
     html: await renderEventRegistrationConfirmation({
@@ -563,6 +564,7 @@ async function sendNotificationEmail(
 
   await resend.emails.send({
     from: NOTIFICATIONS_FROM,
+    replyTo: REPLY_TO,
     to,
     subject,
     html,
@@ -742,6 +744,7 @@ async function sendWaitlistConfirmation({
 
   await resend.emails.send({
     from: NOTIFICATIONS_FROM,
+    replyTo: REPLY_TO,
     to: email,
     subject: `You're on the Waitlist: ${eventTitle}`,
     html: await renderWaitlistConfirmation({

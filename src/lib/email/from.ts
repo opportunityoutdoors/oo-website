@@ -12,3 +12,15 @@ export const NOTIFICATIONS_FROM =
 export const MARKETING_FROM =
   process.env.MARKETING_FROM ||
   "Opportunity Outdoors <hello@send.opportunityoutdoors.org>";
+
+// Where replies actually go.
+//
+// The send.opportunityoutdoors.org subdomain has NO MX records: it exists only to send, so
+// anything replied to notifications@ or hello@ is discarded silently. Several templates
+// invite people to "just reply to this email", which until now was untrue. The apex domain
+// runs Google Workspace and does receive, so replies are pointed there.
+//
+// Pass this as `replyTo` on every send. It costs nothing and it is the difference between
+// a donor reaching a person and shouting into a void.
+export const REPLY_TO =
+  process.env.REPLY_TO_EMAIL || "info@opportunityoutdoors.org";

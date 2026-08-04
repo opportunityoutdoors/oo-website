@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { NOTIFICATIONS_FROM } from "@/lib/email/from";
+import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { renderWelcomePacket } from "@/emails";
 import { apiRequireMember } from "@/lib/admin/auth";
 
@@ -231,6 +231,7 @@ export async function POST(
 
     await resend.emails.send({
       from: NOTIFICATIONS_FROM,
+      replyTo: REPLY_TO,
       to: contact.email,
       subject: `Welcome Packet: ${eventTitle}`,
       html: await renderWelcomePacket({

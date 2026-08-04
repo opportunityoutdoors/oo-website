@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { NOTIFICATIONS_FROM } from "@/lib/email/from";
+import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { renderApproval, renderDenial } from "@/emails";
 import { apiRequireMember } from "@/lib/admin/auth";
 
@@ -167,6 +167,7 @@ async function sendApprovalEmails(
 
     await resend.emails.send({
       from: NOTIFICATIONS_FROM,
+      replyTo: REPLY_TO,
       to: email,
       subject: `You're In! Complete Your ${eventTitle} Registration`,
       html: await renderApproval({ firstName, eventTitle, cost, registerUrl }),
@@ -197,6 +198,7 @@ async function sendDenialEmails(
 
     await resend.emails.send({
       from: NOTIFICATIONS_FROM,
+      replyTo: REPLY_TO,
       to: email,
       subject: `Update on Your ${eventTitle} Registration`,
       html: await renderDenial({

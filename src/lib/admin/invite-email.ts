@@ -1,4 +1,4 @@
-import { NOTIFICATIONS_FROM } from "@/lib/email/from";
+import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { renderAdminInvite } from "@/emails";
 
 export async function sendInviteEmail({
@@ -25,6 +25,7 @@ export async function sendInviteEmail({
 
   await resend.emails.send({
     from: NOTIFICATIONS_FROM,
+    replyTo: REPLY_TO,
     to,
     subject: "You're invited to the Opportunity Outdoors admin dashboard",
     html: await renderAdminInvite({ roleLabel, inviterEmail, inviteUrl }),
