@@ -108,7 +108,12 @@ This Agreement constitutes the entire agreement between the Participant and the 
 
 const TSHIRT_SIZES = ["S", "M", "L", "XL", "2XL", "3XL"];
 
-export default function RegisterForm() {
+export default function RegisterForm({
+  /** Whether the server can actually create a Checkout Session. See page.tsx. */
+  stripeReady = false,
+}: {
+  stripeReady?: boolean;
+}) {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
@@ -641,7 +646,11 @@ export default function RegisterForm() {
                       </p>
                     </div>
                     <div className="mt-5 rounded border border-near-black/10 bg-cream/50 px-5 py-4 text-center">
-                      {charge.totalCents > 0 ? (
+                      {charge.totalCents === 0 ? (
+                        <p className="text-sm font-medium text-near-black/70">
+                          Nothing to pay. Submitting completes your registration.
+                        </p>
+                      ) : stripeReady ? (
                         <>
                           <p className="text-sm font-medium text-near-black/70">
                             You will be taken to Stripe to pay after you submit.
@@ -652,9 +661,16 @@ export default function RegisterForm() {
                           </p>
                         </>
                       ) : (
-                        <p className="text-sm font-medium text-near-black/70">
-                          Nothing to pay. Submitting completes your registration.
-                        </p>
+                        <>
+                          <p className="text-sm font-medium text-near-black/70">
+                            Submitting completes your registration. We will be in
+                            touch about paying the balance.
+                          </p>
+                          <p className="mt-1 text-xs text-near-black/50">
+                            Online payment is not switched on yet, so nothing is
+                            collected here.
+                          </p>
+                        </>
                       )}
                     </div>
                   </>

@@ -5,6 +5,7 @@ import SectionContainer from "@/components/ui/SectionContainer";
 import LabelTag from "@/components/ui/LabelTag";
 import PartnerLogos from "@/components/ui/PartnerLogos";
 import DonateForm from "./DonateForm";
+import { isStripeConfigured } from "@/lib/stripe/client";
 
 export const metadata: Metadata = {
   title: "Donate",
@@ -74,7 +75,25 @@ export default async function DonatePage({
               mentorship, camps, and conservation education.
             </p>
           </div>
-          <DonateForm canceled={canceled === "1"} />
+          {/* The form is only rendered once Stripe can actually take the money. Deploying
+              payment code ahead of the keys is normal; showing a donor a Donate button that
+              500s is not, and it is strictly worse than the honest fallback below. */}
+          {isStripeConfigured() ? (
+            <DonateForm canceled={canceled === "1"} />
+          ) : (
+            <div className="rounded-lg border border-gold/30 bg-gold/5 px-6 py-5 text-center">
+              <p className="text-sm leading-relaxed text-near-black/70">
+                Online donations are almost ready. In the meantime, contact us at{" "}
+                <a
+                  href="mailto:info@opportunityoutdoors.org"
+                  className="font-semibold text-dark-green hover:underline"
+                >
+                  info@opportunityoutdoors.org
+                </a>{" "}
+                to make a donation and we will take care of it personally.
+              </p>
+            </div>
+          )}
         </SectionContainer>
       </section>
 

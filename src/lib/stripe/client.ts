@@ -39,6 +39,18 @@ export function getStripe(): Stripe {
   return cached;
 }
 
+/**
+ * Whether Stripe is wired up at all. Server-only.
+ *
+ * Exists so pages can degrade instead of shipping a form that 500s. Payment code can be
+ * deployed before the keys are, and the user-facing surface must not promise a checkout it
+ * cannot deliver: a dead "Donate" button is worse than an honest "not yet" with an email
+ * address, because the donor has already decided to give by the time it fails.
+ */
+export function isStripeConfigured(): boolean {
+  return Boolean(process.env.STRIPE_SECRET_KEY);
+}
+
 /** True when the configured key is a test-mode key. Used to badge non-live checkouts. */
 export function isTestMode(): boolean {
   const key = process.env.STRIPE_SECRET_KEY || "";
