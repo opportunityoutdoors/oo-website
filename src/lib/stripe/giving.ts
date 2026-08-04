@@ -20,14 +20,29 @@ export const MONTHLY_PRESETS = [1000, 2500, 5000] as const;
 export type Frequency = "once" | "monthly";
 
 /**
- * Stripe's nonprofit rate: 2.2% + 30c. Used only to compute the optional "cover the
- * processing fee" top-up shown to donors.
+ * Stripe's processing rate, used only to compute the optional "cover the processing fee"
+ * top-up shown to donors.
  *
- * If the nonprofit application has not been approved yet the real rate is 2.9% + 30c, and
- * a donor covering fees will slightly under-cover. That is the right way to be wrong: the
- * alternative is over-charging donors for a discount we do not have.
+ * Currently the STANDARD rate, 2.9% + 30c. This was verified against real settlement rather
+ * than assumed: two $25.87 test gifts grossed $51.74 and settled $49.64, a $2.10 spread,
+ * which is exactly 2.9% + 30c twice.
+ *
+ * It was briefly set to the 2.2% nonprofit rate, which under-covered by 18c per gift: the
+ * donor paid an $0.87 top-up while Stripe took $1.05, so the org netted $24.82 on a gift
+ * meant to deliver $25.00. Quietly failing to cover is the one outcome the checkbox exists
+ * to prevent, so the rate now matches what Stripe actually charges.
+ *
+ * WHEN THE NONPROFIT RATE IS APPROVED (see the 80% donation-volume requirement), set
+ * NEXT_PUBLIC_STRIPE_FEE_PERCENT=0.022 rather than editing this line.
+ *
+ * The NEXT_PUBLIC_ prefix is required, not decorative. This module is imported by
+ * DonateForm, a client component, to show the donor their surcharge, and by the checkout
+ * route to compute the actual charge. A server-only env var reads as undefined in the
+ * browser, so the form would quote one number while the server charged another. Inlining it
+ * at build time keeps both sides on the same rate.
  */
-export const FEE_PERCENT = 0.022;
+export const FEE_PERCENT =
+  Number(process.env.NEXT_PUBLIC_STRIPE_FEE_PERCENT) || 0.029;
 export const FEE_FIXED_CENTS = 30;
 
 /**
@@ -52,8 +67,8 @@ export function feeSurchargeCents(netCents: number): number {
  * charge. Returns cents on success, or a human-readable reason on failure.
  *
  * The upper bound is not about distrust of donors. A gift that large should be a
- * conversation (stock, DAF, and wire are all cheaper for both sides than a 2.2% card fee,
- * which on $20,000 is $440), and an unbounded field is an attractive target for carding.
+ * conversation (stock, DAF, and wire are all cheaper for both sides than a card fee, which
+ * on $20,000 is roughly $580), and an unbounded field is an attractive target for carding.
  */
 export function validateAmountCents(
   raw: unknown

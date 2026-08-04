@@ -47,6 +47,10 @@ import {
   DonationReceipt,
   type DonationReceiptProps,
 } from "./templates/DonationReceipt";
+import {
+  ManageDonation,
+  type ManageDonationProps,
+} from "./templates/ManageDonation";
 
 export function renderWaitlistReminder(
   props: WaitlistReminderProps
@@ -114,4 +118,10 @@ export function renderDonationReceipt(
   props: DonationReceiptProps
 ): Promise<string> {
   return render(<DonationReceipt {...props} />);
+}
+
+export function renderManageDonation(
+  props: ManageDonationProps
+): Promise<string> {
+  return render(<ManageDonation {...props} />);
 }

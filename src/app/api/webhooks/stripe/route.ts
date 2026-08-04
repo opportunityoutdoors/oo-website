@@ -4,7 +4,7 @@ import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe/client";
 import { createServiceClient } from "@/lib/supabase/server";
 import { formatCents } from "@/lib/stripe/giving";
-import { NOTIFICATIONS_FROM } from "@/lib/email/from";
+import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { renderDonationReceipt } from "@/emails";
 
 // Stripe webhook. This is the ONLY place a donation row is written: the checkout route
@@ -322,7 +322,7 @@ async function upsertContact(
 ): Promise<string> {
   const { data: existing } = await supabase
     .from("contacts")
-    .select("id, first_name, last_name")
+    .select("id, first_name, last_name, tags")
     .eq("email", email)
     .maybeSingle();
 
@@ -330,12 +330,24 @@ async function upsertContact(
   const last = rest.join(" ") || null;
 
   if (existing) {
-    // Only fill blanks. An existing contact's name came from a form they filled in
-    // themselves; the cardholder name on a payment method is often a spouse, an initial,
+    // Only fill blanks on the name. An existing contact's name came from a form they filled
+    // in themselves; the cardholder name on a payment method is often a spouse, an initial,
     // or an employer, and should not overwrite good data.
-    const patch: Record<string, string> = {};
+    const patch: Record<string, unknown> = {};
     if (!existing.first_name && first) patch.first_name = first;
     if (!existing.last_name && last) patch.last_name = last;
+
+    // The tag is different: it is additive fact, not a competing value. Most donors already
+    // exist as contacts from a form or the 2023 import, so tagging only brand-new rows
+    // would leave the majority of real donors untagged and make "email our donors"
+    // impossible to segment. Appended rather than assigned so existing tags survive.
+    const tags: string[] = Array.isArray(existing.tags) ? existing.tags : [];
+    if (!tags.includes("donor")) patch.tags = [...tags, "donor"];
+
+    // `source` is deliberately left alone. It records where the contact first came from,
+    // and overwriting it with "donation" would destroy attribution for someone who
+    // originally arrived through a camp waitlist or the contact form.
+
     if (Object.keys(patch).length > 0) {
       await supabase.from("contacts").update(patch).eq("id", existing.id);
     }
@@ -396,6 +408,9 @@ async function sendReceipt(
   await resend.emails.send({
     from: NOTIFICATIONS_FROM,
     to: input.email,
+    // Replies to the From address are discarded: send.opportunityoutdoors.org has no MX
+    // records. Point them at the monitored inbox instead.
+    replyTo: REPLY_TO,
     subject: input.recurring
       ? `Your monthly donation receipt: ${formatCents(input.amountCents)}`
       : `Your donation receipt: ${formatCents(input.amountCents)}`,

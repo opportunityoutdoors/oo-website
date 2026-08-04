@@ -1,8 +1,8 @@
-import { Hr, Text } from "@react-email/components";
+import { Hr, Link, Text } from "@react-email/components";
 import * as React from "react";
 import { EmailLayout } from "../Layout";
 import { Callout, CalloutLabel, CalloutLine, Greeting, P, Signoff } from "../components";
-import { colors, fontFamily, mailingAddress, orgEin } from "../theme";
+import { colors, fontFamily, mailingAddress, orgEin, siteUrl } from "../theme";
 
 export interface DonationReceiptProps {
   firstName?: string;
@@ -51,17 +51,20 @@ export function DonationReceipt({
       <Greeting name={firstName} />
 
       <P>
-        Thank you. Your gift of <strong>{amount}</strong> puts new hunters and
-        anglers in the field with people who know what they are doing, which is
-        the whole point of this organization.
+        Thank you. Your gift of <strong>{amount}</strong> helps put new hunters
+        and anglers in the field and experienced mentors by their side.
       </P>
 
       {recurring && (
         <P>
           This is your monthly gift, and it will renew automatically on roughly
           this date each month. Steady support is what lets us plan a season
-          ahead instead of a camp at a time. You can change or cancel it any
-          time by replying to this email.
+          ahead instead of a camp at a time. You can change the amount, update
+          your card, or cancel any time at{" "}
+          <Link href={`${siteUrl()}/donate/manage`} style={{ color: colors.darkGreen, fontWeight: 600 }}>
+            {siteUrl().replace(/^https?:\/\//, "")}/donate/manage
+          </Link>
+          .
         </P>
       )}
 
@@ -72,10 +75,14 @@ export function DonationReceipt({
         <CalloutLine>
           Type: {recurring ? "Recurring monthly gift" : "One-time gift"}
         </CalloutLine>
+        {/* Stated explicitly because donors reasonably wonder whether the fee top-up is
+            deductible. It is: the deduction is what the donor transferred to the charity,
+            and the processing fee is a cost the charity absorbs from its own proceeds, not
+            a reduction of the gift. Naming the total avoids anyone under-claiming. */}
         {feeCovered && (
           <CalloutLine>
-            Includes {feeCovered} you added to cover processing fees. Thank you,
-            that means the full gift reaches the programs.
+            Includes {feeCovered} you added to cover processing fees, so the full
+            gift reaches the programs. The entire {amount} is deductible.
           </CalloutLine>
         )}
         {receiptNumber && <CalloutLine>Receipt number: {receiptNumber}</CalloutLine>}

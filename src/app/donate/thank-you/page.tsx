@@ -50,7 +50,7 @@ export default async function ThankYouPage({
     <>
       <PageHero
         title="Thank You"
-        subtitle="Your support puts new hunters and anglers in the field with people who know what they are doing."
+        subtitle="Your support helps put new hunters and anglers in the field and experienced mentors by their side."
         backgroundImage="/images/hero/donate-hero.jpg"
         flipImage
       />
@@ -75,8 +75,15 @@ export default async function ThankYouPage({
 
             {recurring && (
               <p className="mt-4 text-[15px] leading-relaxed text-near-black/70">
-                Your gift renews automatically each month. You can change or
-                cancel it any time by replying to the receipt email.
+                Your gift renews automatically each month. You can change the
+                amount, update your card, or cancel any time from{" "}
+                <Link
+                  href="/donate/manage"
+                  className="font-semibold text-dark-green hover:underline"
+                >
+                  manage your donation
+                </Link>
+                .
               </p>
             )}
 
@@ -92,18 +99,16 @@ export default async function ThankYouPage({
               and we will sort it out.
             </p>
 
+            {/* Only one CTA. There was a second, "Where It Goes", pointing at /impact,
+                which does not exist as a public route (the impact report lives behind
+                /admin/impact). It 404'd. Removed rather than replaced: this page does not
+                need two competing actions. */}
             <div className="mt-10 flex flex-wrap justify-center gap-4">
               <Link
                 href="/events"
                 className="rounded bg-dark-green px-7 py-3.5 text-[13px] font-bold uppercase tracking-[1px] text-white hover:opacity-90"
               >
                 See Upcoming Events
-              </Link>
-              <Link
-                href="/impact"
-                className="rounded border border-near-black/15 px-7 py-3.5 text-[13px] font-bold uppercase tracking-[1px] text-near-black hover:border-dark-green"
-              >
-                Where It Goes
               </Link>
             </div>
           </div>
