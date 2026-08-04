@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "stripe": "./scripts/stripe.sh",
+    "stripe:listen": "./scripts/stripe.sh listen --forward-to localhost:3000/api/webhooks/stripe"
   },
   "dependencies": {
     "@portabletext/react": "^6.0.3",
