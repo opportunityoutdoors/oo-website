@@ -128,6 +128,10 @@ async function writeToSupabase(
   if (str("phone")) contactData.phone = str("phone");
   if (str("city")) contactData.city = str("city");
   if (str("state")) contactData.state = str("state");
+  // Adult vs minor decides whether a background check is required, and that has to be known
+  // before a registration total can be shown. Written to contacts, not just to the
+  // application tables, because the registration and payment paths read contacts.
+  if (str("dateOfBirth")) contactData.date_of_birth = str("dateOfBirth");
 
   // Form-specific contact fields
   if (formType === "mentee-signup") {
@@ -301,6 +305,11 @@ async function writeToSupabase(
               email: null,
               first_name: str("minorFirstName"),
               last_name: str("minorLastName"),
+              // The waitlist form has always asked for the minor's date of birth and this
+              // insert has always discarded it. It matters now: age is what keeps a
+              // consumer report from ever being run on a child, and the guardian link
+              // alone does not prove someone is under 18.
+              date_of_birth: str("minorDob") || null,
               phone: str("phone"),
               city: str("city"),
               state: str("state"),

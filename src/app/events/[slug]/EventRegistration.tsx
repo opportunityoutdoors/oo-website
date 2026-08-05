@@ -171,6 +171,7 @@ function WaitlistForm({
     phone: "",
     city: "",
     state: "NC",
+    dateOfBirth: "",
     role: "",
     meetingDate: "",
     minorFirstName: "",
@@ -219,6 +220,7 @@ function WaitlistForm({
             phone: form.phone,
             city: form.city,
             state: form.state,
+            dateOfBirth: form.dateOfBirth,
             role: form.role,
             meetingDate: form.meetingDate,
             eventName: event.title,
@@ -263,6 +265,12 @@ function WaitlistForm({
 
         <FormField type="email" label="Email" name="wl-email" required value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
         <FormField type="tel" label="Phone" name="wl-phone" required value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
+
+        {/* Collected here because adult-vs-minor decides whether a background check is
+            required, and that has to be known before a registration total can be shown.
+            Only 8 of 600 existing contacts have a DOB, so asking at the front door is what
+            stops the gap from growing. */}
+        <FormField type="date" label="Date of Birth" name="wl-dob" required value={form.dateOfBirth} onChange={(v) => setForm({ ...form, dateOfBirth: v })} />
 
         <div className="grid gap-5 sm:grid-cols-2">
           <FormField type="text" label="City" name="wl-city" required value={form.city} onChange={(v) => setForm({ ...form, city: v })} placeholder="Raleigh" />
