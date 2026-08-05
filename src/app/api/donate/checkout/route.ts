@@ -127,6 +127,10 @@ export async function POST(req: NextRequest) {
       // folded into the charge. Without this, a $100 gift with fees covered looks like a
       // $102.86 gift and the acknowledgment reports the wrong number.
       metadata: {
+        // Explicit, and required by the webhook. See the dispatch note there: a payment
+        // with no recognised `kind` is refused rather than assumed to be a gift, so this
+        // line is what makes a donation a donation.
+        kind: "donation",
         gift_cents: String(giftCents),
         fee_covered_cents: String(chargeCents - giftCents),
         frequency,
@@ -143,6 +147,7 @@ export async function POST(req: NextRequest) {
         ? {
             subscription_data: {
               metadata: {
+                kind: "donation",
                 gift_cents: String(giftCents),
                 fee_covered_cents: String(chargeCents - giftCents),
                 source: "website",

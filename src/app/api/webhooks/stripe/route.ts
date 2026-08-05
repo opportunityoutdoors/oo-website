@@ -126,10 +126,26 @@ export async function POST(req: NextRequest) {
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (session.mode !== "payment") return;
 
-  // Camp fees are NOT donations. Booking one as a gift would overstate fundraising totals
-  // and, worse, send a tax receipt claiming no goods or services were provided in exchange
-  // for a payment that bought a place at a camp. That is a false statement to the IRS.
-  if (session.metadata?.kind === "camp_registration") {
+  // DISPATCH IS AN ALLOWLIST, AND THE DEFAULT IS REFUSAL.
+  //
+  // Every Checkout flow in this app lands on this one event and is distinguishable only by
+  // metadata.kind. The obvious shape is "if camp, treat as camp, otherwise donation", and
+  // that is what this used to do. It is the wrong default: any future flow that forgets to
+  // set metadata gets booked as a tax-deductible gift and mails the payer an IRS
+  // acknowledgment stating no goods or services were provided. For a store order that
+  // statement is simply false.
+  //
+  // A second webhook endpoint does not solve this. Stripe filters deliveries by event type,
+  // not by metadata, so every endpoint receives every checkout.session.completed and each
+  // would still have to discriminate here. Splitting the URL adds a second signing secret
+  // and a second copy of this logic without adding safety.
+  //
+  // So: recognised kinds are handled, everything else is logged loudly and dropped. A
+  // payment that is not recorded is a bug someone will notice and can backfill. A payment
+  // wrongly recorded as a charitable gift is a false tax document already in an inbox.
+  const kind = session.metadata?.kind;
+
+  if (kind === "camp_registration") {
     // Camp checkout is card-only, so payment_status is settled by now. Guarded anyway so
     // that enabling ACH for camps later fails loudly rather than booking unpaid places.
     if (session.payment_status !== "paid") {
@@ -139,6 +155,26 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       return;
     }
     await handleCampPayment(session);
+    return;
+  }
+
+  // The refusal. Anything not explicitly marked a donation stops here.
+  //
+  // Sessions created before this check existed carry no `kind`, so they are tolerated when
+  // they look unmistakably like a website gift: our own donation metadata is present. That
+  // exemption should be deleted once no such sessions can still be in flight (Stripe retries
+  // for at most 3 days).
+  const looksLikeLegacyDonation =
+    kind === undefined && session.metadata?.gift_cents !== undefined;
+
+  if (kind !== "donation" && !looksLikeLegacyDonation) {
+    console.error(
+      `REFUSING checkout session ${session.id}: metadata.kind is ${JSON.stringify(kind)}, ` +
+        `which is not a recognised payment type. Nothing recorded. If this is a new payment ` +
+        `flow, set metadata.kind when creating the session and add a branch here. It is NOT ` +
+        `booked as a donation, because that would mail the payer a tax receipt asserting no ` +
+        `goods or services were provided.`
+    );
     return;
   }
 

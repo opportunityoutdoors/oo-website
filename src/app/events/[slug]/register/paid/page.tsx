@@ -79,7 +79,7 @@ export default async function CampPaidPage({
       ) : (
         <>
           <h1 className="font-heading text-3xl font-[900] uppercase tracking-tight text-near-black">
-            You Are All Set
+            You&apos;re All Set
           </h1>
           <p className="mt-4 text-[15px] leading-relaxed text-near-black/70">
             {amount ? (
@@ -91,12 +91,13 @@ export default async function CampPaidPage({
             ) : (
               <>Your payment came through and your registration is complete.</>
             )}{" "}
-            Stripe has emailed you a payment receipt, and your registration
-            confirmation with the signed waiver arrived separately.
+            You&apos;ll receive an email with your receipt along with a separate
+            email with your registration confirmation and signed waiver.
           </p>
           <p className="mt-4 text-[15px] leading-relaxed text-near-black/70">
-            A welcome packet with location details and what to bring goes out
-            closer to the date.
+            A welcome packet with location details and what to bring will be sent
+            out closer to the event date. Give us a shout with any questions in
+            the meantime.
           </p>
 
           <div className="mt-10 flex flex-wrap gap-4">

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import SurveyQuestions, { EMPTY_ANSWERS } from "@/components/forms/SurveyQuestions";
+import ResumePaymentButton from "@/components/forms/ResumePaymentButton";
 import type { SurveyAnswers } from "@/lib/surveys/questions";
 import {
   MENTOR_TSHIRT_CENTS,
@@ -46,6 +47,8 @@ interface RegistrationData {
   id: string;
   status: string;
   role: string | null;
+  /** 'none' | 'pending' | 'paid'. Independent of `status`: payment does not gate registration. */
+  payment_status: string | null;
   contacts: ContactInfo;
   events: EventInfo;
   linked_minor: MinorInfo | null;
@@ -245,6 +248,13 @@ export default function RegisterForm({
   }
 
   if (alreadyRegistered && registration) {
+    // Registration and payment are separate states, because payment deliberately does not
+    // gate registration. Someone who abandoned checkout is fully registered AND still owes
+    // money, and this screen used to tell them only the first half: "you're all set", no
+    // mention of a balance, no way to pay, no route forward but email. Reachable in one
+    // click from the confirmation email, so it has to carry the balance.
+    const owesMoney = registration.payment_status === "pending";
+
     return (
       <div className="mx-auto max-w-lg px-6 pb-24 pt-36 text-center">
         <h1 className="mb-4 font-heading text-3xl font-[900] uppercase text-near-black">
@@ -252,14 +262,35 @@ export default function RegisterForm({
         </h1>
         <p className="mb-8 text-near-black/60">
           You&apos;ve already completed your registration for{" "}
-          <strong>{registration.events.title}</strong>. We&apos;ll be in touch with more details as the event approaches.
+          <strong>{registration.events.title}</strong>.{" "}
+          {owesMoney
+            ? "Your spot is held. There is still a balance outstanding."
+            : "We'll be in touch with more details as the event approaches."}
         </p>
-        <Link
-          href="/events"
-          className="inline-block rounded bg-dark-green px-8 py-3 text-[13px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:bg-dark-green/90"
-        >
-          View Events
-        </Link>
+
+        {owesMoney ? (
+          <>
+            <ResumePaymentButton token={token} />
+            <p className="mt-6 text-sm leading-relaxed text-near-black/50">
+              Trouble paying, or need to arrange something different? Email{" "}
+              <a
+                href="mailto:info@opportunityoutdoors.org"
+                className="font-semibold text-dark-green hover:underline"
+              >
+                info@opportunityoutdoors.org
+              </a>{" "}
+              and we will work it out. Cost should not be the reason someone
+              stays home.
+            </p>
+          </>
+        ) : (
+          <Link
+            href="/events"
+            className="inline-block rounded bg-dark-green px-8 py-3 text-[13px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:bg-dark-green/90"
+          >
+            View Events
+          </Link>
+        )}
       </div>
     );
   }
