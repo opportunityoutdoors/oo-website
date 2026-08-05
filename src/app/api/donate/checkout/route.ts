@@ -70,6 +70,29 @@ export async function POST(req: NextRequest) {
       payment_method_types:
         payMethod === "bank" ? ["us_bank_account"] : ["card"],
 
+      // Instant verification ONLY, never microdeposits.
+      //
+      // Stripe's default here is 'automatic', which offers instant verification but lets
+      // the donor fall back to typing account numbers by hand. That fallback is a trap: it
+      // puts the payment into requires_action, mails the donor a code 1-2 business days
+      // later, and does nothing further until they come back and enter it. A donor who
+      // never returns has made no donation at all, and the payment sits stuck forever with
+      // nobody aware. Observed live in testing: a $1,000 gift stalled and only completed
+      // because it was verified through the API by hand.
+      //
+      // The cost of 'instant' is that donors whose banks Financial Connections does not
+      // support cannot pay by bank. They can still use a card, which is one click away and
+      // always works. Losing some ACH coverage beats silently losing whole donations.
+      ...(payMethod === "bank"
+        ? {
+            payment_method_options: {
+              us_bank_account: {
+                verification_method: "instant" as const,
+              },
+            },
+          }
+        : {}),
+
       line_items: [
         {
           quantity: 1,

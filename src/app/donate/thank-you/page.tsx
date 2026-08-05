@@ -34,11 +34,21 @@ export default async function ThankYouPage({
   let recurring = false;
   let paid = false;
 
+  // Bank debits are authorised at checkout but settle days later, so "thank you" and
+  // "your money arrived" are no longer the same moment. Tracked separately because the
+  // page previously asserted a receipt was coming in BOTH branches, which told every ACH
+  // donor to expect an email we deliberately do not send until funds clear.
+  let processing = false;
+
   if (session_id) {
     try {
       const session = await getStripe().checkout.sessions.retrieve(session_id);
-      paid = session.payment_status === "paid" || session.mode === "subscription";
       recurring = session.mode === "subscription";
+      paid = session.payment_status === "paid" || recurring;
+      // 'unpaid' on a completed session means an async method is still in flight. Stripe
+      // uses the same value for a genuinely abandoned session, but those never reach this
+      // page: they land on cancel_url instead.
+      processing = !paid && session.payment_status === "unpaid";
       if (session.amount_total) amount = formatCents(session.amount_total);
     } catch {
       // A bad or expired id should not produce an error page. The gift, if there was one,
@@ -58,7 +68,20 @@ export default async function ThankYouPage({
       <section className="bg-white py-20">
         <SectionContainer>
           <div className="mx-auto max-w-2xl text-center">
-            {paid && amount ? (
+            {processing ? (
+              <>
+                <p className="text-[15px] leading-relaxed text-near-black/70">
+                  Your bank transfer{amount ? <> of <strong className="text-near-black">{amount}</strong></> : null}{" "}
+                  is on its way. Bank payments take about four business days to
+                  clear, so nothing has left your account yet.
+                </p>
+                <p className="mt-4 text-[15px] leading-relaxed text-near-black/70">
+                  Your receipt arrives once the funds land, not today, because it
+                  has to state money we have actually received. Nothing more is
+                  needed from you.
+                </p>
+              </>
+            ) : paid && amount ? (
               <p className="text-[15px] leading-relaxed text-near-black/70">
                 Your {recurring ? "monthly gift" : "gift"} of{" "}
                 <strong className="text-near-black">{amount}</strong>
@@ -67,9 +90,12 @@ export default async function ThankYouPage({
                 tax records.
               </p>
             ) : (
+              // Reached only when the session could not be read back. Deliberately does
+              // NOT promise a receipt: we do not know whether this was a settled card
+              // payment or a pending bank transfer, and guessing wrong misleads either way.
               <p className="text-[15px] leading-relaxed text-near-black/70">
-                Your gift came through. A receipt is on its way to your inbox,
-                and it includes everything you need for your tax records.
+                Thank you. Your donation has been submitted, and you will get a
+                receipt by email once the payment settles.
               </p>
             )}
 
@@ -87,9 +113,12 @@ export default async function ThankYouPage({
               </p>
             )}
 
+            {/* "A few minutes" is the wrong expectation for a bank transfer, where four
+                days is normal and chasing it early wastes everyone's time. */}
             <p className="mt-4 text-[15px] leading-relaxed text-near-black/70">
-              If the receipt has not arrived within a few minutes, check your
-              spam folder, then email{" "}
+              {processing
+                ? "If nothing has arrived a week from now, check your spam folder, then email "
+                : "If the receipt has not arrived within a few minutes, check your spam folder, then email "}
               <a
                 href="mailto:info@opportunityoutdoors.org"
                 className="font-semibold text-dark-green hover:underline"

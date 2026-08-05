@@ -276,10 +276,14 @@ export default function DonateForm({ canceled }: { canceled?: boolean }) {
               aria-label="Payment method"
               className="mt-2 grid gap-2 sm:grid-cols-2"
             >
+              {/* The bank note names the sign-in up front. Verification is instant-only
+                  (see the checkout route), so a donor whose bank is not supported hits a
+                  dead end at Stripe, and finding that out after choosing is worse than
+                  knowing before. */}
               {(
                 [
                   ["card", "Card", "Instant"],
-                  ["bank", "Bank transfer", "About 4 business days"],
+                  ["bank", "Bank transfer", "Sign in to your bank, clears in ~4 days"],
                 ] as const
               ).map(([value, label, note]) => (
                 <button
@@ -329,9 +333,11 @@ export default function DonateForm({ canceled }: { canceled?: boolean }) {
 
         {effectiveMethod === "bank" && (
           <p className="mt-4 rounded border border-near-black/10 bg-cream/50 px-4 py-3 text-xs leading-relaxed text-near-black/60">
-            Bank transfers take about four business days to clear. Your receipt
-            arrives once the funds land, not straight away, because it has to
-            state money we have actually received.
+            You will sign in to your bank on the next screen to authorise this
+            once. Transfers take about four business days to clear, and your
+            receipt arrives when the funds land rather than straight away,
+            because it has to state money we have actually received. If your
+            bank is not listed, come back and choose card.
           </p>
         )}
 
