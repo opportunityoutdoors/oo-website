@@ -32,8 +32,13 @@ export type Frequency = "once" | "monthly";
  * meant to deliver $25.00. Quietly failing to cover is the one outcome the checkbox exists
  * to prevent, so the rate now matches what Stripe actually charges.
  *
- * WHEN THE NONPROFIT RATE IS APPROVED (see the 80% donation-volume requirement), set
- * NEXT_PUBLIC_STRIPE_FEE_PERCENT=0.022 rather than editing this line.
+ * THE 2.2% NONPROFIT RATE IS NOT BEING PURSUED. It requires 80%+ of Stripe volume to come
+ * from tax-deductible donations, and Opportunity Outdoors expects the majority of its
+ * revenue from camp registrations and the store, neither of which counts. Decided
+ * 2026-08-05. Treat 2.9% + 30c as the standing rate rather than a temporary state.
+ *
+ * The env override remains for the unlikely case that changes, or if Stripe ever varies the
+ * rate: set NEXT_PUBLIC_STRIPE_FEE_PERCENT rather than editing this line.
  *
  * The NEXT_PUBLIC_ prefix is required, not decorative. This module is imported by
  * DonateForm, a client component, to show the donor their surcharge, and by the checkout

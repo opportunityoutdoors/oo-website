@@ -156,17 +156,40 @@ export default {
     },
     {
       name: "cost",
-      title: "Cost (Display)",
+      title: "Cost (Display Text Only)",
       type: "string",
       group: "content",
-      description: "Shown on event cards and detail page. Example: 'Free' or '$75'",
+      description:
+        "Wording shown on event cards and the detail page, for example 'Free', '$75', or " +
+        "'$75 per participant'. This is COPY, not a price: nothing here affects what anyone " +
+        "is charged. Set the actual amount in Registration Fee below, and keep the two in " +
+        "agreement by hand.",
     },
     {
       name: "registrationFee",
       title: "Registration Fee ($)",
       type: "number",
       group: "content",
-      description: "Actual amount charged via Stripe (mentees only). Set to 0 for free events. Mentors are not charged.",
+      description:
+        "THIS is the amount charged. Enter a number only, no dollar sign. Set 0 for a free event. " +
+        "Charged once per paying participant: each mentee, and each minor registered by a guardian. " +
+        "Mentors attend free and are never charged this. " +
+        "It should cover everything the event costs you per head: food, lodging, range or guide fees, " +
+        "gear, insurance, the participant t-shirt, and background checks once those are in place. " +
+        "The Cost (Display) field above is the wording shown on the website and has no effect on what " +
+        "anyone pays. Mentors can separately opt into a $25 t-shirt at registration.",
+      // Required, and the reason is a bug this exact field caused. Before it was synced, the
+      // registration form derived the price by stripping non-digits out of Cost (Display),
+      // so "$37.50" became a $3,750 charge and "Free" became NaN. Leaving this blank now
+      // means the event silently charges nothing, which is the safer failure but still
+      // wrong. Making it required forces the number to be stated rather than inferred.
+      //
+      // NOTE: existing events created before this will show a validation warning in the
+      // Studio until someone fills it in. That is the intended prompt, not a defect.
+      validation: (Rule: any) =>
+        Rule.required()
+          .min(0)
+          .error("Set a registration fee. Use 0 for a free event, never leave it blank."),
     },
     {
       name: "spotsTotal",
