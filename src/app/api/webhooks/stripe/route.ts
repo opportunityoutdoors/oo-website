@@ -67,6 +67,21 @@ export async function POST(req: NextRequest) {
         await handleCheckoutCompleted(event.data.object);
         break;
 
+      // ACH settles days after checkout, so the money arriving is its own event. Without
+      // these two an ACH donation would sit pending forever: checkout.session.completed
+      // fires with payment_status 'unpaid' and returns early, and nothing else follows up.
+      case "checkout.session.async_payment_succeeded":
+        await handleAsyncPaymentResolved(event.data.object, "succeeded");
+        break;
+
+      case "checkout.session.async_payment_failed":
+        await handleAsyncPaymentResolved(event.data.object, "failed");
+        break;
+
+      case "charge.refunded":
+        await handleChargeRefunded(event.data.object);
+        break;
+
       case "invoice.paid":
         await handleInvoicePaid(event.data.object);
         break;
@@ -110,15 +125,37 @@ export async function POST(req: NextRequest) {
  */
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   if (session.mode !== "payment") return;
-  if (session.payment_status !== "paid") return;
 
   // Camp fees are NOT donations. Booking one as a gift would overstate fundraising totals
   // and, worse, send a tax receipt claiming no goods or services were provided in exchange
   // for a payment that bought a place at a camp. That is a false statement to the IRS.
   if (session.metadata?.kind === "camp_registration") {
+    // Camp checkout is card-only, so payment_status is settled by now. Guarded anyway so
+    // that enabling ACH for camps later fails loudly rather than booking unpaid places.
+    if (session.payment_status !== "paid") {
+      console.warn(
+        `Camp session ${session.id} completed unpaid (${session.payment_status}); not marking paid`
+      );
+      return;
+    }
     await handleCampPayment(session);
     return;
   }
+
+  // 'paid' means settled, which is true immediately for cards. ACH arrives as 'unpaid'
+  // because the debit takes about four business days, and it can still fail afterwards.
+  //
+  // The previous version returned early on anything other than 'paid', which would have
+  // made every ACH gift vanish silently: money leaves the donor, nothing is ever recorded.
+  // Instead an unsettled gift is written as 'pending' and resolved later by
+  // checkout.session.async_payment_succeeded / _failed.
+  if (session.payment_status !== "paid" && session.payment_status !== "unpaid") {
+    console.warn(
+      `Checkout session ${session.id} in unexpected payment_status ${session.payment_status}; ignoring`
+    );
+    return;
+  }
+  const settled = session.payment_status === "paid";
 
   const paymentIntentId = idOf(session.payment_intent);
   const email = session.customer_details?.email ?? session.customer_email ?? null;
@@ -143,7 +180,124 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     subscriptionId: null,
     customerId: idOf(session.customer),
     campaign: session.metadata?.source ?? "website",
+    paymentMethodType: session.metadata?.pay_method === "bank" ? "us_bank_account" : "card",
+    // A pending gift is not income and gets no receipt. Sending a tax acknowledgment for
+    // money that has not arrived, and might bounce, is the one thing worse than sending it
+    // late.
+    status: settled ? "succeeded" : "pending",
+    sendReceipt: settled,
   });
+}
+
+/**
+ * Resolves an ACH gift once the bank debit settles or fails, four-ish days after checkout.
+ *
+ * Updates the existing pending row rather than inserting: the row was created by
+ * handleCheckoutCompleted and carries the unique payment intent, so a second insert would
+ * collide with the idempotency index anyway.
+ */
+async function handleAsyncPaymentResolved(
+  session: Stripe.Checkout.Session,
+  outcome: "succeeded" | "failed"
+) {
+  const supabase = createServiceClient();
+  const paymentIntentId = idOf(session.payment_intent);
+
+  if (!paymentIntentId) {
+    console.error(`Async payment event for session ${session.id} has no payment intent`);
+    return;
+  }
+
+  // Guarded on the current status so a replayed delivery cannot resurrect a refunded gift
+  // or re-send a receipt for one already settled.
+  const { data: updated, error } = await supabase
+    .from("donations")
+    .update({
+      status: outcome,
+      ...(outcome === "succeeded" ? { date: new Date().toISOString() } : {}),
+    })
+    .eq("stripe_payment_intent_id", paymentIntentId)
+    .eq("status", "pending")
+    .select("id, amount, fee_covered_amount, contact_id, recurring");
+
+  if (error) throw new Error(`Failed to resolve async payment: ${error.message}`);
+
+  if (!updated?.length) {
+    console.log(
+      `Async ${outcome} for ${paymentIntentId} matched no pending donation; already resolved`
+    );
+    return;
+  }
+
+  const row = updated[0];
+  console.log(`ACH gift ${paymentIntentId} resolved: ${outcome} ($${row.amount})`);
+
+  if (outcome !== "succeeded") return;
+
+  // Receipt waits for settlement, which is the whole reason ACH needs this second step.
+  const email = session.customer_details?.email ?? session.customer_email ?? null;
+  if (!email) {
+    console.error(`Cannot send receipt for ${paymentIntentId}: no email on session`);
+    return;
+  }
+
+  after(async () => {
+    try {
+      await sendReceipt({
+        email: email.trim().toLowerCase(),
+        amountCents: Math.round(Number(row.amount) * 100),
+        feeCoveredCents: Math.round(Number(row.fee_covered_amount) * 100),
+        recurring: row.recurring,
+        paymentIntentId,
+        donationId: row.id,
+      });
+    } catch (err) {
+      console.error(`Failed to send ACH receipt for ${row.id}:`, err);
+    }
+  });
+}
+
+/**
+ * Records a refund against the original gift.
+ *
+ * Fires on partial refunds too, so the amount is read from the charge rather than assumed
+ * to be the whole thing. `status` only becomes 'refunded' on a full refund; a partial keeps
+ * 'succeeded' with a non-zero refunded_amount, because the gift is still largely income.
+ */
+async function handleChargeRefunded(charge: Stripe.Charge) {
+  const supabase = createServiceClient();
+  const paymentIntentId = idOf(charge.payment_intent);
+
+  if (!paymentIntentId) {
+    console.error(`Refund on charge ${charge.id} has no payment intent; cannot match`);
+    return;
+  }
+
+  const refundedCents = charge.amount_refunded ?? 0;
+  const fullyRefunded = refundedCents >= (charge.amount ?? 0);
+
+  const { data: updated, error } = await supabase
+    .from("donations")
+    .update({
+      refunded_amount: refundedCents / 100,
+      refunded_at: new Date().toISOString(),
+      ...(fullyRefunded ? { status: "refunded" } : {}),
+    })
+    .eq("stripe_payment_intent_id", paymentIntentId)
+    .select("id, amount");
+
+  if (error) throw new Error(`Failed to record refund: ${error.message}`);
+
+  if (!updated?.length) {
+    // Expected for camp registration refunds, which live in `registrations`, not here.
+    console.log(`Refund for ${paymentIntentId} matched no donation row`);
+    return;
+  }
+
+  console.log(
+    `Refund recorded for ${paymentIntentId}: $${(refundedCents / 100).toFixed(2)}` +
+      `${fullyRefunded ? " (full)" : " (partial)"}`
+  );
 }
 
 /**
@@ -273,6 +427,12 @@ type DonationInput = {
   subscriptionId: string | null;
   customerId: string | null;
   campaign: string;
+  /** 'card' or 'us_bank_account'. Determines which fee rate applied. */
+  paymentMethodType?: string | null;
+  /** 'pending' for an ACH debit still in flight, 'succeeded' once money is in hand. */
+  status?: "pending" | "succeeded";
+  /** False while a gift is pending: no tax receipt for money that has not arrived. */
+  sendReceipt?: boolean;
 };
 
 async function recordDonation(input: DonationInput) {
@@ -291,7 +451,8 @@ async function recordDonation(input: DonationInput) {
       fee_covered_amount: input.feeCoveredCents / 100,
       currency: "usd",
       recurring: input.recurring,
-      status: "succeeded",
+      status: input.status ?? "succeeded",
+      payment_method_type: input.paymentMethodType ?? null,
       method: input.recurring ? "stripe_subscription" : "stripe_checkout",
       campaign: input.campaign,
       stripe_payment_intent_id: input.paymentIntentId,
@@ -313,6 +474,16 @@ async function recordDonation(input: DonationInput) {
       return;
     }
     throw new Error(`Failed to record donation: ${error.message}`);
+  }
+
+  // A pending ACH gift gets no receipt yet. The money has not arrived and may still fail,
+  // and a tax acknowledgment for a payment that later bounces is worse than a late one.
+  // handleAsyncPaymentResolved sends it once the debit settles.
+  if (input.sendReceipt === false) {
+    console.log(
+      `Donation ${inserted.id} recorded as pending (ACH); receipt deferred until settlement`
+    );
+    return;
   }
 
   // Receipt goes out after the response. Stripe wants a fast 2xx, and rendering plus
@@ -385,9 +556,21 @@ async function upsertContact(
   return created.id;
 }
 
-async function sendReceipt(
-  input: DonationInput & { donationId: string }
-) {
+/**
+ * Narrowed to only what the receipt needs, rather than the full DonationInput. The ACH
+ * settlement path reconstructs its arguments from the database row, not from a checkout
+ * session, and has no name, campaign, or customer id to hand over.
+ */
+type ReceiptInput = {
+  email: string;
+  amountCents: number;
+  feeCoveredCents: number;
+  recurring: boolean;
+  paymentIntentId: string | null;
+  donationId: string;
+};
+
+async function sendReceipt(input: ReceiptInput) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     console.error("RESEND_API_KEY not set; donation receipt not sent");

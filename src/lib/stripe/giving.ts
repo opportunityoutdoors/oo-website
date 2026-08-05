@@ -46,19 +46,88 @@ export const FEE_PERCENT =
 export const FEE_FIXED_CENTS = 30;
 
 /**
+ * ACH direct debit: 0.8% with a $5.00 ceiling, no fixed component.
+ *
+ * Bank is cheaper than card at EVERY amount, which is worth stating because the intuition
+ * runs the other way. Card is 2.9% + 30c, and that fixed 30c makes it especially poor on
+ * small gifts: $5 costs 46c by card and 4c by bank. There is no crossover. Verified across
+ * $5 to $20,000, bank wins throughout.
+ *
+ * The cap is what makes it dramatic at the top: a $2,000 gift costs $5 by bank, $58.30 by
+ * card.
+ */
+export const ACH_PERCENT = 0.008;
+export const ACH_CAP_CENTS = 500;
+
+/**
+ * Minimum fee saving before suggesting bank over card.
+ *
+ * Because bank always wins, an unconditional prompt would appear on every gift, including
+ * ones where it saves 42 cents and costs the donor a four-day wait. This makes the nudge
+ * proportionate rather than constant.
+ */
+export const BANK_NUDGE_MIN_SAVING_CENTS = 200;
+
+/**
+ * How the donor pays. Chosen on OUR page rather than Stripe's, which is a deliberate
+ * departure from the usual advice to let Checkout present every method.
+ *
+ * The reason is the fee-cover checkbox. The surcharge has to be computed before the session
+ * is created, and card and bank have completely different rates, so if the donor picks the
+ * method on Stripe's page we would already have charged them the wrong top-up. Quoting the
+ * card rate to someone who then pays by bank overcharges them by up to $50 on a large gift.
+ */
+export type PayMethod = "card" | "bank";
+
+/**
  * The gross charge needed for the org to net `netCents` after Stripe's cut.
  *
- * Solving net = gross - (gross * p + f) for gross gives gross = (net + f) / (1 - p).
+ * Card: solving net = gross - (gross * p + f) for gross gives gross = (net + f) / (1 - p).
  * Charging net * (1 + p) instead is the common mistake and always under-covers, because
  * the fee applies to the topped-up total, not the original amount.
+ *
+ * Bank: the same reasoning until the $5 cap binds, after which the fee stops growing and
+ * the top-up is simply the cap. Solving the uncapped form first and then checking whether
+ * the result would exceed the cap is what gets the boundary right; assuming one branch or
+ * the other misprices every gift on the wrong side of roughly $625.
  */
-export function grossUpForFees(netCents: number): number {
+export function grossUpForFees(
+  netCents: number,
+  method: PayMethod = "card"
+): number {
+  if (method === "bank") {
+    const uncapped = Math.round(netCents / (1 - ACH_PERCENT));
+    // Would Stripe's fee on that gross exceed the cap? If so the cap binds and the donor
+    // only needs to add the flat $5.
+    return uncapped * ACH_PERCENT <= ACH_CAP_CENTS
+      ? uncapped
+      : netCents + ACH_CAP_CENTS;
+  }
   return Math.round((netCents + FEE_FIXED_CENTS) / (1 - FEE_PERCENT));
 }
 
 /** The donor-visible surcharge for covering fees. */
-export function feeSurchargeCents(netCents: number): number {
-  return grossUpForFees(netCents) - netCents;
+export function feeSurchargeCents(
+  netCents: number,
+  method: PayMethod = "card"
+): number {
+  return grossUpForFees(netCents, method) - netCents;
+}
+
+/** What the org saves in fees if this gift comes by bank rather than card. */
+export function bankSavingCents(netCents: number): number {
+  return (
+    feeSurchargeCents(netCents, "card") - feeSurchargeCents(netCents, "bank")
+  );
+}
+
+/**
+ * Whether the saving is large enough to be worth asking the donor to wait four days.
+ *
+ * Not "is bank cheaper", which is always true. See BANK_NUDGE_MIN_SAVING_CENTS.
+ */
+export function worthSuggestingBank(netCents: number): boolean {
+  return bankSavingCents(netCents) >= BANK_NUDGE_MIN_SAVING_CENTS;
 }
 
 /**

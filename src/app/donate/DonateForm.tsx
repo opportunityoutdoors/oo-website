@@ -3,9 +3,12 @@
 import { useState } from "react";
 import {
   MIN_CENTS,
+  bankSavingCents,
+  worthSuggestingBank,
   feeSurchargeCents,
   formatCents,
   type Frequency,
+  type PayMethod,
 } from "@/lib/stripe/giving";
 
 // The giving form. Collects an amount and a frequency, then hands off to Stripe Checkout,
@@ -63,6 +66,7 @@ const MONTHLY_TIERS: Tier[] = [
 
 export default function DonateForm({ canceled }: { canceled?: boolean }) {
   const [frequency, setFrequency] = useState<Frequency>("once");
+  const [payMethod, setPayMethod] = useState<PayMethod>("card");
   const [selectedCents, setSelectedCents] = useState<number | null>(10000);
   const [customValue, setCustomValue] = useState("");
   const [coverFees, setCoverFees] = useState(false);
@@ -80,8 +84,17 @@ export default function DonateForm({ canceled }: { canceled?: boolean }) {
   })();
 
   const giftCents = customCents ?? selectedCents;
-  const surcharge = giftCents ? feeSurchargeCents(giftCents) : 0;
+
+  // ACH is one-time only, so a monthly gift is always card regardless of the toggle state.
+  const effectiveMethod: PayMethod = frequency === "monthly" ? "card" : payMethod;
+
+  const surcharge = giftCents ? feeSurchargeCents(giftCents, effectiveMethod) : 0;
   const totalCents = giftCents ? (coverFees ? giftCents + surcharge : giftCents) : 0;
+
+  // Bank is cheaper at every amount, so the nudge is gated on the saving being big enough
+  // to justify a four-day wait rather than on which method wins.
+  const suggestBank =
+    frequency === "once" && giftCents !== null && worthSuggestingBank(giftCents);
 
   function selectTier(cents: number) {
     setSelectedCents(cents);
@@ -104,7 +117,12 @@ export default function DonateForm({ canceled }: { canceled?: boolean }) {
       const res = await fetch("/api/donate/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amountCents: giftCents, frequency, coverFees }),
+        body: JSON.stringify({
+          amountCents: giftCents,
+          frequency,
+          coverFees,
+          payMethod: effectiveMethod,
+        }),
       });
 
       const data = await res.json();
@@ -245,6 +263,55 @@ export default function DonateForm({ canceled }: { canceled?: boolean }) {
           )}
         </div>
 
+        {/* Payment method. Chosen here rather than on Stripe's page because the fee-cover
+            surcharge below depends on it, and the two rates differ enough that quoting the
+            wrong one would overcharge a bank donor by up to $50 on a large gift. */}
+        {frequency === "once" && (
+          <div className="mt-6">
+            <span className="block text-[12px] font-bold uppercase tracking-[1px] text-near-black">
+              How would you like to pay?
+            </span>
+            <div
+              role="radiogroup"
+              aria-label="Payment method"
+              className="mt-2 grid gap-2 sm:grid-cols-2"
+            >
+              {(
+                [
+                  ["card", "Card", "Instant"],
+                  ["bank", "Bank transfer", "About 4 business days"],
+                ] as const
+              ).map(([value, label, note]) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={payMethod === value}
+                  onClick={() => setPayMethod(value)}
+                  className={`rounded border-2 px-4 py-3 text-left transition-colors ${
+                    payMethod === value
+                      ? "border-dark-green bg-dark-green/5"
+                      : "border-near-black/10 bg-white hover:border-dark-green/40"
+                  }`}
+                >
+                  <span className="block text-sm font-bold text-near-black">
+                    {label}
+                  </span>
+                  <span className="block text-xs text-near-black/50">{note}</span>
+                </button>
+              ))}
+            </div>
+            {suggestBank && payMethod === "card" && (
+              <p className="mt-2 text-xs leading-relaxed text-near-black/60">
+                Bank transfer costs us{" "}
+                {formatCents(bankSavingCents(giftCents!))}{" "}
+                less in fees on a gift this size, if you do not mind it taking a
+                few days.
+              </p>
+            )}
+          </div>
+        )}
+
         {giftCents ? (
           <label className="mt-6 flex cursor-pointer items-start gap-3">
             <input
@@ -259,6 +326,14 @@ export default function DonateForm({ canceled }: { canceled?: boolean }) {
             </span>
           </label>
         ) : null}
+
+        {effectiveMethod === "bank" && (
+          <p className="mt-4 rounded border border-near-black/10 bg-cream/50 px-4 py-3 text-xs leading-relaxed text-near-black/60">
+            Bank transfers take about four business days to clear. Your receipt
+            arrives once the funds land, not straight away, because it has to
+            state money we have actually received.
+          </p>
+        )}
 
         {error && (
           <p className="mt-5 rounded border border-[#b00]/20 bg-[#b00]/5 px-4 py-3 text-sm text-[#b00]">

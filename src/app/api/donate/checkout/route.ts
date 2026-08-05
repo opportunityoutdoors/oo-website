@@ -4,6 +4,7 @@ import {
   grossUpForFees,
   validateAmountCents,
   type Frequency,
+  type PayMethod,
 } from "@/lib/stripe/giving";
 
 // Creates a Stripe Checkout Session and hands the URL back for the browser to follow.
@@ -28,6 +29,16 @@ export async function POST(req: NextRequest) {
   const frequency: Frequency = body.frequency === "monthly" ? "monthly" : "once";
   const coverFees = body.coverFees === true;
 
+  // Card or bank, chosen on our page rather than Stripe's. See the note on PayMethod in
+  // lib/stripe/giving.ts: the fee-cover surcharge has to be computed before the session
+  // exists, and the two methods have completely different rates, so letting Checkout offer
+  // both would mean quoting a number we cannot honour.
+  //
+  // ACH is one-time only. A bank debit can fail days after the fact, and a subscription
+  // whose renewals silently bounce is a worse problem than a slightly pricier card fee.
+  const payMethod: PayMethod =
+    body.payMethod === "bank" && frequency === "once" ? "bank" : "card";
+
   // The gift itself, before any fee top-up. Client-supplied, therefore untrusted: the form
   // could send anything, so the amount is re-validated here rather than accepted on faith.
   const parsed = validateAmountCents(body.amountCents);
@@ -37,8 +48,9 @@ export async function POST(req: NextRequest) {
   const giftCents = parsed.cents;
 
   // What we actually charge. Computed server-side from the validated gift, never taken
-  // from the client, so a tampered request cannot invent its own total.
-  const chargeCents = coverFees ? grossUpForFees(giftCents) : giftCents;
+  // from the client, so a tampered request cannot invent its own total. The rate depends on
+  // the method, which is why the method is settled before this point rather than at Stripe.
+  const chargeCents = coverFees ? grossUpForFees(giftCents, payMethod) : giftCents;
 
   const origin =
     process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
@@ -52,9 +64,12 @@ export async function POST(req: NextRequest) {
     const session = await stripe.checkout.sessions.create({
       mode: frequency === "monthly" ? "subscription" : "payment",
 
-      // Stripe renders the wallet options the donor's device supports. ACH is deliberately
-      // absent: at 0.8% it is far cheaper for us, but it settles in days rather than
-      // seconds and cannot back a subscription cleanly. Worth revisiting for major gifts.
+      // Restricted to the single method the donor already chose, so the surcharge they were
+      // quoted is the one that actually applies. Omitting this lets Stripe offer every
+      // enabled method, which would reintroduce the mismatch.
+      payment_method_types:
+        payMethod === "bank" ? ["us_bank_account"] : ["card"],
+
       line_items: [
         {
           quantity: 1,
@@ -92,6 +107,9 @@ export async function POST(req: NextRequest) {
         gift_cents: String(giftCents),
         fee_covered_cents: String(chargeCents - giftCents),
         frequency,
+        // Read back by the webhook to record how the gift was paid, which is what tells you
+        // later whether the fee top-up was computed at the right rate.
+        pay_method: payMethod,
         source: "website",
       },
 
