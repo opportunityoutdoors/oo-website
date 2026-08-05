@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "stripe": "./scripts/stripe.sh",
-    "stripe:listen": "./scripts/stripe.sh listen --forward-to localhost:3000/api/webhooks/stripe"
+    "stripe:listen": "./scripts/stripe.sh listen --forward-to localhost:3000/api/webhooks/stripe",
+    "vercel": "./scripts/vercel.sh"
   },
   "dependencies": {
     "@portabletext/react": "^6.0.3",

@@ -37,12 +37,25 @@ export async function POST(req: NextRequest) {
 
   const raw = await req.text();
 
+  // getStripe() is called OUTSIDE the verification try/catch on purpose. It throws when
+  // STRIPE_SECRET_KEY is unset, and folding that into the catch below reported a missing
+  // env var as "Invalid signature" — a message that sends you hunting for a secret
+  // mismatch that does not exist. Config problems and auth failures now say different
+  // things and return different statuses.
+  let stripe: ReturnType<typeof getStripe>;
+  try {
+    stripe = getStripe();
+  } catch (err) {
+    console.error("Stripe client unavailable; cannot verify webhook:", err);
+    return NextResponse.json({ error: "Not configured" }, { status: 500 });
+  }
+
   let event: Stripe.Event;
   try {
     // This is the authentication boundary for the whole route. Anyone can POST here, so
     // until constructEvent returns, the payload is attacker-controlled and must not be
     // trusted to say a payment happened.
-    event = getStripe().webhooks.constructEvent(raw, signature, secret);
+    event = stripe.webhooks.constructEvent(raw, signature, secret);
   } catch (err) {
     console.error("Stripe webhook signature verification failed:", err);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
