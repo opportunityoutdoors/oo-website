@@ -122,18 +122,49 @@ async function dispatch(name: string, event: Record<string, unknown>) {
   }
 
   const supabase = createServiceClient();
-  const { data: contact } = await supabase
+
+  // TWO IDS, AND THEY DIFFER. The invite response returns an applicationId AND an applyUrl
+  // built on a DIFFERENT uuid:
+  //
+  //   applicationId : 3b6395c8-1af6-4a31-a847-a87c36232792
+  //   applyUrl      : .../apply/fa41f894-6283-4701-b294-7178c973b839
+  //
+  // In sandbox both were the same string, so this only appears against the live API.
+  // Sensible on their part, since the public link should not expose the application id, but
+  // it means a webhook could reference either and matching on only one silently drops the
+  // result. Try the application id first, then fall back to the link.
+  let contact:
+    | { id: string; email: string | null; background_check_status: string }
+    | null = null;
+
+  const byId = await supabase
     .from("contacts")
     .select("id, email, background_check_status")
     .eq("background_check_id", providerId)
     .maybeSingle();
+  contact = byId.data ?? null;
+
+  if (!contact) {
+    const byUrl = await supabase
+      .from("contacts")
+      .select("id, email, background_check_status")
+      .like("background_check_url", `%${providerId}%`)
+      .maybeSingle();
+    if (byUrl.data) {
+      contact = byUrl.data;
+      console.log(
+        `VolunteerBadge ${name}: matched contact ${contact.id} via the apply URL, not the ` +
+          `application id. Their webhook references the link uuid (${providerId}).`
+      );
+    }
+  }
 
   if (!contact) {
     // Expected for anything created directly in their dashboard rather than by us, which is
     // worth saying plainly rather than treating as a fault.
     console.warn(
-      `VolunteerBadge ${name}: no contact holds background_check_id ${providerId}. ` +
-        `Either it was created outside this app, or the invite response stored a different id.`
+      `VolunteerBadge ${name}: no contact matches ${providerId} by application id or apply URL. ` +
+        `Either it was created outside this app, or they use a third identifier we do not store.`
     );
     return;
   }
