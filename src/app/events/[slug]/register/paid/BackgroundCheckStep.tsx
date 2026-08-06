@@ -21,9 +21,9 @@ export default function BackgroundCheckStep({ url }: { url: string | null }) {
         Complete Your Background Check
       </h2>
       <p className="mt-3 text-[15px] leading-relaxed text-near-black/70">
-        We run a background check on every adult who attends a camp, because
-        most of our participants are kids. It takes about three minutes, and the
-        cost is already covered by what you just paid.
+        We run a background check on every adult who attends a camp. It takes
+        about three minutes, and the cost is already covered by what you just
+        paid.
       </p>
       <p className="mt-3 text-[15px] leading-relaxed text-near-black/70">
         Your information goes directly to our screening provider, not to us. We
