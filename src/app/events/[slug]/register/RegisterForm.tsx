@@ -767,6 +767,20 @@ export default function RegisterForm({
                         </>
                       )}
                     </div>
+
+                    {/* Stated BEFORE payment, which is the only time it counts. If a
+                        background check comes back adverse the registration fee is
+                        refunded, but the processing fee and the check itself are already
+                        spent and are not returned. Discovering that after being declined,
+                        rather than before paying, is how a refund dispute starts. */}
+                    {charge.totalCents > 0 && (
+                      <p className="mt-3 text-center text-xs leading-relaxed text-near-black/50">
+                        Processing fees and background check fees are
+                        non-refundable. If your registration is cancelled or you
+                        are unable to attend, the registration fee is refunded
+                        less those costs.
+                      </p>
+                    )}
                   </>
                 );
               })()}

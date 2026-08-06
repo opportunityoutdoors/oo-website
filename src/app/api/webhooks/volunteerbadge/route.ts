@@ -210,13 +210,38 @@ async function dispatch(name: string, event: Record<string, unknown>) {
       })
       .eq("id", contact.id);
 
-    // TODO: refund the registration minus the Stripe fee and the check cost, per the
-    // disclosed non-refundable terms. Left until a real adverse action has been observed:
-    // issuing refunds off an unverified payload shape is the wrong thing to guess at.
-    console.warn(
-      `VolunteerBadge adverse action COMPLETED for contact ${contact.id} (${contact.email}). ` +
-        `Marked declined. REFUND IS NOT YET AUTOMATED: issue it by hand.`
-    );
+    // Refund now that the decision is final. VolunteerBadge only emits this event after
+    // the pre-adverse notice, the five business day dispute window, and the final notice,
+    // so a human decided several steps ago. This issues money already owed rather than
+    // deciding anything.
+    //
+    // Guarded against a replayed delivery by the payment_status condition inside, and never
+    // fatal: a refund that fails is logged loudly and issued by hand. Throwing instead would
+    // make VolunteerBadge retry an event whose database effects have already been applied,
+    // which risks compounding the problem rather than fixing it.
+    try {
+      const { refundAfterAdverseAction } = await import(
+        "@/lib/background-check/refund"
+      );
+      const outcomes = await refundAfterAdverseAction(contact.id);
+      const done = outcomes.filter((o) => o.refunded);
+
+      console.warn(
+        `VolunteerBadge adverse action COMPLETED for contact ${contact.id} (${contact.email}). ` +
+          `Marked declined. Refunds issued: ${done.length}. ` +
+          outcomes
+            .map((o) =>
+              o.refunded ? `refunded ${o.amountCents}c` : `skipped: ${o.reason}`
+            )
+            .join("; ")
+      );
+    } catch (err) {
+      console.error(
+        `Adverse action refund failed for contact ${contact.id}; ISSUE IT BY HAND:`,
+        err instanceof Error ? err.message : String(err)
+      );
+    }
+
     return;
   }
 
