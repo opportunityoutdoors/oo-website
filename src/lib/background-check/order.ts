@@ -88,6 +88,11 @@ export async function orderBackgroundCheckIfNeeded(
       .update({
         background_check_provider: provider.name,
         background_check_id: result.providerCheckId,
+        // Stored so the confirmation page can link straight to the form. Completion must
+        // never depend on an invite email arriving and being noticed.
+        background_check_url: result.applicantUrl,
+        background_check_invited_at: new Date().toISOString(),
+        background_check_url_expires_at: result.expiresAt?.toISOString() ?? null,
       })
       .eq("id", contactId);
 

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { getStripe } from "@/lib/stripe/client";
 import { formatFee } from "@/lib/stripe/camp-fees";
 import ResumePayment from "./ResumePayment";
+import BackgroundCheckStep from "./BackgroundCheckStep";
+import { createServiceClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Registration Payment",
@@ -41,6 +43,41 @@ export default async function CampPaidPage({
   }
 
   const abandoned = canceled === "1" || (!paid && !session_id);
+
+  // An outstanding background check is surfaced HERE, on the page shown the instant payment
+  // clears, rather than left to the invite email. Someone who has just paid is the most
+  // likely they will ever be to finish; an email that lands in spam a minute later is the
+  // least. Without this, a lost email means a paid registrant who cannot attend.
+  //
+  // Looked up by the Stripe customer email rather than a token, because this page is
+  // reached by redirect from Stripe and carries no registration token.
+  let checkUrl: string | null = null;
+  let checkPending = false;
+
+  if (paid && session_id) {
+    try {
+      const session = await getStripe().checkout.sessions.retrieve(session_id);
+      const regId = session.metadata?.registration_id;
+      if (regId) {
+        const supabase = createServiceClient();
+        const { data } = await supabase
+          .from("registrations")
+          .select("contacts(background_check_status, background_check_url)")
+          .eq("id", regId)
+          .single();
+        const contact = Array.isArray(data?.contacts) ? data?.contacts[0] : data?.contacts;
+        if (contact) {
+          checkPending =
+            contact.background_check_status === "invited" ||
+            contact.background_check_status === "pending";
+          checkUrl = contact.background_check_url ?? null;
+        }
+      }
+    } catch {
+      // The payment is recorded regardless. Worst case this page omits the check step and
+      // the invite email carries it, which is the situation we had before.
+    }
+  }
 
   return (
     <div className="mx-auto max-w-lg px-6 pb-24 pt-36">
@@ -94,6 +131,8 @@ export default async function CampPaidPage({
             You&apos;ll receive an email with your receipt along with a separate
             email with your registration confirmation and signed waiver.
           </p>
+          {checkPending && <BackgroundCheckStep url={checkUrl} />}
+
           <p className="mt-4 text-[15px] leading-relaxed text-near-black/70">
             A welcome packet with location details and what to bring will be sent
             out closer to the event date. Give us a shout with any questions in
