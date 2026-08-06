@@ -262,10 +262,18 @@ export function mapStatus(raw: string): BackgroundCheckStatus {
 export function getBackgroundCheckProvider(): VolunteerBadgeProvider {
   const key = process.env.VOLUNTEERBADGE_API_KEY;
   if (!key) throw new ProviderError("VOLUNTEERBADGE_API_KEY is not set");
-  return new VolunteerBadgeProvider(
-    key,
-    process.env.VOLUNTEERBADGE_TEMPLATE_ID ?? null
-  );
+
+  // Accepts VOLUNTEERBADGE_TEMPLATE as well as the canonical _ID form. The shorter name is
+  // the obvious thing to type, and it was: a live registration paid, ordered no check, and
+  // reset itself to 'none' because the _ID lookup came back undefined. The failure was
+  // correct in every respect and completely invisible from outside, which is the worst
+  // combination. Tolerating both spellings costs nothing.
+  const templateId =
+    process.env.VOLUNTEERBADGE_TEMPLATE_ID ??
+    process.env.VOLUNTEERBADGE_TEMPLATE ??
+    null;
+
+  return new VolunteerBadgeProvider(key, templateId);
 }
 
 /** True when the configured key is a sandbox key. */
