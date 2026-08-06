@@ -43,7 +43,7 @@ export type CheckSubject = {
 };
 
 export type Eligibility =
-  /** Under 18. Never screened. A consumer report on a child is not a thing we do. */
+  /** Under 18. Never screened: running a consumer report on a minor is not something we do. */
   | { kind: "minor"; feeCents: 0 }
   /** Has a clear check that has not lapsed. No charge, no action. */
   | { kind: "covered"; feeCents: 0; expiresAt: string }
@@ -55,7 +55,7 @@ export type Eligibility =
   | { kind: "blocked"; feeCents: 0 }
   /**
    * No date of birth, so adulthood is unknown. NOT treated as an adult: guessing wrong
-   * either charges a child for a check they must never have, or lets an unscreened adult
+   * either charges a minor for a check they must never undergo, or lets an unscreened adult
    * through. 592 of 600 existing contacts are in this state, so it is the common path, not
    * an edge case.
    */
@@ -80,7 +80,7 @@ export function ageInYears(dateOfBirth: string | null, asOf: Date): number | nul
 /**
  * Decides what a person needs and what it costs.
  *
- * Order matters. Minor is checked first because it overrides everything: a child with a
+ * Order matters. Minor is checked first because it overrides everything: a minor with a
  * stale check record still must not be screened. Declined is checked before need, because
  * someone already turned away must not be quietly re-invited by the pricing path.
  */

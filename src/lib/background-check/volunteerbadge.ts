@@ -204,8 +204,7 @@ export class VolunteerBadgeProvider implements BackgroundCheckProvider {
  * Their status vocabulary onto ours.
  *
  * Unrecognised values map to 'error', never to 'clear'. A status we do not understand must
- * not be read as permission to be near children, and 'error' surfaces it to a human instead
- * of burying it.
+ * not be read as clearance, and 'error' surfaces it to a human instead of burying it.
  */
 export function mapStatus(raw: string): BackgroundCheckStatus {
   // Normalised because their vocabulary mixes spaces and underscores across the API, the
