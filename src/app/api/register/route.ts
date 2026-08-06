@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
   const { data: registration } = await supabase
     .from("registrations")
-    .select("*, contacts(id, email, first_name, last_name, phone, city, state, tshirt_size), events(id, title, slug, event_type, date_start, date_end, location, cost, registration_fee)")
+    .select("*, contacts(id, email, first_name, last_name, phone, city, state, tshirt_size, date_of_birth, background_check_status, background_check_expires_at), events(id, title, slug, event_type, date_start, date_end, location, cost, registration_fee)")
     .eq("token", token)
     .single();
 
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
   // Check for linked minor
   const { data: linkedMinor } = await supabase
     .from("registrations")
-    .select("id, role, status, contacts(id, first_name, last_name, tshirt_size)")
+    .select("id, role, status, contacts(id, first_name, last_name, tshirt_size, date_of_birth)")
     .eq("guardian_registration_id", registration.id)
     .single();
 
@@ -62,9 +62,14 @@ export async function POST(request: NextRequest) {
     waiver_signed,
     waiver_text,
     signature_name,
+    // Only sent when the contact has no date of birth on file. Most existing contacts
+    // predate the field, so registration is the second chance to collect it rather than
+    // making 592 people redo a waitlist form.
+    date_of_birth,
     // Minor fields
     minor_tshirt_size,
     minor_dietary_medical,
+    minor_date_of_birth,
     survey,
     minor_survey,
   } = body;
@@ -155,11 +160,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: regError.message }, { status: 500 });
   }
 
-  // Update parent contact with t-shirt size
-  if (tshirt_size) {
+  // Update parent contact with t-shirt size, and date of birth if it was missing.
+  //
+  // DOB is only overwritten when absent, never replaced. An existing value came from a
+  // waitlist or application where the person entered it deliberately; letting a later form
+  // silently change it would move someone across the adult/minor line, which decides
+  // whether they are screened at all.
+  const contactPatch: Record<string, unknown> = {};
+  if (tshirt_size) contactPatch.tshirt_size = tshirt_size;
+  if (date_of_birth) contactPatch.date_of_birth = date_of_birth;
+  if (Object.keys(contactPatch).length > 0) {
     await supabase
       .from("contacts")
-      .update({ tshirt_size })
+      .update(contactPatch)
       .eq("id", registration.contact_id);
   }
 
@@ -189,11 +202,15 @@ export async function POST(request: NextRequest) {
       })
       .eq("id", linkedMinor.id);
 
-    // Update minor contact with t-shirt size
-    if (minor_tshirt_size) {
+    // Same for the minor. Their DOB matters most of all: it is what guarantees a consumer
+    // report is never run on a child.
+    const minorPatch: Record<string, unknown> = {};
+    if (minor_tshirt_size) minorPatch.tshirt_size = minor_tshirt_size;
+    if (minor_date_of_birth) minorPatch.date_of_birth = minor_date_of_birth;
+    if (Object.keys(minorPatch).length > 0) {
       await supabase
         .from("contacts")
-        .update({ tshirt_size: minor_tshirt_size })
+        .update(minorPatch)
         .eq("id", linkedMinor.contact_id);
     }
   }
