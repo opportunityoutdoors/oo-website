@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { createServiceClient } from "@/lib/supabase/server";
+import { expiryFrom } from "@/lib/background-check/eligibility";
+import { mapStatus } from "@/lib/background-check/volunteerbadge";
 
 // VolunteerBadge webhook. Receives background check results and the adverse action
 // sequence.
@@ -67,16 +70,135 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   }
 
-  // TODO: dispatch. check.complete updates contacts.background_check_status and stamps
-  // expires_at; adverse_action.completed triggers the partial refund. Logging the shape
-  // first, because the payloads have not been seen yet and guessing at field names is how
-  // the first real result gets dropped.
+  // The whole payload is logged on every event, always. Their field names are not
+  // documented and have already differed from the docs once (applyUrl), so the log is the
+  // only record of what a real delivery actually looks like. Cheap, and the alternative is
+  // guessing again after the fact.
   console.log(
     `VolunteerBadge event ${name}:`,
-    JSON.stringify(event).slice(0, 2000)
+    JSON.stringify(event).slice(0, 4000)
   );
 
+  try {
+    await dispatch(name, event);
+  } catch (err) {
+    // 500 asks them to retry, which is right for a transient database failure. Matching a
+    // contact is idempotent, so a retry is safe.
+    console.error(`VolunteerBadge handler failed for ${name}:`, err);
+    return NextResponse.json({ error: "Handler failed" }, { status: 500 });
+  }
+
   return NextResponse.json({ received: true });
+}
+
+/**
+ * Applies an event to a contact.
+ *
+ * Written defensively rather than against a known schema, because no real payload has been
+ * seen yet. Every field is looked for in several plausible places and the outcome is logged
+ * explicitly, so the first live delivery either works or says precisely which lookup failed.
+ * The alternative, waiting for a payload before writing any of this, means the first real
+ * result arrives with nothing to catch it.
+ */
+async function dispatch(name: string, event: Record<string, unknown>) {
+  const data = (event.data ?? event) as Record<string, unknown>;
+
+  // Their id has appeared as applicationId in POST responses. checkId, id and
+  // application_id are plausible neighbours; all are tried before giving up.
+  const providerId = firstString(data, [
+    "applicationId",
+    "application_id",
+    "checkId",
+    "check_id",
+    "id",
+  ]);
+
+  if (!providerId) {
+    console.error(
+      `VolunteerBadge ${name}: no id found in payload; cannot match a contact. ` +
+        `Keys present: ${Object.keys(data).join(", ")}`
+    );
+    return;
+  }
+
+  const supabase = createServiceClient();
+  const { data: contact } = await supabase
+    .from("contacts")
+    .select("id, email, background_check_status")
+    .eq("background_check_id", providerId)
+    .maybeSingle();
+
+  if (!contact) {
+    // Expected for anything created directly in their dashboard rather than by us, which is
+    // worth saying plainly rather than treating as a fault.
+    console.warn(
+      `VolunteerBadge ${name}: no contact holds background_check_id ${providerId}. ` +
+        `Either it was created outside this app, or the invite response stored a different id.`
+    );
+    return;
+  }
+
+  if (name === "check.complete" || name === "check.error") {
+    const rawStatus =
+      firstString(data, ["status", "result", "outcome"]) ??
+      (name === "check.error" ? "error" : "unknown");
+
+    const status = mapStatus(rawStatus);
+    const completedAt = firstString(data, ["completedAt", "completed_at"]);
+    const completed = completedAt ? new Date(completedAt) : new Date();
+
+    await supabase
+      .from("contacts")
+      .update({
+        background_check_status: status,
+        background_check_completed_at: completed.toISOString(),
+        // Only a clear result earns an expiry. A flag or an error must not look like cover.
+        background_check_expires_at:
+          status === "clear" ? expiryFrom(completed).toISOString() : null,
+      })
+      .eq("id", contact.id);
+
+    console.log(
+      `VolunteerBadge ${name}: contact ${contact.id} ${contact.background_check_status} -> ${status} (raw "${rawStatus}")`
+    );
+    return;
+  }
+
+  // The adverse action series is driven from their dashboard, so these are recorded rather
+  // than acted on. The exception is completion, which is the point a decision becomes final
+  // and a refund is owed.
+  if (name === "adverse_action.completed") {
+    await supabase
+      .from("contacts")
+      .update({
+        background_check_status: "declined",
+        background_check_reviewed_at: new Date().toISOString(),
+      })
+      .eq("id", contact.id);
+
+    // TODO: refund the registration minus the Stripe fee and the check cost, per the
+    // disclosed non-refundable terms. Left until a real adverse action has been observed:
+    // issuing refunds off an unverified payload shape is the wrong thing to guess at.
+    console.warn(
+      `VolunteerBadge adverse action COMPLETED for contact ${contact.id} (${contact.email}). ` +
+        `Marked declined. REFUND IS NOT YET AUTOMATED: issue it by hand.`
+    );
+    return;
+  }
+
+  console.log(`VolunteerBadge ${name}: recorded for contact ${contact.id}, no action taken`);
+}
+
+/** First key present as a non-empty string. Their payload shape is not documented. */
+function firstString(
+  obj: Record<string, unknown>,
+  keys: string[]
+): string | null {
+  for (const k of keys) {
+    const v = obj[k];
+    if (typeof v === "string" && v.trim()) return v;
+  }
+  return null;
 }
 
 /**
