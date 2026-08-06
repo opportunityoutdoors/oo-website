@@ -29,6 +29,17 @@ export type CampChargeInput = {
   wantsTshirt: boolean;
   /** A guardian registering a minor alongside themselves pays for both. */
   minorName?: string | null;
+  /**
+   * Cost of a background check for this person, or 0 when none is needed.
+   *
+   * Passed in rather than computed here, because deciding it needs their date of birth and
+   * current check status, which are database facts. This module deals only in arithmetic so
+   * it stays testable and so the client and server can run the identical calculation.
+   *
+   * Charged even to mentors, who otherwise attend free: the check is a cost per adult body,
+   * not a fee for attending, and mentors are precisely the adults who most need screening.
+   */
+  backgroundCheckCents?: number;
 };
 
 /**
@@ -69,6 +80,16 @@ export function computeCampCharge(input: CampChargeInput): CampCharge {
       label: `${input.minorName}'s registration`,
       cents: feeCents,
     });
+  }
+
+  // Last, and itemised rather than folded into the registration fee. Someone paying $12 for
+  // a camp and $5 for a check should see both: a single unexplained $17 invites a support
+  // email, and a line item is also the honest way to charge a mentor who otherwise attends
+  // free. Only ever present when the person genuinely needs one, so a returning mentor with
+  // a current check sees no charge and no line.
+  const bgCents = Math.max(0, Math.round(input.backgroundCheckCents ?? 0));
+  if (bgCents > 0) {
+    lines.push({ label: "Background check", cents: bgCents });
   }
 
   return {

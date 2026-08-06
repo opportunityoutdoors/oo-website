@@ -1,5 +1,6 @@
 import { getStripe } from "./client";
 import { computeCampCharge, type FeeLine } from "./camp-fees";
+import { evaluateEligibility } from "@/lib/background-check/eligibility";
 import { createServiceClient } from "@/lib/supabase/server";
 
 // Creates a Stripe Checkout Session for a camp registration.
@@ -26,7 +27,7 @@ export async function createCampCheckoutSession(opts: {
   const { data: reg } = await supabase
     .from("registrations")
     .select(
-      "id, role, token, payment_status, event_id, contacts(email, first_name, last_name, tshirt_size), events(id, title, slug, registration_fee)"
+      "id, role, token, payment_status, event_id, contacts(email, first_name, last_name, tshirt_size, date_of_birth, background_check_status, background_check_expires_at), events(id, title, slug, registration_fee)"
     )
     .eq("id", opts.registrationId)
     .single();
@@ -49,6 +50,15 @@ export async function createCampCheckoutSession(opts: {
 
   const minorName = minor ? (one(minor.contacts)?.first_name ?? "Your minor") : null;
 
+  // Derived from the database here, never from the request. The form shows the same number
+  // by running the same function, but a tampered client must not be able to zero out a
+  // background check it does not want to pay for.
+  const eligibility = evaluateEligibility({
+    dateOfBirth: contact?.date_of_birth ?? null,
+    status: contact?.background_check_status ?? "none",
+    expiresAt: contact?.background_check_expires_at ?? null,
+  });
+
   const charge = computeCampCharge({
     role: reg.role,
     registrationFee: event.registration_fee,
@@ -56,6 +66,7 @@ export async function createCampCheckoutSession(opts: {
     // offers "No thanks" as the empty value for exactly this reason.
     wantsTshirt: Boolean(contact?.tshirt_size),
     minorName,
+    backgroundCheckCents: eligibility.feeCents,
   });
 
   if (charge.totalCents === 0) return { kind: "free" };

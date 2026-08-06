@@ -6,6 +6,7 @@ import Link from "next/link";
 import SurveyQuestions, { EMPTY_ANSWERS } from "@/components/forms/SurveyQuestions";
 import ResumePaymentButton from "@/components/forms/ResumePaymentButton";
 import type { SurveyAnswers } from "@/lib/surveys/questions";
+import { evaluateEligibility } from "@/lib/background-check/eligibility";
 import {
   MENTOR_TSHIRT_CENTS,
   computeCampCharge,
@@ -28,6 +29,9 @@ interface EventInfo {
 interface ContactInfo {
   /** Null for contacts created before the field existed. Prompted for when missing. */
   date_of_birth: string | null;
+  /** Drives whether a background check line appears in the total. */
+  background_check_status: string | null;
+  background_check_expires_at: string | null;
   first_name: string | null;
   last_name: string | null;
   email: string;
@@ -686,11 +690,24 @@ export default function RegisterForm({
                   shown here cannot drift from the total charged. It reads the numeric
                   registration_fee rather than parsing the `cost` display string. */}
               {(() => {
+                // Same function the server runs, fed the same inputs, so the quoted total
+                // cannot drift from the charged one. A date of birth typed into this form
+                // but not yet saved is used immediately, otherwise someone filling in a
+                // missing DOB would see the fee appear only after submitting.
+                const eligibility = evaluateEligibility({
+                  dateOfBirth:
+                    registration!.contacts.date_of_birth || dateOfBirth || null,
+                  status: (registration!.contacts.background_check_status ??
+                    "none") as never,
+                  expiresAt: registration!.contacts.background_check_expires_at,
+                });
+
                 const charge = computeCampCharge({
                   role: registration!.role,
                   registrationFee: event.registration_fee,
                   wantsTshirt: Boolean(tshirtSize),
                   minorName: minor?.contacts.first_name ?? null,
+                  backgroundCheckCents: eligibility.feeCents,
                 });
 
                 return (

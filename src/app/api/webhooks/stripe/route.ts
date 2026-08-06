@@ -450,6 +450,39 @@ async function handleCampPayment(session: Stripe.Checkout.Session) {
   console.log(
     `Camp payment recorded: registration ${registrationId}, ${session.amount_total} cents`
   );
+
+  // Background checks are ordered here, after the money has settled, because that is the
+  // point at which someone is committed. Ordering earlier means paying to screen people who
+  // never turn up.
+  //
+  // Runs in after() so a slow or failing screening provider cannot delay the 2xx Stripe is
+  // waiting for. The payment is already durably recorded by this point, and an unordered
+  // check is visible in the admin and retryable, whereas a webhook timeout would have Stripe
+  // retrying a payment we have in fact recorded.
+  //
+  // The guardian and their minor are handled separately and deliberately: the guardian is an
+  // adult who needs screening, the minor never does. orderBackgroundCheckIfNeeded re-checks
+  // eligibility for each, so passing both is safe and the minor simply returns 'minor'.
+  after(async () => {
+    const { orderBackgroundCheckIfNeeded } = await import(
+      "@/lib/background-check/order"
+    );
+
+    const { data: reg } = await supabase
+      .from("registrations")
+      .select("contact_id")
+      .eq("id", registrationId)
+      .single();
+
+    if (!reg?.contact_id) return;
+
+    const outcome = await orderBackgroundCheckIfNeeded(reg.contact_id);
+    if (!outcome.ordered) {
+      console.log(
+        `No background check ordered for registration ${registrationId}: ${outcome.reason}`
+      );
+    }
+  });
 }
 
 type DonationInput = {
