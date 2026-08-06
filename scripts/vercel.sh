@@ -35,7 +35,11 @@ ENV_FILE="$REPO_ROOT/.env.local"
 
 read_env() {
   [ -f "$ENV_FILE" ] || return 0
-  grep -E "^$1=" "$ENV_FILE" | head -1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//'
+  # `|| true` is load-bearing. Under `set -euo pipefail`, grep finding nothing exits 1, the
+  # pipeline inherits it, and the whole script dies with no output at all. That is exactly
+  # what happened the first time this ran: VERCEL_SCOPE was unset, an optional variable, and
+  # the wrapper exited silently before doing anything. Absent must mean empty, not fatal.
+  grep -E "^$1=" "$ENV_FILE" 2>/dev/null | head -1 | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//' || true
 }
 
 TOKEN="$(read_env VERCEL_TOKEN)"
@@ -76,4 +80,7 @@ else
 fi
 echo "" >&2
 
-exec npx -y vercel@latest --token "$TOKEN" "${SCOPE_ARGS[@]}" "$@"
+# The +"..." form is required, not stylistic. macOS ships bash 3.2, where expanding an
+# EMPTY array as "${ARR[@]}" under `set -u` is treated as an unbound variable and aborts.
+# VERCEL_SCOPE is optional, so the empty case is the normal one.
+exec npx -y vercel@latest --token "$TOKEN" ${SCOPE_ARGS[@]+"${SCOPE_ARGS[@]}"} "$@"
