@@ -18,7 +18,18 @@
     "without breaking the other. Put a TEST MODE restricted key here (rk_test_...). Stripe",
     "derives tool permissions from the key, so the key IS the sandbox: a read-only test key",
     "cannot move money regardless of what any tool asks for. Never put sk_live_ in this slot.",
-    "Create one at https://dashboard.stripe.com/test/apikeys under Restricted keys."
+    "Create one at https://dashboard.stripe.com/test/apikeys under Restricted keys.",
+    "",
+    "On the volunteerbadge server: it is an HTTP transport, not stdio, so unlike the others",
+    "it CANNOT shell out to read ./.env.local. Claude Code expands ${VAR} from the process",
+    "environment, so VOLUNTEERBADGE_MCP_KEY must be exported in the shell that launches",
+    "Claude Code. That is a real weakness of HTTP MCP servers and worth knowing: an unset",
+    "variable means the header goes out empty and every call fails on auth, rather than",
+    "failing clearly at startup.",
+    "",
+    "Their MCP does NOT expose webhook delivery logs, so it cannot answer 'did the webhook",
+    "fire'. It covers credits, ordering, and check status. Useful for reconciling a stuck",
+    "check by hand, which is exactly the situation that prompted adding it."
   ],
   "mcpServers": {
     "supabase": {
@@ -36,6 +47,13 @@
         "-c",
         "if [ -f ./.env.local ]; then export RESEND_API_KEY=\"$(grep -E '^RESEND_API_KEY=' ./.env.local | head -1 | cut -d= -f2- | sed -e 's/^\"//' -e 's/\"$//')\"; fi; exec npx -y resend-mcp"
       ]
+    },
+    "volunteerbadge": {
+      "type": "http",
+      "url": "https://www.volunteerbadge.com/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${VOLUNTEERBADGE_MCP_KEY}"
+      }
     },
     "stripe": {
       "type": "stdio",
