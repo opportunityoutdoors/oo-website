@@ -22,8 +22,21 @@ export type InviteInput = {
 export type InviteResult = {
   /** Provider's identifier. Stored on the contact and used to match their webhooks back. */
   providerCheckId: string;
-  /** Where the applicant completes disclosure, authorization and identity, if given. */
+  /**
+   * Where the applicant completes disclosure, authorization and identity.
+   *
+   * Worth surfacing even though the provider also emails it: invite emails get filtered,
+   * and a link the admin can resend beats telling someone to check their spam folder.
+   */
   applicantUrl: string | null;
+  /** When the invite lapses, if the provider says. VolunteerBadge gives 14 days. */
+  expiresAt: Date | null;
+  /**
+   * True when the provider returned a stub rather than creating a real application. A
+   * sandbox response is shaped identically to a live one, so without this flag a test
+   * result is indistinguishable from a real screening.
+   */
+  sandbox: boolean;
 };
 
 export type CheckState = {

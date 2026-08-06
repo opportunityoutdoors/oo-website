@@ -53,9 +53,17 @@ export class VolunteerBadgeProvider implements BackgroundCheckProvider {
       applicationId?: string;
       id?: string;
       checkId?: string;
+      // `applyUrl` is the real field name, confirmed against a live response. The others
+      // were guesses from the docs and none of them appear; reading only those threw the
+      // URL away, which matters because in sandbox no email is sent and this link is the
+      // only way to reach the form.
+      applyUrl?: string;
       url?: string;
       applicationUrl?: string;
       link?: string;
+      expiresAt?: string;
+      sandbox?: boolean;
+      mode?: string;
     }>("POST", "/applications", {
       templateId: this.templateId,
       email: input.email,
@@ -75,9 +83,22 @@ export class VolunteerBadgeProvider implements BackgroundCheckProvider {
       );
     }
 
+    // A sandbox response is a stub: no email is sent, no volunteer record is created, and
+    // no credit is consumed. Logged loudly so a test result is never mistaken for a real
+    // one, which is easy to do when the shape is otherwise identical.
+    if (body.sandbox === true || body.mode === "test") {
+      console.warn(
+        `VolunteerBadge SANDBOX: application ${providerCheckId} is a stub. No email sent. ` +
+          `Reach the form directly at ${body.applyUrl ?? "(no url returned)"}`
+      );
+    }
+
     return {
       providerCheckId,
-      applicantUrl: body.url ?? body.applicationUrl ?? body.link ?? null,
+      applicantUrl:
+        body.applyUrl ?? body.url ?? body.applicationUrl ?? body.link ?? null,
+      expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+      sandbox: body.sandbox === true || body.mode === "test",
     };
   }
 

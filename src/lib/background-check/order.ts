@@ -92,7 +92,9 @@ export async function orderBackgroundCheckIfNeeded(
       .eq("id", contactId);
 
     console.log(
-      `Background check ordered for contact ${contactId}: ${result.providerCheckId}`
+      `Background check ordered for contact ${contactId}: ${result.providerCheckId}` +
+        (result.sandbox ? " [SANDBOX, no email sent]" : "") +
+        (result.applicantUrl ? ` -> ${result.applicantUrl}` : "")
     );
     return {
       ordered: true,
