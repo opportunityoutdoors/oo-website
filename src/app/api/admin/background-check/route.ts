@@ -21,6 +21,28 @@ export async function GET(req: NextRequest) {
   const supabase = createServiceClient();
   const eventId = req.nextUrl.searchParams.get("eventId");
 
+  // Reconcile before reading. The cron that would otherwise do this runs daily, because
+  // Vercel's Hobby plan caps cron frequency at once per day, and 24 hours is far too long
+  // to leave someone paid and unscreened. Doing it here means the answer is current the
+  // moment an admin looks, which is exactly when it matters.
+  //
+  // Never fatal: if the provider is unreachable the list still renders from stored state,
+  // which is stale rather than absent.
+  try {
+    const { reconcileStuckChecks } = await import(
+      "@/app/api/cron/background-checks/route"
+    );
+    const result = await reconcileStuckChecks();
+    if (result.updated > 0) {
+      console.log(`Admin view reconciled ${result.updated} background check(s)`);
+    }
+  } catch (err) {
+    console.error(
+      "Admin view could not reconcile background checks:",
+      err instanceof Error ? err.message : String(err)
+    );
+  }
+
   // Paid registrants, with the check state of the person behind each. Scoped to an event
   // when asked, because "is everyone coming to this camp screened" is the question that
   // actually gets asked, and it is asked per event.

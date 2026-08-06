@@ -27,47 +27,40 @@ const MIN_AGE_MINUTES = 15;
 /** How many to reconcile per run. Their API is not rate-limit documented, so be modest. */
 const BATCH = 25;
 
-export async function GET(req: NextRequest) {
-  // Same guard as the other crons: Vercel sends the secret, nobody else should reach this.
-  const auth = req.headers.get("authorization");
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+/**
+ * Reconciles checks that have not resolved. Exported so the admin view can call it directly
+ * rather than waiting for the schedule.
+ *
+ * That matters because this cron runs DAILY, not every two hours as first written. Vercel's
+ * Hobby plan caps cron frequency at once per day, and the sub-daily schedule silently failed
+ * four consecutive deployments before anyone noticed. A stuck check waiting up to 24 hours
+ * is too slow for someone who has paid and cannot attend, so the real answer is to reconcile
+ * when a human looks at the list, and let the cron be the backstop for when nobody does.
+ */
+export async function reconcileStuckChecks(limit = BATCH) {
   const supabase = createServiceClient();
   const cutoff = new Date(Date.now() - MIN_AGE_MINUTES * 60_000).toISOString();
 
-  const { data: stuck, error } = await supabase
+  const { data: stuck } = await supabase
     .from("contacts")
-    .select("id, email, background_check_id, background_check_status, background_check_invited_at")
+    .select("id, email, background_check_id, background_check_status")
     .in("background_check_status", ["invited", "pending"])
     .not("background_check_id", "is", null)
     .lt("background_check_invited_at", cutoff)
     .order("background_check_invited_at", { ascending: true })
-    .limit(BATCH);
+    .limit(limit);
 
-  if (error) {
-    console.error("Background check poll: query failed:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  if (!stuck?.length) {
-    return NextResponse.json({ checked: 0, updated: 0 });
-  }
+  if (!stuck?.length) return { checked: 0, updated: 0 };
 
   const provider = getBackgroundCheckProvider();
   let updated = 0;
-  const results: Array<{ id: string; from: string; to: string; raw: string }> = [];
 
   for (const contact of stuck) {
     try {
       const state = await provider.getStatus(contact.background_check_id!);
-
-      // Nothing changed. Common and not worth a write.
       if (state.status === contact.background_check_status) continue;
 
       const completed = state.completedAt ?? new Date();
-
       await supabase
         .from("contacts")
         .update({
@@ -76,35 +69,41 @@ export async function GET(req: NextRequest) {
             state.status === "clear" || state.status === "flagged"
               ? completed.toISOString()
               : null,
-          // Only a clear result earns an expiry, exactly as in the webhook path.
           background_check_expires_at:
             state.status === "clear" ? expiryFrom(completed).toISOString() : null,
         })
         .eq("id", contact.id)
-        // Guarded so a webhook arriving mid-poll wins rather than being overwritten by a
-        // staler read.
+        // A webhook arriving mid-poll wins rather than being overwritten by a staler read.
         .eq("background_check_status", contact.background_check_status);
 
       updated++;
-      results.push({
-        id: contact.id,
-        from: contact.background_check_status,
-        to: state.status,
-        raw: state.raw,
-      });
-
       console.log(
-        `Background check poll: ${contact.email} ${contact.background_check_status} -> ${state.status} (raw "${state.raw}")`
+        `Background check reconcile: ${contact.email} ${contact.background_check_status} -> ${state.status} (raw "${state.raw}")`
       );
     } catch (err) {
-      // One unreachable check must not stop the batch. Logged with the id so it can be
-      // chased, and retried on the next run.
       console.error(
-        `Background check poll: ${contact.background_check_id} failed:`,
+        `Background check reconcile: ${contact.background_check_id} failed:`,
         err instanceof Error ? err.message : String(err)
       );
     }
   }
 
-  return NextResponse.json({ checked: stuck.length, updated, results });
+  return { checked: stuck.length, updated };
+}
+
+export async function GET(req: NextRequest) {
+  // Same guard as the other crons: Vercel sends the secret, nobody else should reach this.
+  const auth = req.headers.get("authorization");
+  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const result = await reconcileStuckChecks();
+    return NextResponse.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Background check cron failed:", message);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
