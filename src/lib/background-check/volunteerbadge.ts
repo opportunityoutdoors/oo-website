@@ -208,22 +208,44 @@ export class VolunteerBadgeProvider implements BackgroundCheckProvider {
  * of burying it.
  */
 export function mapStatus(raw: string): BackgroundCheckStatus {
-  switch (raw.toLowerCase()) {
+  // Normalised because their vocabulary mixes spaces and underscores across the API, the
+  // dashboard and the docs ("under review" vs "under_review"). Matching the literal string
+  // missed both spellings, which would have mapped a real records-found result to 'error'.
+  switch (raw.toLowerCase().replace(/[\s-]+/g, "_")) {
     case "clear":
     case "clear_no_records":
+    case "all_cleared":
     case "complete":
     case "completed":
     case "passed":
       return "clear";
+
+    // 'consider' is the one that needs a human: records were found AND confirmed by their
+    // CRA reviewers, so the report is released and a decision is owed.
     case "consider":
-    case "review":
     case "records_found":
     case "flagged":
       return "flagged";
+
+    // 'under review' is NOT a flag for us. Records surfaced, but their CRA team is still
+    // assessing and deliberately withholds the report until they have stripped unrelated
+    // material. Nothing is owed by us yet, so this is a wait, not a decision. Treating it
+    // as 'flagged' would put unreviewed hits in front of an admin who cannot act on them.
+    case "under_review":
+    case "investigating_hits":
     case "pending":
     case "processing":
     case "in_progress":
+    case "screening":
+    case "submitted":
       return "pending";
+
+    // Their record of a decision we made in their dashboard. Mirrored so the two systems
+    // cannot disagree about whether someone was turned away.
+    case "declined":
+      return "declined";
+    case "approved":
+      return "clear";
     case "invited":
     case "sent":
     case "awaiting_applicant":
