@@ -51,6 +51,10 @@ import {
   ManageDonation,
   type ManageDonationProps,
 } from "./templates/ManageDonation";
+import {
+  BackgroundCheckAlert,
+  type BackgroundCheckAlertProps,
+} from "./templates/BackgroundCheckAlert";
 
 export function renderWaitlistReminder(
   props: WaitlistReminderProps
@@ -124,4 +128,10 @@ export function renderManageDonation(
   props: ManageDonationProps
 ): Promise<string> {
   return render(<ManageDonation {...props} />);
+}
+
+export function renderBackgroundCheckAlert(
+  props: BackgroundCheckAlertProps
+): Promise<string> {
+  return render(<BackgroundCheckAlert {...props} />);
 }

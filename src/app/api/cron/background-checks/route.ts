@@ -71,6 +71,8 @@ export async function reconcileStuckChecks(limit = BATCH) {
               : null,
           background_check_expires_at:
             state.status === "clear" ? expiryFrom(completed).toISOString() : null,
+          // See the webhook path: a status change invalidates any prior alert.
+          background_check_alerted_at: null,
         })
         .eq("id", contact.id)
         // A webhook arriving mid-poll wins rather than being overwritten by a staler read.
@@ -99,8 +101,17 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Reconcile first, then alert. Order matters: polling may resolve a check that would
+    // otherwise have been reported as stalled, and an alert about a problem that fixed
+    // itself thirty seconds ago is exactly the kind of noise that gets a channel muted.
     const result = await reconcileStuckChecks();
-    return NextResponse.json(result);
+
+    const { sendBackgroundCheckAlerts } = await import(
+      "@/lib/background-check/alert"
+    );
+    const alerts = await sendBackgroundCheckAlerts();
+
+    return NextResponse.json({ ...result, alerts });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("Background check cron failed:", message);

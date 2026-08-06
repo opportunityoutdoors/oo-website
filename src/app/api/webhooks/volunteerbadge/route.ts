@@ -186,6 +186,9 @@ async function dispatch(name: string, event: Record<string, unknown>) {
         // Only a clear result earns an expiry. A flag or an error must not look like cover.
         background_check_expires_at:
           status === "clear" ? expiryFrom(completed).toISOString() : null,
+        // Status moved, so any previous alert is about a state that no longer exists.
+        // Clearing it lets the next real problem alert again instead of being silenced.
+        background_check_alerted_at: null,
       })
       .eq("id", contact.id);
 

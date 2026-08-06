@@ -5,6 +5,7 @@ import Link from "next/link";
 import MatchingTab from "./MatchingTab";
 import StatsTab from "./StatsTab";
 import { formatEventDateRange } from "@/lib/format-event-date";
+import { describeCheck } from "@/lib/background-check/display";
 
 interface Registration {
   id: string;
@@ -24,6 +25,11 @@ interface Registration {
     city: string | null;
     state: string | null;
     tshirt_size: string | null;
+    date_of_birth: string | null;
+    background_check_status: string | null;
+    background_check_expires_at: string | null;
+    background_check_invited_at: string | null;
+    background_check_url: string | null;
   };
 }
 
@@ -169,6 +175,33 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
     if (activeTab === "registered") return r.status === "registered" || r.status === "attended";
     return true;
   });
+
+  // Screening summary across everyone who has actually paid. Unpaid registrants are not
+  // attending yet, so counting them would make the number look worse than it is and bury
+  // the people who genuinely need chasing.
+  //
+  // Computed over the WHOLE event, not the filtered tab: "is this camp ready" is a question
+  // about the camp, and it should not change because someone clicked a tab.
+  const checkSummary = (() => {
+    const paid = event.registrations.filter((r) => r.payment_status === "paid");
+    let cleared = 0;
+    let waiting = 0;
+    let attention = 0;
+    for (const r of paid) {
+      const d = describeCheck({
+        dateOfBirth: r.contacts?.date_of_birth ?? null,
+        status: r.contacts?.background_check_status ?? null,
+        expiresAt: r.contacts?.background_check_expires_at ?? null,
+        invitedAt: r.contacts?.background_check_invited_at ?? null,
+        paid: true,
+        eventDate: event.date_start,
+      });
+      if (d.needsAttention) attention++;
+      else if (d.tone === "ok") cleared++;
+      else waiting++;
+    }
+    return { total: paid.length, cleared, waiting, attention };
+  })();
 
   const filteredIds = filteredRegs.map((r) => r.id);
   const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
@@ -414,6 +447,44 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
             </div>
           )}
 
+          {/* Screening summary. Sits above the table because "is this camp ready" is the
+              question someone opens this page to answer in the week before an event, and it
+              should not require reading every row to find out. */}
+          {checkSummary.total > 0 && (
+            <div
+              className={`mb-4 rounded border px-4 py-3 ${
+                checkSummary.attention > 0
+                  ? "border-[#b00]/25 bg-[#b00]/5"
+                  : "border-near-black/10 bg-cream/50"
+              }`}
+            >
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
+                <span className="font-semibold text-near-black">
+                  Background checks
+                </span>
+                <span className="text-dark-green">
+                  {checkSummary.cleared} of {checkSummary.total} cleared
+                </span>
+                {checkSummary.waiting > 0 && (
+                  <span className="text-[#8B6914]">
+                    {checkSummary.waiting} in progress
+                  </span>
+                )}
+                {checkSummary.attention > 0 && (
+                  <span className="font-semibold text-[#b00]">
+                    {checkSummary.attention} need attention
+                  </span>
+                )}
+              </div>
+              {checkSummary.attention > 0 && (
+                <p className="mt-1 text-xs leading-relaxed text-near-black/60">
+                  These people have paid and are not cleared to attend. Hover a
+                  status in the table for what each one needs.
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Registrations Table */}
           {activeTab !== "matching" && activeTab !== "stats" && <div className="rounded-lg border border-near-black/10 bg-white">
             <div className="overflow-x-auto">
@@ -435,6 +506,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                     {isCamp && <th className="px-4 py-3 font-semibold">Meeting</th>}
                     <th className="px-4 py-3 font-semibold">Status</th>
                     <th className="px-4 py-3 font-semibold">Waiver</th>
+                    <th className="px-4 py-3 font-semibold">Check</th>
                     <th className="w-24 px-4 py-3 font-semibold">Actions</th>
                   </tr>
                 </thead>
@@ -447,6 +519,17 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                     const meetingSlot = reg.meeting_date_selected
                       ? event.meeting_slots?.find((s) => s.label === reg.meeting_date_selected || s.date === reg.meeting_date_selected)
                       : null;
+
+                    // Same describeCheck the alert emails use, so a row and an email never
+                    // disagree about what state someone is in.
+                    const check = describeCheck({
+                      dateOfBirth: reg.contacts?.date_of_birth ?? null,
+                      status: reg.contacts?.background_check_status ?? null,
+                      expiresAt: reg.contacts?.background_check_expires_at ?? null,
+                      invitedAt: reg.contacts?.background_check_invited_at ?? null,
+                      paid: reg.payment_status === "paid",
+                      eventDate: event.date_start,
+                    });
 
                     return (
                       <tr
@@ -497,6 +580,31 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                             </a>
                           ) : (
                             <span className="text-[10px] text-near-black/30">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            title={check.detail}
+                            className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${
+                              check.tone === "ok"
+                                ? "bg-dark-green/10 text-dark-green"
+                                : check.tone === "act"
+                                  ? "bg-[#b00]/10 text-[#b00]"
+                                  : "bg-gold/15 text-[#8B6914]"
+                            }`}
+                          >
+                            {check.label}
+                          </span>
+                          {reg.contacts?.background_check_url && check.tone !== "ok" && (
+                            <a
+                              href={reg.contacts.background_check_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="ml-2 text-[10px] font-semibold text-dark-green hover:underline"
+                            >
+                              link
+                            </a>
                           )}
                         </td>
                         <td className="px-4 py-3">
