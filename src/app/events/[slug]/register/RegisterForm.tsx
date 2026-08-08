@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import SurveyQuestions, { EMPTY_ANSWERS } from "@/components/forms/SurveyQuestions";
 import ResumePaymentButton from "@/components/forms/ResumePaymentButton";
-import type { SurveyAnswers } from "@/lib/surveys/questions";
+import { scaleQuestions, type SurveyAnswers } from "@/lib/surveys/questions";
 import { evaluateEligibility } from "@/lib/background-check/eligibility";
 import {
   MENTOR_TSHIRT_CENTS,
@@ -107,13 +107,16 @@ I grant the Organization permission to photograph, video record, or otherwise ca
 9. Minor Participants
 If the Participant is under the age of 18, the undersigned parent or legal guardian acknowledges that they have read and understood this Agreement in its entirety, and agrees to all of its terms on behalf of the minor Participant.
 
-10. Governing Law and Jurisdiction
+10. Background Screening and Duty to Disclose
+I understand that Opportunity Outdoors requires a background check of every participant aged 18 or older, and I consent to one being conducted. I confirm that I have no pending criminal charges that I have not disclosed to the Organization. I further agree that if I am charged with any offense between now and the Event, I will notify the Organization immediately and voluntarily suspend my participation pending review. I understand that failing to disclose a pending charge is itself grounds for removal from the Event.
+
+11. Governing Law and Jurisdiction
 This Agreement shall be governed by and construed in accordance with the laws of the State of North Carolina.
 
-11. Severability
+12. Severability
 If any provision of this Agreement is found to be invalid, illegal, or unenforceable, such finding shall not affect the validity or enforceability of the remaining provisions.
 
-12. Entire Agreement and Acknowledgment
+13. Entire Agreement and Acknowledgment
 This Agreement constitutes the entire agreement between the Participant and the Organization with respect to the subject matter hereof. I have carefully read this Agreement, fully understand its contents, and am aware that it contains a release of liability, an assumption of risk, and an indemnification obligation. I sign this Agreement voluntarily and of my own free will, as a condition of my participation in the Event.`;
 
 const TSHIRT_SIZES = ["S", "M", "L", "XL", "2XL", "3XL"];
@@ -151,6 +154,12 @@ export default function RegisterForm({
   const [survey, setSurvey] = useState<SurveyAnswers>(EMPTY_ANSWERS);
   const [minorSurvey, setMinorSurvey] = useState<SurveyAnswers>(EMPTY_ANSWERS);
   const waiverRef = useRef<HTMLDivElement>(null);
+  // Which step is on screen. The form used to be one long page: details, survey,
+  // commitments, waiver and payment stacked together, which meant reading a liability
+  // waiver in the same breath as picking a t-shirt size. Splitting it does not change what
+  // is collected or when it is saved, only how much is asked at once.
+  const [step, setStep] = useState(1);
+  const [stepError, setStepError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
@@ -232,6 +241,71 @@ export default function RegisterForm({
       setError(data.error || "Something went wrong");
     }
     setSubmitting(false);
+  }
+
+
+  /**
+   * What each step needs before it will let you move on.
+   *
+   * Validated here rather than by the browser's `required`, because native validation on a
+   * hidden step silently blocks submission with an error nobody can see: the field it is
+   * complaining about is not on screen. This says which step and why.
+   */
+  function validateStep(n: number): string | null {
+    const r = registration;
+    if (!r) return "Registration is still loading.";
+
+    if (n === 1) {
+      if (!tshirtSize) return "Choose a t-shirt size.";
+      if (!r.contacts.date_of_birth && !dateOfBirth) return "Enter your date of birth.";
+      if (!emergencyName.trim() || !emergencyPhone.trim())
+        return "Add an emergency contact name and phone number.";
+      if (r.role !== "Mentor" && !transportation) return "Choose a transportation option.";
+      if (r.linked_minor) {
+        if (!minorTshirtSize) return `Choose a t-shirt size for ${r.linked_minor.contacts.first_name}.`;
+        if (!r.linked_minor.contacts.date_of_birth && !minorDateOfBirth)
+          return `Enter ${r.linked_minor.contacts.first_name}'s date of birth.`;
+      }
+      return null;
+    }
+
+    if (n === 2) {
+      const keys = scaleQuestions(r.events.event_type).map((q) => q.key);
+      const missing = keys.some((k) => !survey[k]);
+      if (missing) return "Answer every question before continuing.";
+      if (r.linked_minor && keys.some((k) => !minorSurvey[k]))
+        return `Answer every question for ${r.linked_minor.contacts.first_name}.`;
+      return null;
+    }
+
+    if (n === 3) {
+      const commitment = r.role === "Mentor" ? mentorCommitment : menteeCommitment;
+      if (!commitment) return "Confirm the commitment above.";
+      if (!contactShareConsent) return "Confirm the contact sharing consent.";
+      if (!waiverScrolled) return "Read to the bottom of the waiver.";
+      if (!waiverSigned) return "Tick the box to accept the waiver.";
+      if (!signatureName.trim()) return "Type your full name as your signature.";
+      return null;
+    }
+
+    return null;
+  }
+
+  function goNext() {
+    const problem = validateStep(step);
+    if (problem) {
+      setStepError(problem);
+      return;
+    }
+    setStepError(null);
+    setStep((n) => n + 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function goBack() {
+    setStepError(null);
+    setStep((n) => Math.max(1, n - 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   if (loading) {
@@ -361,6 +435,11 @@ export default function RegisterForm({
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-10">
+        <StepRail step={step} />
+
+        {/* Step 1: who you are and what we need to run the camp safely. */}
+        {step === 1 && (
+        <>
         {/* Camp Details */}
         <section>
           <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
@@ -527,6 +606,13 @@ export default function RegisterForm({
           </section>
         )}
 
+        </>
+        )}
+
+        {/* Step 2: the baseline survey. Its own step because it is the one part people
+            answer thoughtfully, and burying it under logistics got it skimmed. */}
+        {step === 2 && (
+        <>
         {/* Baseline survey. Asked once per participant, so a guardian registering a minor
             answers twice: their own set and one on the minor's behalf. Keeping it
             per-participant is what makes the confidence delta meaningful per person
@@ -567,6 +653,14 @@ export default function RegisterForm({
           </section>
         )}
 
+        </>
+        )}
+
+        {/* Step 3: what you are agreeing to. Alone on its own step, deliberately. Reading a
+            liability waiver in the same breath as picking a t-shirt size is how people end
+            up signing something they did not read. */}
+        {step === 3 && (
+        <>
         {/* Commitments & Consent */}
         <section>
           <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
@@ -679,6 +773,12 @@ export default function RegisterForm({
           </div>
         </section>
 
+        </>
+        )}
+
+        {/* Step 4: what it costs and what happens next. */}
+        {step === 4 && (
+        <>
         {/* Payment */}
         {(registration!.role !== "Mentor" || tshirtSize || minor) && (
           <section>
@@ -788,18 +888,115 @@ export default function RegisterForm({
           </section>
         )}
 
+        </>
+        )}
+
+        {stepError && (
+          <p className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {stepError}
+          </p>
+        )}
+
         {error && (
           <p className="text-sm text-red-600">{error}</p>
         )}
 
-        <button
-          type="submit"
-          disabled={submitting || !waiverSigned || !signatureName.trim() || !waiverScrolled || !contactShareConsent || (registration!.role === "Mentor" ? !mentorCommitment : !menteeCommitment)}
-          className="w-full rounded bg-dark-green px-8 py-4 text-[13px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:bg-dark-green/90 disabled:opacity-50"
-        >
-          {submitting ? "Submitting..." : "Complete Registration"}
-        </button>
+        <div className="flex items-center gap-3">
+          {step > 1 && (
+            <button
+              type="button"
+              onClick={goBack}
+              disabled={submitting}
+              className="rounded border border-near-black/20 px-6 py-4 text-[13px] font-bold uppercase tracking-[1.5px] text-near-black/60 transition-colors hover:bg-near-black/5 disabled:opacity-50"
+            >
+              Back
+            </button>
+          )}
+
+          {step < 4 ? (
+            // A plain button, never type="submit". An Enter keypress in a text field on step
+            // one would otherwise submit the whole registration from the first screen.
+            <button
+              type="button"
+              onClick={goNext}
+              className="flex-1 rounded bg-dark-green px-8 py-4 text-[13px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:bg-dark-green/90"
+            >
+              Continue
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={submitting || !waiverSigned || !signatureName.trim() || !waiverScrolled || !contactShareConsent || (registration!.role === "Mentor" ? !mentorCommitment : !menteeCommitment)}
+              className="flex-1 rounded bg-dark-green px-8 py-4 text-[13px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:bg-dark-green/90 disabled:opacity-50"
+            >
+              {submitting ? "Submitting..." : "Complete Registration"}
+            </button>
+          )}
+        </div>
       </form>
     </div>
+  );
+}
+
+/**
+ * Where you are, and what is still to come.
+ *
+ * FIVE stages for a four-step form, on purpose. The background check happens after payment,
+ * and the first live run showed someone completing registration, paying, and then being
+ * surprised by a screening step nobody had mentioned. Naming it here as the last stage
+ * costs nothing and means it is never a surprise.
+ */
+function StepRail({ step }: { step: number }) {
+  const stages = [
+    "Your details",
+    "Survey",
+    "Agreements",
+    "Review and pay",
+    "Background check",
+  ];
+
+  return (
+    <ol className="mb-10 flex flex-wrap gap-x-2 gap-y-2 border-b border-near-black/10 pb-5">
+      {stages.map((label, i) => {
+        const n = i + 1;
+        const done = n < step;
+        const current = n === step;
+        // The fifth stage is not part of this form and must never look reachable from it.
+        const afterPayment = n === 5;
+
+        return (
+          <li key={label} className="flex items-center gap-2">
+            <span
+              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                current
+                  ? "bg-dark-green text-white"
+                  : done
+                    ? "bg-dark-green/15 text-dark-green"
+                    : "bg-near-black/8 text-near-black/35"
+              }`}
+            >
+              {done ? "\u2713" : n}
+            </span>
+            <span
+              className={`text-xs ${
+                current
+                  ? "font-semibold text-near-black"
+                  : afterPayment
+                    ? "text-near-black/35"
+                    : "text-near-black/50"
+              }`}
+            >
+              {label}
+              {afterPayment && (
+                <span className="ml-1 text-near-black/30">(after payment)</span>
+              )}
+            </span>
+            {n < stages.length && (
+              <span className="ml-1 hidden text-near-black/20 sm:inline">/</span>
+            )}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
