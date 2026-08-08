@@ -199,8 +199,13 @@ export async function recordReview(input: ReviewInput): Promise<ReviewOutcome> {
         ok: true,
         statusAfter: after,
         reviewId: review.id,
+        // Reasons arrive as complete sentences, so they are shown as written rather than
+        // prefixed. The admin reading this is deciding whether a refund went wrong, and a
+        // label like "Skipped:" in front of a full sentence just adds noise.
         refunds: outcomes.map((o) =>
-          o.refunded ? `Refunded $${(o.amountCents / 100).toFixed(2)}` : `Skipped: ${o.reason}`
+          o.refunded
+            ? `Refunded $${(o.amountCents / 100).toFixed(2)} for ${o.where}.`
+            : o.reason
         ),
       };
     } catch (err) {

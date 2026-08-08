@@ -17,8 +17,19 @@ import { BACKGROUND_CHECK_FEE_CENTS } from "./eligibility";
 // accept.
 
 export type RefundOutcome =
-  | { refunded: true; amountCents: number; refundId: string }
+  | { refunded: true; amountCents: number; refundId: string; where: string }
   | { refunded: false; reason: string };
+
+/**
+ * Cents as dollars, for text a person reads.
+ *
+ * Every `reason` on this type is surfaced verbatim in the admin UI. "paid 500c, fees 545c"
+ * was accurate and unreadable: internal units have no business in a sentence shown to
+ * someone deciding whether a refund went wrong.
+ */
+function money(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
 
 /**
  * Refunds every paid, unrefunded registration for a contact.
@@ -58,28 +69,40 @@ export async function refundAfterAdverseAction(
     throw new Error(`Could not read registrations for refund: ${error.message}`);
   }
 
-  if (!regs?.length) return [{ refunded: false, reason: "no paid registrations" }];
+  if (!regs?.length) {
+    return [{ refunded: false, reason: "They have no paid registrations." }];
+  }
 
   const results: RefundOutcome[] = [];
 
   for (const reg of regs) {
     const ev = Array.isArray(reg.events) ? reg.events[0] : reg.events;
+    const where = ev?.title ?? "an event";
 
     // A camp that has already happened is not refundable on these grounds. They attended;
     // the adverse action affects future participation.
     if (ev?.date_start && new Date(ev.date_start) < new Date()) {
-      results.push({ refunded: false, reason: `${ev.title} already took place` });
+      results.push({
+        refunded: false,
+        reason: `${where} has already taken place, so it is not refunded.`,
+      });
       continue;
     }
 
     if (!reg.stripe_payment_id) {
-      results.push({ refunded: false, reason: `${reg.id} has no payment intent` });
+      results.push({
+        refunded: false,
+        reason: `${where}: no Stripe payment is recorded against this registration, so there is nothing to refund automatically. Check it by hand.`,
+      });
       continue;
     }
 
     const paidCents = Math.round(Number(reg.payment_amount ?? 0) * 100);
     if (paidCents <= 0) {
-      results.push({ refunded: false, reason: `${reg.id} has no recorded amount` });
+      results.push({
+        refunded: false,
+        reason: `${where}: no amount is recorded against this registration. Check it by hand.`,
+      });
       continue;
     }
 
@@ -103,9 +126,14 @@ export async function refundAfterAdverseAction(
       // Happens on a registration that was almost entirely the check itself, for instance a
       // free camp where the $5 check was the whole charge. Nothing is owed back, and saying
       // so plainly beats attempting a zero or negative refund.
+      const parts = [`${money(stripeFee)} processing`];
+      if (checkCents > 0) parts.push(`${money(checkCents)} background check`);
+
       results.push({
         refunded: false,
-        reason: `nothing refundable: paid ${paidCents}c, fees ${stripeFee + checkCents}c`,
+        reason:
+          `${where}: nothing to refund. They paid ${money(paidCents)}, and the ` +
+          `non-refundable fees (${parts.join(" plus ")}) come to ${money(stripeFee + checkCents)}.`,
       });
       continue;
     }
@@ -148,15 +176,24 @@ export async function refundAfterAdverseAction(
       }
 
       console.log(
-        `Refund (${kind}): registration ${reg.id}, paid ${paidCents}c, ` +
-          `withheld ${stripeFee}c stripe + ${checkCents}c check, refunded ${refundCents}c`
+        `Refund (${kind}): registration ${reg.id}, paid ${money(paidCents)}, ` +
+          `withheld ${money(stripeFee)} stripe + ${money(checkCents)} check, ` +
+          `refunded ${money(refundCents)}`
       );
 
-      results.push({ refunded: true, amountCents: refundCents, refundId: refund.id });
+      results.push({
+        refunded: true,
+        amountCents: refundCents,
+        refundId: refund.id,
+        where,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`Refund (${kind}) failed for ${reg.id}:`, message);
-      results.push({ refunded: false, reason: `stripe error: ${message}` });
+      results.push({
+        refunded: false,
+        reason: `${where}: Stripe refused the refund (${message}). Issue it by hand.`,
+      });
     }
   }
 
