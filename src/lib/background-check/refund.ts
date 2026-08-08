@@ -41,13 +41,22 @@ export async function refundAfterAdverseAction(
 ): Promise<RefundOutcome[]> {
   const supabase = createServiceClient();
 
-  const { data: regs } = await supabase
+  const { data: regs, error } = await supabase
     .from("registrations")
     .select(
       "id, payment_status, payment_amount, stripe_payment_id, refunded_at, events(title, date_start)"
     )
     .eq("contact_id", contactId)
     .eq("payment_status", "paid");
+
+  // Checked, not swallowed. This query previously named a column that did not exist, so
+  // PostgREST rejected it, `data` came back null, and the next line read that null as "this
+  // person has no paid registrations". The caller was told there was nothing to refund and
+  // logged a clean run. Money that was owed simply never moved, and nothing anywhere said so.
+  // A query that fails and a person who owes nothing must never look the same.
+  if (error) {
+    throw new Error(`Could not read registrations for refund: ${error.message}`);
+  }
 
   if (!regs?.length) return [{ refunded: false, reason: "no paid registrations" }];
 
@@ -114,16 +123,29 @@ export async function refundAfterAdverseAction(
         },
       });
 
-      await supabase
+      const { error: markError } = await supabase
         .from("registrations")
         .update({
           payment_status: "refunded",
           refunded_at: new Date().toISOString(),
+          refunded_amount: refundCents / 100,
         })
         .eq("id", reg.id)
         // Guarded so a replayed webhook cannot refund the same registration twice. Stripe
         // would happily issue a second partial refund; the condition is what stops it.
         .eq("payment_status", "paid");
+
+      // The money has already left Stripe by this point, so this cannot throw and undo it.
+      // But a failure here is serious rather than cosmetic: the row still reads 'paid', so
+      // the guard above no longer protects anything and a replayed webhook WOULD refund a
+      // second time. Shout, and say exactly which registration to fix by hand.
+      if (markError) {
+        console.error(
+          `REFUNDED ${refundCents}c FOR REGISTRATION ${reg.id} BUT COULD NOT RECORD IT: ` +
+            `${markError.message}. The row still reads 'paid', so a repeat event could refund ` +
+            `again. Set payment_status='refunded' by hand.`
+        );
+      }
 
       console.log(
         `Refund (${kind}): registration ${reg.id}, paid ${paidCents}c, ` +
