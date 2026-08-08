@@ -6,6 +6,7 @@ import MatchingTab from "./MatchingTab";
 import StatsTab from "./StatsTab";
 import ReviewModal from "./ReviewModal";
 import ReadinessPanel from "./ReadinessPanel";
+import { computePipeline, type StageKey } from "@/lib/camp-pipeline";
 import { formatEventDateRange } from "@/lib/format-event-date";
 import { describeCheck } from "@/lib/background-check/display";
 
@@ -62,7 +63,11 @@ interface EventDetail {
   registrations: Registration[];
 }
 
-type PipelineTab = "waitlist" | "approved" | "denied" | "registered" | "matching" | "stats" | "all";
+// The status tabs are gone. Waitlist, approved, denied and registered were all filters on
+// registration status, and every one of them is now a stage in the pipeline panel above,
+// where clicking it filters this same table. Two ways to ask the same question is how the
+// counts and the list drift apart. What remains are the two genuinely different views.
+type PipelineTab = "all" | "matching" | "stats";
 
 const STATUS_STYLES: Record<string, string> = {
   waitlist: "bg-gold/15 text-gold",
@@ -77,6 +82,9 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<PipelineTab>("all");
+
+  // Which pipeline stage the table is narrowed to, if any. Set by clicking the panel.
+  const [stageFilter, setStageFilter] = useState<StageKey | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -208,14 +216,16 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
 
   const isCamp = event.event_type === "hunt-camp" || event.event_type === "fish-camp";
 
-  const filteredRegs = event.registrations.filter((r) => {
-    if (activeTab === "all") return true;
-    if (activeTab === "waitlist") return r.status === "waitlist" || r.status === "meeting_rsvp";
-    if (activeTab === "approved") return r.status === "approved";
-    if (activeTab === "denied") return r.status === "denied";
-    if (activeTab === "registered") return r.status === "registered" || r.status === "attended";
-    return true;
-  });
+  // One definition of the stages, shared with the panel. Computing them separately here is
+  // how a count and the list under it end up disagreeing.
+  const pipeline = computePipeline(event.registrations);
+  const focusedStage = stageFilter
+    ? (pipeline.stages.find((s) => s.key === stageFilter) ?? null)
+    : null;
+
+  const filteredRegs = focusedStage
+    ? event.registrations.filter((r) => focusedStage.stuck.some((x) => x.id === r.id))
+    : event.registrations;
 
   const filteredIds = filteredRegs.map((r) => r.id);
   const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
@@ -225,10 +235,6 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
   );
 
   const counts = {
-    waitlist: event.registrations.filter((r) => r.status === "waitlist" || r.status === "meeting_rsvp").length,
-    approved: event.registrations.filter((r) => r.status === "approved").length,
-    denied: event.registrations.filter((r) => r.status === "denied").length,
-    registered: event.registrations.filter((r) => r.status === "registered" || r.status === "attended").length,
     matching: approvedAndRegistered.length,
     stats: event.registrations.length,
     all: event.registrations.length,
@@ -384,6 +390,14 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
               eventId={eventId}
               eventDate={event.date_start}
               registrations={event.registrations}
+              activeStage={stageFilter}
+              onSelectStage={(stage) => {
+                setStageFilter(stage);
+                // Narrowing the table only makes sense on the table, so a stage click also
+                // leaves Matching or Stats rather than silently doing nothing.
+                if (stage) setActiveTab("all");
+                setSelected(new Set());
+              }}
               onChanged={fetchEvent}
             />
           )}
@@ -391,12 +405,16 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
           {/* Tabs. Community and workshop events skip the camp pipeline stages but still
               get survey results, so they get a reduced bar rather than none. */}
           <div className="mb-4 flex gap-1 rounded-lg border border-near-black/10 bg-white p-1">
-            {((isCamp
-              ? ["all", "waitlist", "approved", "denied", "registered", "matching", "stats"]
-              : ["all", "stats"]) as PipelineTab[]).map((tab) => (
+            {((isCamp ? ["all", "matching", "stats"] : ["all", "stats"]) as PipelineTab[]).map((tab) => (
               <button
                 key={tab}
-                onClick={() => { setActiveTab(tab); setSelected(new Set()); }}
+                onClick={() => {
+                  setActiveTab(tab);
+                  // Leaving the table clears its narrowing, so coming back does not show a
+                  // filtered list with nothing on screen explaining why.
+                  if (tab !== "all") setStageFilter(null);
+                  setSelected(new Set());
+                }}
                 className={`flex-1 rounded px-3 py-2 text-xs font-bold uppercase tracking-[0.5px] transition-colors ${
                   activeTab === tab
                     ? "bg-dark-green text-white"
@@ -476,6 +494,25 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
           {/* Screening summary. Sits above the table because "is this camp ready" is the
               question someone opens this page to answer in the week before an event, and it
               should not require reading every row to find out. */}
+          {/* What the table is narrowed to. Without this a filtered list looks like missing
+              data, and the only clue would be a highlighted row further up the page. */}
+          {focusedStage && activeTab === "all" && (
+            <div className="mb-3 flex items-center justify-between gap-3 rounded border border-dark-green/25 bg-dark-green/5 px-4 py-2">
+              <span className="text-xs text-near-black/70">
+                Showing {focusedStage.stuck.length}{" "}
+                {focusedStage.stuck.length === 1 ? "person" : "people"} at{" "}
+                <span className="font-semibold">{focusedStage.label}</span>
+                {focusedStage.note ? `: ${focusedStage.note}` : ""}
+              </span>
+              <button
+                onClick={() => { setStageFilter(null); setSelected(new Set()); }}
+                className="shrink-0 text-xs font-semibold text-dark-green hover:underline"
+              >
+                show everyone
+              </button>
+            </div>
+          )}
+
           {/* Registrations Table */}
           {activeTab !== "matching" && activeTab !== "stats" && <div className="rounded-lg border border-near-black/10 bg-white">
             <div className="overflow-x-auto">
