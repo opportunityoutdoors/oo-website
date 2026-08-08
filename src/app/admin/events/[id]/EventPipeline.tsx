@@ -5,6 +5,7 @@ import Link from "next/link";
 import MatchingTab from "./MatchingTab";
 import StatsTab from "./StatsTab";
 import ReviewModal from "./ReviewModal";
+import ReadinessPanel from "./ReadinessPanel";
 import { formatEventDateRange } from "@/lib/format-event-date";
 import { describeCheck } from "@/lib/background-check/display";
 
@@ -17,6 +18,11 @@ interface Registration {
   token: string | null;
   meeting_date_selected: string | null;
   created_at: string;
+  // Already returned by the API, which selects *. Declared here so the readiness panel can
+  // answer "matched" and "packet sent" without a second request.
+  welcome_packet_sent: boolean;
+  mentor_id: string | null;
+  guardian_registration_id: string | null;
   contacts: {
     id: string;
     email: string;
@@ -80,6 +86,33 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
     name: string;
     status: string;
   } | null>(null);
+
+  const [orderingCheck, setOrderingCheck] = useState<string | null>(null);
+
+  /**
+   * Orders a background check for someone who has none.
+   *
+   * Exists because ordering can fail after the money has been taken, and did: a misnamed
+   * environment variable meant a paid registration ordered no check and left the person
+   * with a confirmation page promising an email that never came. Idempotent server-side,
+   * so pressing it twice cannot buy two checks.
+   */
+  async function orderCheck(contactId: string) {
+    setOrderingCheck(contactId);
+    try {
+      const res = await fetch("/api/admin/background-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contactId }),
+      });
+      const data = await res.json();
+      if (!res.ok) alert(data.error ?? "Could not order the check.");
+      else if (!data.ordered) alert(`Not ordered: ${data.reason}`);
+      await fetchEvent();
+    } finally {
+      setOrderingCheck(null);
+    }
+  }
 
   const fetchEvent = useCallback(async () => {
     const res = await fetch(`/api/admin/events/${eventId}`);
@@ -183,33 +216,6 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
     if (activeTab === "registered") return r.status === "registered" || r.status === "attended";
     return true;
   });
-
-  // Screening summary across everyone who has actually paid. Unpaid registrants are not
-  // attending yet, so counting them would make the number look worse than it is and bury
-  // the people who genuinely need chasing.
-  //
-  // Computed over the WHOLE event, not the filtered tab: "is this camp ready" is a question
-  // about the camp, and it should not change because someone clicked a tab.
-  const checkSummary = (() => {
-    const paid = event.registrations.filter((r) => r.payment_status === "paid");
-    let cleared = 0;
-    let waiting = 0;
-    let attention = 0;
-    for (const r of paid) {
-      const d = describeCheck({
-        dateOfBirth: r.contacts?.date_of_birth ?? null,
-        status: r.contacts?.background_check_status ?? null,
-        expiresAt: r.contacts?.background_check_expires_at ?? null,
-        invitedAt: r.contacts?.background_check_invited_at ?? null,
-        paid: true,
-        eventDate: event.date_start,
-      });
-      if (d.needsAttention) attention++;
-      else if (d.tone === "ok") cleared++;
-      else waiting++;
-    }
-    return { total: paid.length, cleared, waiting, attention };
-  })();
 
   const filteredIds = filteredRegs.map((r) => r.id);
   const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
@@ -370,6 +376,18 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
 
         {/* Pipeline */}
         <div className="lg:col-span-3">
+          {/* Above the tabs, because "is this camp ready to run" is the question the whole
+              page exists to answer and it should not require picking a tab first. Camps
+              only: community events have no matching, screening, or welcome packet. */}
+          {isCamp && (
+            <ReadinessPanel
+              eventId={eventId}
+              eventDate={event.date_start}
+              registrations={event.registrations}
+              onChanged={fetchEvent}
+            />
+          )}
+
           {/* Tabs. Community and workshop events skip the camp pipeline stages but still
               get survey results, so they get a reduced bar rather than none. */}
           <div className="mb-4 flex gap-1 rounded-lg border border-near-black/10 bg-white p-1">
@@ -458,41 +476,6 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
           {/* Screening summary. Sits above the table because "is this camp ready" is the
               question someone opens this page to answer in the week before an event, and it
               should not require reading every row to find out. */}
-          {checkSummary.total > 0 && (
-            <div
-              className={`mb-4 rounded border px-4 py-3 ${
-                checkSummary.attention > 0
-                  ? "border-[#b00]/25 bg-[#b00]/5"
-                  : "border-near-black/10 bg-cream/50"
-              }`}
-            >
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
-                <span className="font-semibold text-near-black">
-                  Background checks
-                </span>
-                <span className="text-dark-green">
-                  {checkSummary.cleared} of {checkSummary.total} cleared
-                </span>
-                {checkSummary.waiting > 0 && (
-                  <span className="text-[#8B6914]">
-                    {checkSummary.waiting} in progress
-                  </span>
-                )}
-                {checkSummary.attention > 0 && (
-                  <span className="font-semibold text-[#b00]">
-                    {checkSummary.attention} need attention
-                  </span>
-                )}
-              </div>
-              {checkSummary.attention > 0 && (
-                <p className="mt-1 text-xs leading-relaxed text-near-black/60">
-                  These people have paid and are not cleared to attend. Hover a
-                  status in the table for what each one needs.
-                </p>
-              )}
-            </div>
-          )}
-
           {/* Registrations Table */}
           {activeTab !== "matching" && activeTab !== "stats" && <div className="rounded-lg border border-near-black/10 bg-white">
             <div className="overflow-x-auto">
@@ -614,10 +597,28 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                               link
                             </a>
                           )}
-                          {/* Only on rows a human is actually blocking. 'act' covers a
-                              finding to adjudicate, someone who refused to take part, and
-                              anyone already declined whose history is worth reading. */}
-                          {check.tone === "act" && reg.contacts?.id && (
+                          {/* On every row with a contact, not only blocked ones. A cleared
+                              person still needs to be reachable: screening policy 7.5 has
+                              the panel deciding on someone charged DURING their term, and
+                              that person is cleared by definition. It is also the only way
+                              to read their review history. */}
+                          {reg.contacts?.id &&
+                            reg.payment_status === "paid" &&
+                            ["none", "expired", "error"].includes(
+                              reg.contacts.background_check_status ?? "none"
+                            ) && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  orderCheck(reg.contacts.id);
+                                }}
+                                disabled={orderingCheck === reg.contacts.id}
+                                className="ml-2 text-[10px] font-semibold text-dark-green hover:underline disabled:opacity-40"
+                              >
+                                {orderingCheck === reg.contacts.id ? "ordering..." : "order check"}
+                              </button>
+                            )}
+                          {reg.contacts?.id && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();

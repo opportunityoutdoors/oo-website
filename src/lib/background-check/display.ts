@@ -18,6 +18,18 @@ export type CheckDisplay = {
   needsAttention: boolean;
 };
 
+/**
+ * How stale an unfinished invite must be before it counts as stalled, and how close the
+ * event must be. Both matter: an unfinished check a month out is normal, the same check
+ * three days out is a problem.
+ *
+ * Exported because alert.ts documented these same two numbers and then never used them,
+ * while this file hardcoded them. Editing the constants there changed nothing, which is the
+ * worst kind of configuration: it looks adjustable and is not.
+ */
+export const STALLED_MIN_DAYS = 2;
+export const EVENT_WITHIN_DAYS = 14;
+
 export function describeCheck(input: {
   dateOfBirth: string | null;
   status: BackgroundCheckStatus | string | null;
@@ -100,7 +112,9 @@ export function describeCheck(input: {
     // An unfinished invite only becomes urgent as the event closes in. Flagging every
     // in-progress check would bury the ones that actually need chasing.
     const urgent =
-      daysToEvent !== null && daysToEvent <= 14 && (days ?? 0) >= 2;
+      daysToEvent !== null &&
+      daysToEvent <= EVENT_WITHIN_DAYS &&
+      (days ?? 0) >= STALLED_MIN_DAYS;
 
     return {
       label: urgent ? "Not finished" : "In progress",

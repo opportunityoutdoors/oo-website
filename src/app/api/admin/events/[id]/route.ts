@@ -25,6 +25,32 @@ export async function GET(
     return NextResponse.json({ error: "Event not found" }, { status: 404 });
   }
 
+  // Reconcile background checks before reading them.
+  //
+  // The cron that would otherwise do this runs once a day, because Vercel's Hobby plan caps
+  // cron frequency there, and 24 hours is far too long to leave someone paid and unscreened.
+  // Doing it here means the answer is current the moment an admin opens the event, which is
+  // exactly when it matters. This used to live behind an org-wide screening page; when that
+  // page was removed the behaviour had to come with it, or it would simply have stopped
+  // happening while appearing to have been kept.
+  //
+  // Never fatal: if the provider is unreachable the page still renders from stored state,
+  // which is stale rather than absent.
+  try {
+    const { reconcileStuckChecks } = await import(
+      "@/app/api/cron/background-checks/route"
+    );
+    const result = await reconcileStuckChecks();
+    if (result.updated > 0) {
+      console.log(`Event view reconciled ${result.updated} background check(s)`);
+    }
+  } catch (err) {
+    console.error(
+      "Event view could not reconcile background checks:",
+      err instanceof Error ? err.message : String(err)
+    );
+  }
+
   const { data: registrations } = await supabase
     .from("registrations")
     .select(

@@ -17,14 +17,6 @@ import { describeCheck } from "./display";
 const ALERT_TO = process.env.BACKGROUND_CHECK_ALERT_EMAIL || REPLY_TO;
 
 /**
- * How stale an unfinished invite must be before it is worth an email, and how close the
- * event must be. Both matter: an unfinished check a month out is normal, the same check
- * three days out is a problem.
- */
-const STALLED_MIN_DAYS = 2;
-const EVENT_WITHIN_DAYS = 14;
-
-/**
  * Finds anyone needing attention and emails staff about them.
  *
  * Called from the daily cron. Returns counts so the cron response says what it did rather
@@ -40,7 +32,7 @@ export async function sendBackgroundCheckAlerts(): Promise<{
   const { data: rows } = await supabase
     .from("registrations")
     .select(
-      "id, payment_status, events(title, date_start), contacts(id, email, first_name, last_name, date_of_birth, background_check_status, background_check_expires_at, background_check_invited_at, background_check_alerted_at)"
+      "id, payment_status, events(id, title, date_start), contacts(id, email, first_name, last_name, date_of_birth, background_check_status, background_check_expires_at, background_check_invited_at, background_check_alerted_at)"
     )
     .eq("payment_status", "paid");
 
@@ -81,6 +73,7 @@ export async function sendBackgroundCheckAlerts(): Promise<{
       name: [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email,
       email: c.email,
       event: ev?.title ?? null,
+      eventId: ev?.id ?? null,
       detail: d.detail,
     };
 
@@ -110,6 +103,7 @@ type AlertRow = {
   name: string;
   email: string;
   event: string | null;
+  eventId: string | null;
   detail: string;
 };
 
@@ -127,6 +121,8 @@ async function send(kind: "flagged" | "stalled", people: AlertRow[]) {
       process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
       "https://www.opportunityoutdoors.org";
 
+    const eventIds = [...new Set(people.map((p) => p.eventId).filter(Boolean))];
+
     const html = await renderBackgroundCheckAlert({
       kind,
       people: people.map(({ name, email, event, detail }) => ({
@@ -135,7 +131,12 @@ async function send(kind: "flagged" | "stalled", people: AlertRow[]) {
         event,
         detail,
       })),
-      adminUrl: `${origin}/admin/events`,
+      // Straight to the camp when everyone named is on the same one, which with one event
+      // at a time is essentially always. Landing on the list and making someone pick is a
+      // small tax paid every single alert.
+      adminUrl: eventIds.length === 1 && eventIds[0]
+        ? `${origin}/admin/events/${eventIds[0]}`
+        : `${origin}/admin/events`,
     });
 
     await new Resend(apiKey).emails.send({

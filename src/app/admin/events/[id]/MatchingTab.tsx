@@ -24,7 +24,6 @@ export default function MatchingTab({ eventId }: { eventId: string }) {
   const [loading, setLoading] = useState(true);
   const [autoMatching, setAutoMatching] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [sendingWelcome, setSendingWelcome] = useState(false);
   const [sendingOneOff, setSendingOneOff] = useState<string | null>(null);
 
   const fetchMatching = useCallback(async () => {
@@ -42,7 +41,6 @@ export default function MatchingTab({ eventId }: { eventId: string }) {
   const mentors = registrations.filter((r) => r.role === "Mentor");
   const mentees = registrations.filter((r) => r.role === "Mentee");
   const unmatchedMentees = mentees.filter((m) => !m.mentor_id);
-  const allMatched = mentees.length > 0 && unmatchedMentees.length === 0;
 
   async function handleManualMatch(menteeId: string, mentorId: string | null) {
     await fetch(`/api/admin/events/${eventId}/matching`, {
@@ -68,30 +66,6 @@ export default function MatchingTab({ eventId }: { eventId: string }) {
     }
   }
 
-  const registeredCount = registrations.filter((r) => r.status === "registered" || r.status === "attended").length;
-  const unsent = registrations.filter((r) => (r.status === "registered" || r.status === "attended") && !r.welcome_packet_sent);
-  const canSendAll = allMatched && unsent.length > 0;
-
-  async function handleSendWelcomePackets() {
-    if (!confirm(`Send welcome packets to ${unsent.length} participant${unsent.length !== 1 ? "s" : ""}?`)) return;
-    setSendingWelcome(true);
-    const res = await fetch(`/api/admin/events/${eventId}/welcome-packet`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    const data = await res.json();
-    setSendingWelcome(false);
-    if (res.ok) {
-      alert(
-        `Welcome packets sent to ${data.sent} participant${data.sent !== 1 ? "s" : ""}.` +
-          withheldNote(data.withheld)
-      );
-      fetchMatching();
-    } else {
-      alert((data.error || "Failed to send welcome packets") + withheldNote(data.withheld));
-    }
-  }
 
   /**
    * Names anyone the screening gate held back.
@@ -161,14 +135,10 @@ export default function MatchingTab({ eventId }: { eventId: string }) {
           >
             Add Participant
           </button>
-          <button
-            onClick={handleSendWelcomePackets}
-            disabled={sendingWelcome || !canSendAll}
-            className="rounded bg-gold px-4 py-2 text-xs font-bold uppercase tracking-[1px] text-near-black transition-colors hover:bg-gold/90 disabled:opacity-50"
-            title={!allMatched ? "All mentees must be matched first" : unsent.length === 0 ? "All packets already sent" : ""}
-          >
-            {sendingWelcome ? "Sending..." : `Send Welcome Packets${unsent.length > 0 ? ` (${unsent.length})` : ""}`}
-          </button>
+          {/* Sending them all moved to the Readiness panel at the top of the event. It
+              lived here only because matching used to be the last gate before sending;
+              screening is now also a gate, so the send belongs where every gate is visible.
+              The per-person send below stays, since that one is genuinely contextual. */}
         </div>
         <div className="text-xs text-near-black/40">
           {unmatchedMentees.length === 0 ? (
