@@ -3,6 +3,40 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { renderWelcomePacket } from "@/emails";
 import { apiRequireMember } from "@/lib/admin/auth";
+import { evaluateEligibility, mayParticipate } from "@/lib/background-check/eligibility";
+
+/**
+ * Why someone was held back, in words an admin can act on.
+ *
+ * Keyed by Eligibility['kind']. 'covered' and 'minor' never appear because mayParticipate()
+ * accepts them.
+ */
+const WITHHELD_REASON: Record<string, string> = {
+  needs_check: "no valid background check on file",
+  in_progress: "background check started but not finished",
+  blocked: "declined after a background check review",
+  unknown_age: "no date of birth on file, so we cannot tell if a check is required",
+};
+
+/**
+ * Reason for a specific person, preferring what their raw status actually says.
+ *
+ * Eligibility collapses 'flagged' and 'error' into needs_check, which is right for pricing
+ * (both mean order another check) and wrong for telling a human why someone was held back.
+ * "No valid background check on file" for a flagged person is true and misleading: they
+ * have a check, it found something, and it is sitting in a queue waiting for the panel.
+ * That is the case most worth naming precisely.
+ */
+function withheldReason(kind: string, status: string | null): string {
+  if (status === "flagged") {
+    return "background check returned findings and is waiting on a panel decision";
+  }
+  if (status === "error") {
+    return "background check could not be completed by the provider";
+  }
+  if (status === "expired") return "background check has lapsed and needs renewing";
+  return WITHHELD_REASON[kind] ?? kind;
+}
 
 interface ContactInfo {
   first_name: string | null;
@@ -78,7 +112,9 @@ export async function POST(
   // Fetch registrations to send to
   let query = supabase
     .from("registrations")
-    .select("*, contacts(id, email, first_name, last_name, phone)")
+    .select(
+      "*, contacts(id, email, first_name, last_name, phone, date_of_birth, background_check_status, background_check_expires_at)"
+    )
     .eq("event_id", eventId)
     .in("status", ["registered", "attended"]);
 
@@ -88,10 +124,62 @@ export async function POST(
     query = query.eq("welcome_packet_sent", false);
   }
 
-  const { data: registrations } = await query;
+  const { data: candidates, error: queryError } = await query;
 
-  if (!registrations?.length) {
+  // Checked rather than swallowed. A failed query and an empty event previously produced
+  // the same "No eligible recipients", which reads as a clean no-op.
+  if (queryError) {
+    return NextResponse.json(
+      { error: `Could not read registrations: ${queryError.message}` },
+      { status: 500 }
+    );
+  }
+
+  if (!candidates?.length) {
     return NextResponse.json({ error: "No eligible recipients", sent: 0 }, { status: 400 });
+  }
+
+  // SCREENING GATE. The welcome packet carries meeting points, times, and what to bring:
+  // everything someone would need to turn up. It must never reach a person the screening
+  // policy says cannot attend.
+  //
+  // Registration status is not sufficient to decide this. Declining a check sets the
+  // CONTACT's status and leaves the registration reading 'registered', so a flagged or
+  // declined person stays in this query. mayParticipate() is the rule, and until now it was
+  // exported and called from nowhere at all.
+  //
+  // Minors are permitted: they are never screened, and they receive nothing directly anyway
+  // (the loop below skips anyone with a guardian).
+  const withheld: { name: string; reason: string }[] = [];
+  const registrations = candidates.filter((r) => {
+    const c = Array.isArray(r.contacts) ? r.contacts[0] : r.contacts;
+    const eligibility = evaluateEligibility({
+      dateOfBirth: c?.date_of_birth ?? null,
+      status: c?.background_check_status ?? "none",
+      expiresAt: c?.background_check_expires_at ?? null,
+    });
+
+    if (mayParticipate(eligibility)) return true;
+
+    withheld.push({
+      name:
+        [c?.first_name, c?.last_name].filter(Boolean).join(" ") || c?.email || "Unknown",
+      reason: withheldReason(eligibility.kind, c?.background_check_status ?? null),
+    });
+    return false;
+  });
+
+  // Say who was held back and why. Silently dropping people would be its own failure: the
+  // admin would see "sent 8" for a camp of 10 and have no reason to look further.
+  if (!registrations.length) {
+    return NextResponse.json(
+      {
+        error: "Nobody is cleared to receive a welcome packet yet.",
+        sent: 0,
+        withheld,
+      },
+      { status: 400 }
+    );
   }
 
   // Check all mentees are matched. Minors (linked to a guardian) are excluded
@@ -260,5 +348,7 @@ export async function POST(
     sentCount++;
   }
 
-  return NextResponse.json({ sent: sentCount });
+  // withheld travels with the success response, not only the failure one. "Sent 8" for a
+  // camp of 10 looks like success unless the other two are named.
+  return NextResponse.json({ sent: sentCount, withheld });
 }

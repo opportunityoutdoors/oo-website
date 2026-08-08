@@ -83,11 +83,27 @@ export default function MatchingTab({ eventId }: { eventId: string }) {
     const data = await res.json();
     setSendingWelcome(false);
     if (res.ok) {
-      alert(`Welcome packets sent to ${data.sent} participant${data.sent !== 1 ? "s" : ""}.`);
+      alert(
+        `Welcome packets sent to ${data.sent} participant${data.sent !== 1 ? "s" : ""}.` +
+          withheldNote(data.withheld)
+      );
       fetchMatching();
     } else {
-      alert(data.error || "Failed to send welcome packets");
+      alert((data.error || "Failed to send welcome packets") + withheldNote(data.withheld));
     }
+  }
+
+  /**
+   * Names anyone the screening gate held back.
+   *
+   * The packet carries meeting points and times, so it must not reach someone who cannot
+   * attend. But dropping them quietly is its own failure: "sent 8" for a camp of 10 reads
+   * as success. Whoever pressed the button is the person who can chase a missing check.
+   */
+  function withheldNote(withheld?: { name: string; reason: string }[]) {
+    if (!withheld?.length) return "";
+    const lines = withheld.map((w) => `  ${w.name}: ${w.reason}`).join("\n");
+    return `\n\nHeld back, not cleared to attend:\n${lines}`;
   }
 
   async function handleSendOneOff(registrationId: string) {
@@ -99,11 +115,16 @@ export default function MatchingTab({ eventId }: { eventId: string }) {
     });
     const data = await res.json();
     setSendingOneOff(null);
-    if (res.ok) {
-      alert("Welcome packet sent.");
+    if (res.ok && data.sent > 0) {
+      alert("Welcome packet sent." + withheldNote(data.withheld));
+      fetchMatching();
+    } else if (res.ok) {
+      // Nothing went out. Saying "sent" here would be a plain untruth, and this is the one
+      // case where the admin most needs to know: they picked one person and got silence.
+      alert("Nothing sent." + (withheldNote(data.withheld) || " Nobody was eligible."));
       fetchMatching();
     } else {
-      alert(data.error || "Failed to send");
+      alert((data.error || "Failed to send") + withheldNote(data.withheld));
     }
   }
 
