@@ -27,7 +27,17 @@ export type RefundOutcome =
  * of them are now void. Past events are left alone: they attended, the money was earned.
  */
 export async function refundAfterAdverseAction(
-  contactId: string
+  contactId: string,
+  /**
+   * Why the money is going back, recorded on the Stripe refund.
+   *
+   * 'adverse_action' is the FCRA path: a report drove the decision and the provider ran the
+   * notice sequence. 'disqualified' is the other one: refusal to consent, non-compliance, a
+   * concealed charge. No report, so no notice was owed, and an admin issued it directly.
+   * Stripe's dashboard is where someone will look to reconstruct why a refund happened, and
+   * labelling both the same would lose the distinction that matters.
+   */
+  kind: "adverse_action" | "disqualified" = "adverse_action"
 ): Promise<RefundOutcome[]> {
   const supabase = createServiceClient();
 
@@ -97,7 +107,7 @@ export async function refundAfterAdverseAction(
         amount: refundCents,
         reason: "requested_by_customer",
         metadata: {
-          kind: "adverse_action",
+          kind,
           registration_id: reg.id,
           withheld_stripe_fee_cents: String(stripeFee),
           withheld_check_cents: String(checkCents),
@@ -116,14 +126,14 @@ export async function refundAfterAdverseAction(
         .eq("payment_status", "paid");
 
       console.log(
-        `Adverse action refund: registration ${reg.id}, paid ${paidCents}c, ` +
+        `Refund (${kind}): registration ${reg.id}, paid ${paidCents}c, ` +
           `withheld ${stripeFee}c stripe + ${checkCents}c check, refunded ${refundCents}c`
       );
 
       results.push({ refunded: true, amountCents: refundCents, refundId: refund.id });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      console.error(`Adverse action refund failed for ${reg.id}:`, message);
+      console.error(`Refund (${kind}) failed for ${reg.id}:`, message);
       results.push({ refunded: false, reason: `stripe error: ${message}` });
     }
   }

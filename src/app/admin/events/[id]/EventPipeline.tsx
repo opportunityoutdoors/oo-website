@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import MatchingTab from "./MatchingTab";
 import StatsTab from "./StatsTab";
+import ReviewModal from "./ReviewModal";
 import { formatEventDateRange } from "@/lib/format-event-date";
 import { describeCheck } from "@/lib/background-check/display";
 
@@ -72,6 +73,13 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
   const [activeTab, setActiveTab] = useState<PipelineTab>("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [actionLoading, setActionLoading] = useState(false);
+
+  // The contact whose background check is being adjudicated, if any.
+  const [reviewing, setReviewing] = useState<{
+    contactId: string;
+    name: string;
+    status: string;
+  } | null>(null);
 
   const fetchEvent = useCallback(async () => {
     const res = await fetch(`/api/admin/events/${eventId}`);
@@ -606,6 +614,24 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                               link
                             </a>
                           )}
+                          {/* Only on rows a human is actually blocking. 'act' covers a
+                              finding to adjudicate, someone who refused to take part, and
+                              anyone already declined whose history is worth reading. */}
+                          {check.tone === "act" && reg.contacts?.id && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setReviewing({
+                                  contactId: reg.contacts.id,
+                                  name: name === "—" ? reg.contacts.email : name,
+                                  status: reg.contacts.background_check_status ?? "none",
+                                });
+                              }}
+                              className="ml-2 text-[10px] font-semibold text-dark-green hover:underline"
+                            >
+                              review
+                            </button>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-1">
@@ -657,6 +683,22 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
           </div>}
         </div>
       </div>
+
+      {reviewing && (
+        <ReviewModal
+          contactId={reviewing.contactId}
+          contactName={reviewing.name}
+          currentStatus={reviewing.status}
+          onClose={() => setReviewing(null)}
+          onDone={async () => {
+            setReviewing(null);
+            // Refetch rather than patching local state: a decision can change the check
+            // status, the expiry, and the payment status all at once, and the table should
+            // show what is actually stored.
+            await fetchEvent();
+          }}
+        />
+      )}
     </>
   );
 }
