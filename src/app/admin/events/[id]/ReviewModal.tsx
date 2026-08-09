@@ -35,7 +35,7 @@ const OPTIONS: {
     value: "cleared",
     label: "Cleared by the panel",
     blurb:
-      "All three officers agreed this person may take part. Sets their check to clear for 12 months.",
+      "The check found something and the panel agreed it does not bar them: too old, too minor, or unrelated to what they would be doing. Sets their check to clear for 12 months and they carry on as normal. This is the option for an acceptable offence, and it needs all three officers to agree.",
     from: ["flagged"],
   },
   {
@@ -159,16 +159,32 @@ export default function ReviewModal({
   const selected = OPTIONS.find((o) => o.value === decision);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-near-black/40 p-4 sm:p-8">
-      <div className="w-full max-w-2xl rounded-lg bg-white shadow-xl">
-        <div className="border-b border-near-black/10 px-6 py-4">
-          <h2 className="text-lg font-semibold text-near-black">
-            Record a review decision
-          </h2>
-          <p className="mt-1 text-sm text-near-black/60">
-            {contactName} &middot; currently{" "}
-            <span className="font-medium">{currentStatus}</span>
-          </p>
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-near-black/40 p-4 sm:p-8"
+      onClick={onClose}
+    >
+      {/* Stops a click inside the panel from closing it via the backdrop above. */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-2xl rounded-lg bg-white shadow-xl"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-near-black/10 px-6 py-4">
+          <div>
+            <h2 className="text-lg font-semibold text-near-black">
+              Record a review decision
+            </h2>
+            <p className="mt-1 text-sm text-near-black/60">
+              {contactName} &middot; currently{" "}
+              <span className="font-medium">{currentStatus}</span>
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="-mr-1 shrink-0 rounded px-2 py-1 text-lg leading-none text-near-black/35 hover:bg-near-black/5 hover:text-near-black"
+          >
+            &times;
+          </button>
         </div>
 
         {result ? (
@@ -189,11 +205,19 @@ export default function ReviewModal({
         ) : (
           <div className="px-6 py-5">
             {available.length === 0 ? (
-              <p className="text-sm text-near-black/70">
-                There is nothing to decide here. This check is {currentStatus}.
-                {currentStatus === "declined" &&
-                  " Reversing a decline is not something this screen does."}
-              </p>
+              <>
+                <p className="text-sm text-near-black/70">
+                  There is nothing to decide here. This check is {currentStatus}.
+                  {currentStatus === "declined" &&
+                    " Reversing a decline is not something this screen does."}
+                </p>
+                <button
+                  onClick={onClose}
+                  className="mt-4 rounded bg-dark-green px-4 py-2 text-sm font-semibold text-white hover:bg-dark-green/90"
+                >
+                  Close
+                </button>
+              </>
             ) : (
               <>
                 <fieldset>

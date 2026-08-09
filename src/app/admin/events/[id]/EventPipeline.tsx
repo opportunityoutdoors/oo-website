@@ -403,6 +403,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                 is openable whether or not anything is wrong, which is the thing the stage
                 funnel could not do. */}
             <CampBoard
+              eventId={eventId}
               registrations={event.registrations}
               isPast={Boolean(
                 event.date_start && new Date(event.date_start) < new Date()
@@ -592,7 +593,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                         </td>
                         <td className="px-4 py-3">
                           <Link
-                            href={`/admin/contacts/${reg.contacts?.id}`}
+                            href={`/admin/contacts/${reg.contacts?.id}?from=${eventId}`}
                             className="font-medium text-near-black hover:text-dark-green"
                           >
                             {name}

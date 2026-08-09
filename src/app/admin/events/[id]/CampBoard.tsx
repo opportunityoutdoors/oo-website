@@ -27,6 +27,7 @@ import {
 // an oversight.
 
 type Props = {
+  eventId: string;
   registrations: PipelineReg[];
   /** Past camps hide requirement badges: they describe readiness, which is about the future. */
   isPast: boolean;
@@ -34,7 +35,7 @@ type Props = {
   onReview: (contactId: string, name: string, status: string) => void;
 };
 
-export default function CampBoard({ registrations, isPast, onMoved, onReview }: Props) {
+export default function CampBoard({ eventId, registrations, isPast, onMoved, onReview }: Props) {
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<Position | null>(null);
   const [busy, setBusy] = useState(false);
@@ -135,6 +136,7 @@ export default function CampBoard({ registrations, isPast, onMoved, onReview }: 
                 {cards.map((reg) => (
                   <Card
                     key={reg.id}
+                    eventId={eventId}
                     reg={reg}
                     isPast={isPast}
                     dragging={dragging === reg.id}
@@ -173,6 +175,7 @@ export default function CampBoard({ registrations, isPast, onMoved, onReview }: 
 }
 
 function Card({
+  eventId,
   reg,
   isPast,
   dragging,
@@ -180,6 +183,7 @@ function Card({
   onDragEnd,
   onReview,
 }: {
+  eventId: string;
   reg: PipelineReg;
   isPast: boolean;
   dragging: boolean;
@@ -241,7 +245,7 @@ function Card({
         {reg.contacts?.id && (
           <>
             <Link
-              href={`/admin/contacts/${reg.contacts.id}`}
+              href={`/admin/contacts/${reg.contacts.id}?from=${eventId}`}
               onClick={(e) => e.stopPropagation()}
               className="text-[10px] text-near-black/40 hover:text-dark-green"
             >

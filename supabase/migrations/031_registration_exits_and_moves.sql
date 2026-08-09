@@ -37,7 +37,10 @@ alter table registrations
       'never_paid',
       'stopped_responding',
       'cannot_make_it',
-      'withdrew_after_paying'
+      'withdrew_after_paying',
+      -- Added in 032. Distinct from cannot_make_it: one told us, the other left a mentor
+      -- waiting at a trailhead.
+      'no_show'
     )
   );
 

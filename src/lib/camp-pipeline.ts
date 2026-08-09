@@ -248,6 +248,13 @@ export const EXIT_REASONS: {
     position: "dropped_out",
     consequence: "Not refunded as a rule. Camp costs are committed in advance.",
   },
+  {
+    value: "no_show",
+    label: "Did not show up",
+    position: "dropped_out",
+    consequence:
+      "The only exit that can happen to someone who cleared everything. Worth knowing: it means the whole process worked and they still did not come.",
+  },
 ];
 
 /**

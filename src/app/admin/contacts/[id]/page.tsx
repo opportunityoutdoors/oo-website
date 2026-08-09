@@ -4,12 +4,20 @@ import { createServiceClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Contact Detail" };
 
+// Reads searchParams (`from`) and live registration data, neither of which survives being
+// cached. Every other admin page sets this; this one did not, and the back link silently
+// kept rendering its build-time value.
+export const dynamic = "force-dynamic";
+
 export default async function ContactDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string }>;
 }) {
   const { id } = await params;
+  const { from } = await searchParams;
   const supabase = createServiceClient();
 
   const { data: contact } = await supabase
@@ -51,15 +59,29 @@ export default async function ContactDetailPage({
 
   const name = [contact.first_name, contact.last_name].filter(Boolean).join(" ") || "Unknown";
 
+  // Where "back" should go. Opening a profile from a camp board and being returned to the
+  // full contact list means finding your way back to the camp by hand every time.
+  //
+  // Shape-checked before it reaches an href: `from` is a query parameter, and building a URL
+  // out of unvalidated input is how an open redirect starts, even on a page behind auth.
+  const fromEventId = /^[0-9a-f-]{36}$/i.test(from ?? "") ? from : null;
+  const { data: fromEvent } = fromEventId
+    ? await supabase.from("events").select("title").eq("id", fromEventId).maybeSingle()
+    : { data: null };
+
+  const back = fromEventId
+    ? { href: `/admin/events/${fromEventId}`, label: fromEvent?.title ?? "Back to event" }
+    : { href: "/admin/contacts", label: "Back to Contacts" };
+
   return (
     <>
       {/* Header */}
       <div className="mb-8">
         <Link
-          href="/admin/contacts"
+          href={back.href}
           className="mb-3 inline-block text-xs font-semibold uppercase tracking-[1px] text-near-black/40 transition-colors hover:text-near-black"
         >
-          &larr; Back to Contacts
+          &larr; {back.label}
         </Link>
         <h1 className="font-heading text-3xl font-[900] uppercase tracking-tight text-near-black">
           {name}
