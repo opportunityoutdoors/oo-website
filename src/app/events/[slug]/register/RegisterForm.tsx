@@ -838,10 +838,20 @@ export default function RegisterForm({
                       ))}
                     </div>
 
-                    {/* The ask. Above the total so the number they see is the one they will
-                        be charged, and defaulted to nothing: a pre-filled amount is a charge
-                        somebody has to notice and remove, which is not the same as being
-                        asked. Declining is a button, not an empty field to work out. */}
+                    {/* MENTORS ONLY. A mentee has just been asked for a registration fee;
+                        asking them for more in the same breath reads as being nickel-and-dimed.
+                        A mentor is paying nothing and giving up a weekend, so an invitation to
+                        chip in lands differently.
+
+                        Above the total, so the number they end on is the number they pay. And
+                        defaulted to nothing: a pre-filled amount is a charge somebody has to
+                        notice and remove, which is not the same as being asked. Declining is a
+                        button the same size as agreeing, not a link to hunt for.
+
+                        The server still accepts a donation from anyone. Not asking a mentee is
+                        a decision about what to put in front of them, not a reason to refuse
+                        money somebody deliberately chose to give. */}
+                    {registration!.role === "Mentor" && (
                     <div className="mb-3 rounded border border-near-black/10 bg-cream/40 p-4">
                       <p className="text-sm font-medium text-near-black">
                         Help cover the cost of camp
@@ -884,6 +894,7 @@ export default function RegisterForm({
                         </button>
                       </div>
                     </div>
+                    )}
 
                     <div className="flex items-center justify-between border-t border-near-black/10 pt-3">
                       <p className="text-sm font-bold text-near-black">Total</p>
