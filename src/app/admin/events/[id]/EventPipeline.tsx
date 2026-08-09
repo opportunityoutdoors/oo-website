@@ -267,9 +267,11 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-4">
-        {/* Event Info Sidebar */}
-        <div className="space-y-4 lg:col-span-1">
+      {/* Overview across the top rather than down the side. The board is the widest thing
+          on this page and the thing people came for; a sidebar was taking a quarter of the
+          screen to show nine numbers that read fine in a row. */}
+      <div className="space-y-4">
+        <div className="space-y-4">
           <div className="rounded-lg border border-near-black/10 bg-white p-5">
             <h2 className="mb-3 text-xs font-bold uppercase tracking-[1px] text-near-black/40">
               Overview
@@ -285,50 +287,24 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
               const ratio = mentors > 0 ? `${(mentees / mentors).toFixed(1)}:1` : mentees > 0 ? "No mentors" : "—";
 
               return (
-                <dl className="space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <dt className="font-semibold text-near-black/40">Total Signups</dt>
-                    <dd className="font-bold text-near-black">{active.length}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="font-semibold text-near-black/40">Mentees</dt>
-                    <dd className="font-bold text-near-black">{mentees}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="font-semibold text-near-black/40">Mentors</dt>
-                    <dd className="font-bold text-near-black">{mentors}</dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="font-semibold text-near-black/40">Ratio</dt>
-                    <dd className="font-bold text-near-black">{ratio}</dd>
-                  </div>
-                  <div className="mt-1 border-t border-near-black/5 pt-2">
-                    <div className="flex justify-between">
-                      <dt className="font-semibold text-near-black/40">Spots</dt>
-                      <dd className="text-near-black">{event.spots_total || "Unlimited"}</dd>
-                    </div>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="font-semibold text-near-black/40">Status</dt>
-                    <dd className="text-near-black">{event.status}</dd>
-                  </div>
+                <dl className="flex flex-wrap items-end gap-x-8 gap-y-3">
+                  <Figure label="Signups" value={active.length} />
+                  <Figure label="Mentees" value={mentees} />
+                  <Figure label="Mentors" value={mentors} />
+                  <Figure label="Ratio" value={ratio} />
+                  <Figure label="Spots" value={event.spots_total || "Unlimited"} muted />
+                  <Figure label="Status" value={event.status} muted />
                   {isCamp && (
-                    <div className="mt-1 border-t border-near-black/5 pt-2">
-                      <div className="flex justify-between">
-                        <dt className="font-semibold text-near-black/40">Registered Mentors</dt>
-                        <dd className="font-bold text-near-black">{registeredMentors}</dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt className="font-semibold text-near-black/40">Mentee Slots (3:1)</dt>
-                        <dd className="font-bold text-near-black">{maxMenteeSlots}</dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt className="font-semibold text-near-black/40">Available</dt>
-                        <dd className={`font-bold ${availableMenteeSlots > 0 ? "text-dark-green" : "text-red-500"}`}>
-                          {availableMenteeSlots}
-                        </dd>
-                      </div>
-                    </div>
+                    <>
+                      <span className="h-8 w-px self-center bg-near-black/10" />
+                      <Figure label="Registered mentors" value={registeredMentors} />
+                      <Figure label="Mentee slots (3:1)" value={maxMenteeSlots} />
+                      <Figure
+                        label="Available"
+                        value={availableMenteeSlots}
+                        tone={availableMenteeSlots > 0 ? "good" : "bad"}
+                      />
+                    </>
                   )}
                 </dl>
               );
@@ -340,13 +316,13 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
               <h2 className="mb-3 text-xs font-bold uppercase tracking-[1px] text-near-black/40">
                 Meeting Slots
               </h2>
-              <div className="space-y-3">
+              <div className="flex flex-wrap gap-3">
                 {event.meeting_slots.map((slot, i) => {
                   const rsvpCount = event.registrations.filter(
                     (r) => r.meeting_date_selected === slot.label || r.meeting_date_selected === slot.date
                   ).length;
                   return (
-                    <div key={i} className="rounded border border-near-black/5 p-3">
+                    <div key={i} className="min-w-[190px] flex-1 rounded border border-near-black/5 p-3">
                       <p className="text-xs font-medium text-near-black">
                         {slot.label || new Date(slot.date).toLocaleDateString("en-US", {
                           weekday: "short",
@@ -383,7 +359,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
         </div>
 
         {/* Pipeline */}
-        <div className="lg:col-span-3">
+        <div>
           {/* Above the tabs, because "is this camp ready to run" is the question the whole
               page exists to answer and it should not require picking a tab first. Camps
               only: community events have no matching, screening, or welcome packet. */}
@@ -748,5 +724,44 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
         />
       )}
     </>
+  );
+}
+
+/**
+ * One number in the overview strip.
+ *
+ * Label above value rather than beside it, so a row of these stays readable as the labels
+ * vary in length. "Mentee slots (3:1)" and "Ratio" do not line up side by side.
+ */
+function Figure({
+  label,
+  value,
+  tone,
+  muted,
+}: {
+  label: string;
+  value: string | number;
+  tone?: "good" | "bad";
+  muted?: boolean;
+}) {
+  return (
+    <div>
+      <dt className="text-[10px] font-semibold uppercase tracking-[0.5px] text-near-black/35">
+        {label}
+      </dt>
+      <dd
+        className={`mt-0.5 text-lg font-semibold leading-none ${
+          tone === "good"
+            ? "text-dark-green"
+            : tone === "bad"
+              ? "text-[#b00]"
+              : muted
+                ? "text-near-black/60"
+                : "text-near-black"
+        }`}
+      >
+        {value}
+      </dd>
+    </div>
   );
 }

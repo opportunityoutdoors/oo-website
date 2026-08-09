@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   byPosition,
   nameOf,
+  position,
   requirements,
   POSITIONS,
   EXIT_REASONS,
@@ -89,7 +90,11 @@ export default function CampBoard({ registrations, isPast, onMoved, onReview }: 
         </p>
       )}
 
-      <div className="flex gap-3 overflow-x-auto pb-2">
+      {/* Columns share the width rather than being fixed, so the board fills a wide screen
+          and only scrolls once seven columns cannot fit at their minimum. Seven fixed
+          190px columns needed 1402px, which overflows an ordinary laptop once the nav is
+          accounted for. */}
+      <div className="flex gap-2 overflow-x-auto pb-2">
         {POSITIONS.map((col) => {
           const cards = columns[col.key];
           // Ready is computed, never assigned. Refusing the drop here rather than letting the
@@ -110,7 +115,7 @@ export default function CampBoard({ registrations, isPast, onMoved, onReview }: 
                 e.preventDefault();
                 if (droppable) onDrop(col.key);
               }}
-              className={`w-[190px] shrink-0 rounded-lg border p-2 transition-colors ${
+              className={`min-w-[150px] flex-1 rounded-lg border p-1.5 transition-colors ${
                 isOver
                   ? "border-dark-green bg-dark-green/5"
                   : "border-near-black/10 bg-cream/30"
@@ -184,6 +189,10 @@ function Card({
 }) {
   const reqs = requirements(reg);
   const reason = EXIT_REASONS.find((x) => x.value === reg.exit_reason);
+  // Anyone out of the pipeline, however they left. Keying this on exit_reason alone missed
+  // people declined by screening, whose exit is recorded on the contact rather than here,
+  // so a turned-away person still showed badges for requirements they will never meet.
+  const gone = ["turned_away", "dropped_out"].includes(position(reg));
 
   return (
     <div
@@ -195,7 +204,7 @@ function Card({
       }`}
     >
       <div className="flex items-baseline justify-between gap-1">
-        <span className="truncate text-[13px] font-medium text-near-black">
+        <span className="text-[13px] font-medium leading-tight text-near-black">
           {nameOf(reg)}
         </span>
         {reg.role && (
@@ -205,7 +214,7 @@ function Card({
 
       {/* Requirements describe readiness, which is a question about the future. A camp that
           ran before background checks existed did not fail one. */}
-      {!isPast && !reg.exit_reason && (
+      {!isPast && !gone && (
         <div className="mt-1.5 flex flex-wrap gap-1">
           {reqs.map((r) => (
             <span
@@ -222,8 +231,10 @@ function Card({
         </div>
       )}
 
-      {reason && (
-        <p className="mt-1 text-[10px] leading-tight text-near-black/45">{reason.label}</p>
+      {(reason || (gone && reg.contacts?.background_check_status === "declined")) && (
+        <p className="mt-1 text-[10px] leading-tight text-near-black/45">
+          {reason?.label ?? "Declined after a background check"}
+        </p>
       )}
 
       <div className="mt-1.5 flex gap-2">
