@@ -35,14 +35,21 @@ const EVENT_SLUG = "zz-test-fixture-camp";
 const EMAIL_DOMAIN = "+fixture@opportunityoutdoors.org";
 
 /**
- * Where fixture mail should actually land, when a test needs to receive something.
+ * A real inbox that fixture mail can reach, e.g. you@gmail.com.
  *
- * The +fixture addresses above are deliberately undeliverable: they exist to be obvious in
- * the admin, not to receive. Set FIXTURE_EMAIL in .env.local to your own plus-addressed
- * inbox when a test needs a real message to arrive. Not hardcoded, because a personal
- * address does not belong in a checked-in script.
+ * Every fixture person gets a distinct plus-addressed variant of it, so they are all
+ * distinguishable in the admin and all land in one place.
+ *
+ * WHY THIS IS NOT OPTIONAL IN PRACTICE. The first version used undeliverable +fixture
+ * addresses on the org's own domain, with a note in TESTING.md warning not to trigger any
+ * mail. That warning lasted exactly one test: paying a fixture registration sends a
+ * confirmation email automatically, with no send button to avoid. Two addresses hard
+ * bounced and landed on Resend's suppression list.
+ *
+ * A rule that depends on remembering it is not a rule. Deliverable addresses remove the
+ * hazard rather than documenting it.
  */
-const DELIVERABLE = process.env.FIXTURE_EMAIL || null;
+const INBOX = process.env.FIXTURE_EMAIL || null;
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -61,6 +68,15 @@ if ((process.env.STRIPE_SECRET_KEY || "").startsWith("sk_live_")) {
       "alongside live payment credentials. Switch .env.local to a test key first."
   );
   process.exit(1);
+}
+
+if (!INBOX) {
+  console.warn(
+    "warning: FIXTURE_EMAIL is not set, so fixture people get undeliverable addresses.\n" +
+      "         Anything that sends them mail will HARD BOUNCE and be suppressed by Resend.\n" +
+      "         Paying a fixture registration sends a confirmation automatically, so this\n" +
+      "         is easy to trip. Set FIXTURE_EMAIL=you@gmail.com in .env.local.\n"
+  );
 }
 
 const db = createClient(url, key, { auth: { persistSession: false } });
@@ -166,7 +182,6 @@ const PEOPLE = [
     paid: false,
     waiver: false,
     check: "clear",
-    deliverable: true,
     purpose:
       "Approved and invited, has NOT registered. Use their token to walk the registration form.",
   },
@@ -184,8 +199,11 @@ const PEOPLE = [
   },
 ];
 
-const email = (p) =>
-  p.deliverable && DELIVERABLE ? DELIVERABLE : `zz.${p.key}${EMAIL_DOMAIN}`;
+function email(p) {
+  if (!INBOX) return `zz.${p.key}${EMAIL_DOMAIN}`;
+  const [local, domain] = INBOX.split("@");
+  return `${local}+zz.${p.key}@${domain}`;
+}
 
 function yearFromNow() {
   const d = new Date();
@@ -253,12 +271,17 @@ async function destroy() {
   }
   await db.from("contacts").delete().like("email", `%${EMAIL_DOMAIN}`);
 
-  // A contact created under FIXTURE_EMAIL does not match the pattern above, so it is removed
-  // by address rather than left orphaned. Scoped to exactly that one address.
-  if (DELIVERABLE) {
-    await db.from("registrations").delete().eq("contact_id",
-      (await db.from("contacts").select("id").eq("email", DELIVERABLE).maybeSingle()).data?.id ?? "00000000-0000-0000-0000-000000000000");
-    await db.from("contacts").delete().eq("email", DELIVERABLE);
+  // Contacts created under FIXTURE_EMAIL do not match the pattern above, so they are removed
+  // by their own plus-addressed pattern rather than left orphaned.
+  if (INBOX) {
+    const [local, domain] = INBOX.split("@");
+    const pattern = `${local}+zz.%@${domain}`;
+    const { data: mine } = await db.from("contacts").select("id").like("email", pattern);
+    for (const c of mine ?? []) {
+      await db.from("background_check_reviews").delete().eq("contact_id", c.id);
+      await db.from("registrations").delete().eq("contact_id", c.id);
+    }
+    await db.from("contacts").delete().like("email", pattern);
   }
 
   console.log(`Removed the fixture camp and ${contacts?.length ?? 0} fixture contact(s).`);
