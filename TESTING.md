@@ -73,6 +73,16 @@ Two safety properties worth knowing:
 Fixture registrations carry no `stripe_payment_id`, so the refund path correctly reports that
 it cannot refund automatically rather than reaching for a real payment intent.
 
+**Do not run a full welcome packet send against the fixture.** The `+fixture` addresses are
+undeliverable by design, and sending to them produces hard bounces, which Resend adds to the
+suppression list and which cost real sender reputation. Test the gate by targeting only
+people it must refuse: that path sends nothing. When a test genuinely needs mail to arrive,
+set `FIXTURE_EMAIL` in `.env.local` to your own plus-addressed inbox.
+
+**Stripe Checkout cannot be automated, and should not be.** It carries an invisible hCaptcha,
+so driving it from a script means defeating bot detection. Someone completes that step by
+hand with a test card; everything before and after it is verifiable without touching it.
+
 ## 3. Before pushing
 
 The things only a person can judge. Run through whichever apply to what changed.

@@ -34,6 +34,16 @@ const EVENT_TITLE = "ZZ TEST Fixture Camp";
 const EVENT_SLUG = "zz-test-fixture-camp";
 const EMAIL_DOMAIN = "+fixture@opportunityoutdoors.org";
 
+/**
+ * Where fixture mail should actually land, when a test needs to receive something.
+ *
+ * The +fixture addresses above are deliberately undeliverable: they exist to be obvious in
+ * the admin, not to receive. Set FIXTURE_EMAIL in .env.local to your own plus-addressed
+ * inbox when a test needs a real message to arrive. Not hardcoded, because a personal
+ * address does not belong in a checked-in script.
+ */
+const DELIVERABLE = process.env.FIXTURE_EMAIL || null;
+
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -147,6 +157,20 @@ const PEOPLE = [
     purpose: "Registered but has not paid. Blocks at the payment stage.",
   },
   {
+    key: "invited",
+    first: "Ivy",
+    last: "Invited",
+    dob: "1994-03-22",
+    role: "Mentee",
+    status: "approved",
+    paid: false,
+    waiver: false,
+    check: "clear",
+    deliverable: true,
+    purpose:
+      "Approved and invited, has NOT registered. Use their token to walk the registration form.",
+  },
+  {
     key: "waitlist",
     first: "Hana",
     last: "Waitlist",
@@ -160,7 +184,8 @@ const PEOPLE = [
   },
 ];
 
-const email = (p) => `zz.${p.key}${EMAIL_DOMAIN}`;
+const email = (p) =>
+  p.deliverable && DELIVERABLE ? DELIVERABLE : `zz.${p.key}${EMAIL_DOMAIN}`;
 
 function yearFromNow() {
   const d = new Date();
@@ -227,6 +252,14 @@ async function destroy() {
     await db.from("registrations").delete().eq("contact_id", c.id);
   }
   await db.from("contacts").delete().like("email", `%${EMAIL_DOMAIN}`);
+
+  // A contact created under FIXTURE_EMAIL does not match the pattern above, so it is removed
+  // by address rather than left orphaned. Scoped to exactly that one address.
+  if (DELIVERABLE) {
+    await db.from("registrations").delete().eq("contact_id",
+      (await db.from("contacts").select("id").eq("email", DELIVERABLE).maybeSingle()).data?.id ?? "00000000-0000-0000-0000-000000000000");
+    await db.from("contacts").delete().eq("email", DELIVERABLE);
+  }
 
   console.log(`Removed the fixture camp and ${contacts?.length ?? 0} fixture contact(s).`);
 }
