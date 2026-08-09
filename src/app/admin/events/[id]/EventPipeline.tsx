@@ -7,6 +7,7 @@ import StatsTab from "./StatsTab";
 import ReviewModal from "./ReviewModal";
 import ReadinessPanel from "./ReadinessPanel";
 import CampBoard from "./CampBoard";
+import ExitDialog from "./ExitDialog";
 import { position, nameOf, POSITIONS, type Position } from "@/lib/camp-pipeline";
 import { formatEventDateRange } from "@/lib/format-event-date";
 import { describeCheck } from "@/lib/background-check/display";
@@ -103,6 +104,44 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
 
   const [orderingCheck, setOrderingCheck] = useState<string | null>(null);
 
+  // A bulk exit, waiting on a reason. Same dialog the board uses.
+  const [bulkExit, setBulkExit] = useState<"turned_away" | "dropped_out" | null>(null);
+
+  /**
+   * Moves everyone selected out of the pipeline, with a reason.
+   *
+   * Routed through the same endpoint a drag uses rather than the bulk status PATCH, so the
+   * validation is identical. The old "Deny" button wrote status='denied' with no reason at
+   * all, producing a card the board itself would have refused to create.
+   */
+  async function bulkMoveOut(to: "turned_away" | "dropped_out", exitReason: string) {
+    setActionLoading(true);
+    try {
+      const failures: string[] = [];
+      for (const id of selected) {
+        const res = await fetch("/api/admin/registrations/move", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ registrationId: id, to, exitReason }),
+        });
+        if (!res.ok) failures.push((await res.json()).error ?? "unknown error");
+      }
+      // Named rather than swallowed: a partial bulk that reports success is how somebody
+      // ends up thinking a person was removed when they were not.
+      if (failures.length) {
+        alert(
+          `${selected.size - failures.length} moved. ${failures.length} refused:\n` +
+            [...new Set(failures)].join("\n")
+        );
+      }
+      setSelected(new Set());
+      await fetchEvent();
+    } finally {
+      setActionLoading(false);
+      setBulkExit(null);
+    }
+  }
+
   /**
    * Orders a background check for someone who has none.
    *
@@ -171,19 +210,6 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
     setActionLoading(false);
   }
 
-  async function bulkDelete() {
-    if (selected.size === 0) return;
-    if (!confirm(`Remove ${selected.size} camper${selected.size > 1 ? "s" : ""} from this event?`)) return;
-    setActionLoading(true);
-    await fetch("/api/admin/registrations", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: [...selected] }),
-    });
-    setSelected(new Set());
-    await fetchEvent();
-    setActionLoading(false);
-  }
 
   async function updateSingle(id: string, status: string) {
     setActionLoading(true);
@@ -205,17 +231,6 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
     }
   }
 
-  async function deleteSingle(id: string) {
-    if (!confirm("Remove this camper from the event?")) return;
-    setActionLoading(true);
-    await fetch("/api/admin/registrations", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: [id] }),
-    });
-    await fetchEvent();
-    setActionLoading(false);
-  }
 
   if (loading) {
     return <div className="py-16 text-center text-near-black/40">Loading...</div>;
@@ -463,11 +478,18 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                   Approve
                 </button>
                 <button
-                  onClick={() => bulkUpdateStatus("denied")}
+                  onClick={() => setBulkExit("turned_away")}
                   disabled={actionLoading}
                   className="rounded border border-near-black/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.5px] text-near-black/60 transition-colors hover:bg-near-black/5 disabled:opacity-50"
                 >
-                  Deny
+                  Turn Away
+                </button>
+                <button
+                  onClick={() => setBulkExit("dropped_out")}
+                  disabled={actionLoading}
+                  className="rounded border border-near-black/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.5px] text-near-black/60 transition-colors hover:bg-near-black/5 disabled:opacity-50"
+                >
+                  Dropped Out
                 </button>
                 <button
                   onClick={() => bulkUpdateStatus("waitlist")}
@@ -490,14 +512,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                 >
                   Mark Attended
                 </button>
-                <div className="mx-1 h-5 w-px bg-near-black/10" />
-                <button
-                  onClick={bulkDelete}
-                  disabled={actionLoading}
-                  className="rounded border border-red-200 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.5px] text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50"
-                >
-                  Remove
-                </button>
+
               </div>
             </div>
           )}
@@ -712,14 +727,10 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                                 Register
                               </button>
                             )}
-                            <button
-                              onClick={() => deleteSingle(reg.id)}
-                              disabled={actionLoading}
-                              className="rounded px-2 py-1 text-[10px] font-semibold text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                              title="Remove from event"
-                            >
-                              Remove
-                            </button>
+                            {/* Remove is gone. Somebody who is not coming has a reason, and
+                                the reason is the thing worth keeping: deleting the row threw
+                                away that they were ever here. Select them and use Turn Away
+                                or Dropped Out instead. */}
                           </div>
                         </td>
                       </tr>
@@ -740,6 +751,15 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
           </div>}
         </div>
       </div>
+
+      {bulkExit && (
+        <ExitDialog
+          name={`${selected.size} ${selected.size === 1 ? "person" : "people"}`}
+          to={bulkExit}
+          onCancel={() => setBulkExit(null)}
+          onConfirm={(reason) => bulkMoveOut(bulkExit, reason)}
+        />
+      )}
 
       {reviewing && (
         <ReviewModal
