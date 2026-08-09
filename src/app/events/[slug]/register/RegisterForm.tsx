@@ -872,13 +872,21 @@ export default function RegisterForm({
                         background check comes back adverse the registration fee is
                         refunded, but the processing fee and the check itself are already
                         spent and are not returned. Discovering that after being declined,
-                        rather than before paying, is how a refund dispute starts. */}
+                        rather than before paying, is how a refund dispute starts.
+
+                        DELIBERATELY SILENT on what happens if someone withdraws. This used
+                        to promise "if your registration is cancelled or you are unable to
+                        attend, the registration fee is refunded less those costs", which
+                        was not the policy: OO commits camp costs in advance, so a
+                        withdrawal is not refunded as a rule. Refunds happen in real
+                        circumstances (a family emergency, a check we could not accept) and
+                        those are conversations, not entitlements. Promising a refund on the
+                        payment screen and then declining one is worse than saying nothing
+                        and being generous when it is warranted. */}
                     {charge.totalCents > 0 && (
                       <p className="mt-3 text-center text-xs leading-relaxed text-near-black/50">
                         Processing fees and background check fees are
-                        non-refundable. If your registration is cancelled or you
-                        are unable to attend, the registration fee is refunded
-                        less those costs.
+                        non-refundable.
                       </p>
                     )}
                   </>

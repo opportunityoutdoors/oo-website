@@ -74,13 +74,26 @@ YOUR decision THEIR move    outstanding   matched                    decision   
 ```
 
 **Attended is not decoration.** `status = 'attended'` is already what the post-survey cron
-filters on: it sends a day after the event ends, only to people marked attended, and the
-Stats tab warns when a past event has none. That mechanism exists and works.
+filters on, and the Stats tab warns when a past event has none. That mechanism exists.
 
 What does not work is marking it. Attendance can currently only be set as a BULK action:
 select checkboxes, click a button. There is no per-person control at all. Dragging a card
-into Attended fixes that without new machinery, and it is the single most valuable thing the
-board buys, because nothing downstream fires until somebody does it.
+into Attended fixes that, and it is the most valuable thing the board buys, because nothing
+downstream fires until somebody marks it.
+
+**The survey fires on the drag, not on a date.** Today the cron sends to anyone marked
+attended whose event ended at least a day ago. That is a lower bound rather than a window, so
+marking somebody attended a week late does still reach them, just on the next nightly run.
+
+It should not work that way. Marking attendance is the moment a human confirms the camp
+happened for that person, and the survey should follow it directly rather than up to a day
+later for no visible reason. So:
+
+- Moving a card into Attended sends the post-survey immediately.
+- The nightly cron stays exactly as it is, as a backstop for a send that failed. It already
+  skips anyone with an existing row in `survey_invites`, so it cannot double-send.
+
+Belt and braces, and the belt is the one people can see working.
 
 Every person is in exactly one column, always. No column can be empty of meaning, none can
 go dead, and every one is openable whether or not anything is wrong. That alone fixes the
