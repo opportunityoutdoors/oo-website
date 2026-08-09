@@ -69,23 +69,31 @@ export default function ReadinessPanel({
 
   if (registrations.length === 0) return null;
 
-  const bits = [
-    `${cols.registered.length + cols.ready.length} registered`,
-    `${cols.ready.length} ready`,
-  ];
-  if (cols.invited.length) bits.push(`${cols.invited.length} yet to register`);
-  if (cols.waitlist.length) bits.push(`${cols.waitlist.length} on the waitlist`);
-  if (sent.length) bits.push(`${sent.length} packet${sent.length === 1 ? "" : "s"} sent`);
+  // A finished camp is a different question. "0 ready" is meaningless once it has run, and
+  // readiness counts on a past camp read as failures rather than history.
+  const bits = isPast
+    ? [
+        `${cols.attended.length} attended`,
+        ...(cols.turned_away.length ? [`${cols.turned_away.length} turned away`] : []),
+        ...(cols.dropped_out.length ? [`${cols.dropped_out.length} dropped out`] : []),
+      ]
+    : [
+        `${cols.registered.length + cols.ready.length} registered`,
+        `${cols.ready.length} ready`,
+        ...(cols.invited.length ? [`${cols.invited.length} yet to register`] : []),
+        ...(cols.waitlist.length ? [`${cols.waitlist.length} on the waitlist`] : []),
+        ...(sent.length ? [`${sent.length} packet${sent.length === 1 ? "" : "s"} sent`] : []),
+      ];
 
   return (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-near-black/10 bg-white px-4 py-2.5">
       <p className="text-sm text-near-black/70">
         {isPast && (
           <span className="mr-2 text-xs font-semibold text-near-black/40">
-            This camp has already run.
+            This camp has already run.{" "}
           </span>
         )}
-        {bits.join(" · ")}
+        {bits.join(" · ") || "Nobody recorded."}
       </p>
 
       {!isPast && (

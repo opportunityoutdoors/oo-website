@@ -7,7 +7,7 @@ import StatsTab from "./StatsTab";
 import ReviewModal from "./ReviewModal";
 import ReadinessPanel from "./ReadinessPanel";
 import CampBoard from "./CampBoard";
-import { computePipeline, type StageKey } from "@/lib/camp-pipeline";
+import { position, nameOf, POSITIONS, type Position } from "@/lib/camp-pipeline";
 import { formatEventDateRange } from "@/lib/format-event-date";
 import { describeCheck } from "@/lib/background-check/display";
 
@@ -85,8 +85,12 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<PipelineTab>("all");
 
-  // Which pipeline stage the table is narrowed to, if any. Set by clicking the panel.
-  const [stageFilter, setStageFilter] = useState<StageKey | null>(null);
+  // The table's own filter and sort. It answers a different question from the board ("sort
+  // by this, act on these six") and needs its own controls rather than borrowing the
+  // board's selection, which is why the stage-click filter it used to have is gone.
+  const [posFilter, setPosFilter] = useState<Position | "all">("all");
+  const [sortBy, setSortBy] = useState<SortKey>("name");
+  const [sortDesc, setSortDesc] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -192,6 +196,15 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
     setActionLoading(false);
   }
 
+  /** Same column twice reverses it, which is what everyone expects a header click to do. */
+  function sort(field: SortKey) {
+    if (field === sortBy) setSortDesc((d) => !d);
+    else {
+      setSortBy(field);
+      setSortDesc(false);
+    }
+  }
+
   async function deleteSingle(id: string) {
     if (!confirm("Remove this camper from the event?")) return;
     setActionLoading(true);
@@ -218,16 +231,30 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
 
   const isCamp = event.event_type === "hunt-camp" || event.event_type === "fish-camp";
 
-  // One definition of the stages, shared with the panel. Computing them separately here is
-  // how a count and the list under it end up disagreeing.
-  const pipeline = computePipeline(event.registrations);
-  const focusedStage = stageFilter
-    ? (pipeline.stages.find((s) => s.key === stageFilter) ?? null)
-    : null;
-
-  const filteredRegs = focusedStage
-    ? event.registrations.filter((r) => focusedStage.stuck.some((x) => x.id === r.id))
-    : event.registrations;
+  const filteredRegs = [...event.registrations]
+    .filter((r) => posFilter === "all" || position(r) === posFilter)
+    .sort((a, b) => {
+      const dir = sortDesc ? -1 : 1;
+      const val = (r: typeof a) => {
+        switch (sortBy) {
+          case "name":
+            return nameOf(r).toLowerCase();
+          case "role":
+            return (r.role || "").toLowerCase();
+          case "status":
+            return position(r);
+          case "paid":
+            return r.payment_status === "paid" ? "1" : "0";
+          case "waiver":
+            return r.waiver_signed ? "1" : "0";
+          case "check":
+            return r.contacts?.background_check_status || "";
+          default:
+            return "";
+        }
+      };
+      return val(a).localeCompare(val(b)) * dir;
+    });
 
   const filteredIds = filteredRegs.map((r) => r.id);
   const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selected.has(id));
@@ -396,9 +423,6 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                 key={tab}
                 onClick={() => {
                   setActiveTab(tab);
-                  // Leaving the table clears its narrowing, so coming back does not show a
-                  // filtered list with nothing on screen explaining why.
-                  if (tab !== "all") setStageFilter(null);
                   setSelected(new Set());
                 }}
                 className={`flex-1 rounded px-3 py-2 text-xs font-bold uppercase tracking-[0.5px] transition-colors ${
@@ -480,22 +504,30 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
           {/* Screening summary. Sits above the table because "is this camp ready" is the
               question someone opens this page to answer in the week before an event, and it
               should not require reading every row to find out. */}
-          {/* What the table is narrowed to. Without this a filtered list looks like missing
-              data, and the only clue would be a highlighted row further up the page. */}
-          {focusedStage && activeTab === "all" && (
-            <div className="mb-3 flex items-center justify-between gap-3 rounded border border-dark-green/25 bg-dark-green/5 px-4 py-2">
-              <span className="text-xs text-near-black/70">
-                Showing {focusedStage.stuck.length}{" "}
-                {focusedStage.stuck.length === 1 ? "person" : "people"} at{" "}
-                <span className="font-semibold">{focusedStage.label}</span>
-                {focusedStage.note ? `: ${focusedStage.note}` : ""}
-              </span>
-              <button
-                onClick={() => { setStageFilter(null); setSelected(new Set()); }}
-                className="shrink-0 text-xs font-semibold text-dark-green hover:underline"
-              >
-                show everyone
-              </button>
+          {/* The table's own filter, mirroring the board's columns so the two describe the
+              same world. Counts included, because a filter that might return nothing should
+              say so before you pick it. */}
+          {activeTab === "all" && (
+            <div className="mb-3 flex flex-wrap items-center gap-1.5">
+              <FilterChip
+                label="Everyone"
+                count={event.registrations.length}
+                active={posFilter === "all"}
+                onClick={() => { setPosFilter("all"); setSelected(new Set()); }}
+              />
+              {POSITIONS.map((col) => {
+                const n = event.registrations.filter((r) => position(r) === col.key).length;
+                if (n === 0) return null;
+                return (
+                  <FilterChip
+                    key={col.key}
+                    label={col.label}
+                    count={n}
+                    active={posFilter === col.key}
+                    onClick={() => { setPosFilter(col.key); setSelected(new Set()); }}
+                  />
+                );
+              })}
             </div>
           )}
 
@@ -513,14 +545,14 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                         className="h-3.5 w-3.5 rounded border-near-black/30 accent-dark-green"
                       />
                     </th>
-                    <th className="px-4 py-3 font-semibold">Name</th>
+                    <SortHeader label="Name" field="name" sortBy={sortBy} sortDesc={sortDesc} onSort={sort} />
                     <th className="px-4 py-3 font-semibold">Email</th>
                     <th className="px-4 py-3 font-semibold">Phone</th>
-                    <th className="px-4 py-3 font-semibold">Role</th>
+                    <SortHeader label="Role" field="role" sortBy={sortBy} sortDesc={sortDesc} onSort={sort} />
                     {isCamp && <th className="px-4 py-3 font-semibold">Meeting</th>}
-                    <th className="px-4 py-3 font-semibold">Status</th>
-                    <th className="px-4 py-3 font-semibold">Waiver</th>
-                    <th className="px-4 py-3 font-semibold">Check</th>
+                    <SortHeader label="Status" field="status" sortBy={sortBy} sortDesc={sortDesc} onSort={sort} />
+                    <SortHeader label="Waiver" field="waiver" sortBy={sortBy} sortDesc={sortDesc} onSort={sort} />
+                    <SortHeader label="Check" field="check" sortBy={sortBy} sortDesc={sortDesc} onSort={sort} />
                     <th className="w-24 px-4 py-3 font-semibold">Actions</th>
                   </tr>
                 </thead>
@@ -763,5 +795,61 @@ function Figure({
         {value}
       </dd>
     </div>
+  );
+}
+
+type SortKey = "name" | "role" | "status" | "paid" | "waiver" | "check";
+
+function SortHeader({
+  label,
+  field,
+  sortBy,
+  sortDesc,
+  onSort,
+}: {
+  label: string;
+  field: SortKey;
+  sortBy: SortKey;
+  sortDesc: boolean;
+  onSort: (f: SortKey) => void;
+}) {
+  const active = sortBy === field;
+  return (
+    <th className="px-4 py-3 font-semibold">
+      <button
+        onClick={() => onSort(field)}
+        className={`uppercase tracking-[1px] transition-colors hover:text-near-black ${
+          active ? "text-near-black" : ""
+        }`}
+      >
+        {label}
+        <span className={`ml-1 ${active ? "" : "opacity-0"}`}>{sortDesc ? "\u2193" : "\u2191"}</span>
+      </button>
+    </th>
+  );
+}
+
+function FilterChip({
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-full px-3 py-1 text-xs transition-colors ${
+        active
+          ? "bg-dark-green text-white"
+          : "bg-near-black/5 text-near-black/60 hover:bg-near-black/10"
+      }`}
+    >
+      {label} <span className={active ? "text-white/60" : "text-near-black/35"}>{count}</span>
+    </button>
   );
 }
