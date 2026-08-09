@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/server";
+import { position, POSITIONS, EXIT_REASONS } from "@/lib/camp-pipeline";
 
 export const metadata = { title: "Contact Detail" };
 
@@ -34,6 +35,7 @@ export default async function ContactDetailPage({
     { data: mentorApps },
     { data: registrations },
     { data: sponsorships },
+    { data: reviews },
   ] = await Promise.all([
     supabase
       .from("mentee_applications")
@@ -55,7 +57,24 @@ export default async function ContactDetailPage({
       .select("*")
       .eq("contact_id", id)
       .order("created_at", { ascending: false }),
+    // Every panel decision about this person. Append-only, and the screening policy requires
+    // it exist; being able to read it without knowing which event to look under is what
+    // makes it usable.
+    supabase
+      .from("background_check_reviews")
+      .select("*, admin_users(email)")
+      .eq("contact_id", id)
+      .order("decided_at", { ascending: false }),
   ]);
+
+  // Board moves for this person's registrations, including backwards ones.
+  const { data: moves } = registrations?.length
+    ? await supabase
+        .from("registration_moves")
+        .select("*, admin_users(email)")
+        .in("registration_id", registrations.map((r) => r.id))
+        .order("moved_at", { ascending: false })
+    : { data: [] };
 
   const name = [contact.first_name, contact.last_name].filter(Boolean).join(" ") || "Unknown";
 
@@ -226,6 +245,54 @@ export default async function ContactDetailPage({
           )}
 
           {/* Event/Camp History */}
+          {/* Screening. Above the event history because it is about the person rather than
+              any one camp, which is the distinction the whole data model turns on. */}
+          {(contact.background_check_status !== "none" || (reviews?.length ?? 0) > 0) && (
+            <div className="rounded-lg border border-near-black/10 bg-white">
+              <div className="flex items-baseline justify-between gap-3 border-b border-near-black/10 px-5 py-4">
+                <h2 className="text-sm font-bold uppercase tracking-[1px] text-near-black">
+                  Screening
+                </h2>
+                <span className="text-xs text-near-black/50">
+                  {contact.background_check_status}
+                  {contact.background_check_expires_at &&
+                    contact.background_check_status === "clear" &&
+                    ` until ${new Date(contact.background_check_expires_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}`}
+                </span>
+              </div>
+
+              {reviews && reviews.length > 0 ? (
+                reviews.map((r) => {
+                  const by = Array.isArray(r.admin_users) ? r.admin_users[0] : r.admin_users;
+                  return (
+                    <div key={r.id} className="border-b border-near-black/5 px-5 py-3 last:border-0">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="text-sm font-medium text-near-black">
+                          {String(r.decision).replace(/_/g, " ")}
+                          {r.status_before && r.status_after
+                            ? ` (${r.status_before} to ${r.status_after})`
+                            : ""}
+                        </span>
+                        <span className="shrink-0 text-xs text-near-black/40">
+                          {new Date(r.decided_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-near-black/50">
+                        {by?.email ? `recorded by ${by.email} · ` : ""}present: {r.panel_present}
+                      </p>
+                      {/* The decision, never the report. Same rule as everywhere else. */}
+                      <p className="mt-1 text-xs leading-relaxed text-near-black/70">{r.reason}</p>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="px-5 py-4 text-xs text-near-black/40">
+                  No panel decisions recorded. A check that came back clean never needs one.
+                </p>
+              )}
+            </div>
+          )}
+
           {registrations && registrations.length > 0 && (
             <div className="rounded-lg border border-near-black/10 bg-white">
               <div className="border-b border-near-black/10 px-5 py-4">
@@ -233,31 +300,76 @@ export default async function ContactDetailPage({
                   Event History ({registrations.length})
                 </h2>
               </div>
-              {registrations.map((reg) => (
-                <div key={reg.id} className="flex items-center justify-between border-b border-near-black/5 px-5 py-4 last:border-0">
-                  <div>
-                    <p className="text-sm font-medium text-near-black">
-                      {(reg.events as { title: string } | null)?.title || "Unknown Event"}
-                    </p>
-                    <p className="text-xs text-near-black/50">
-                      {reg.role} · {new Date(reg.created_at).toLocaleDateString()}
-                    </p>
+              {registrations.map((reg) => {
+                const ev = reg.events as { title: string; date_start: string | null } | null;
+
+                // The same position the board would put them in, computed from the same
+                // function, so the two views cannot describe this person differently.
+                const pos = position({
+                  ...reg,
+                  contacts: {
+                    first_name: contact.first_name,
+                    last_name: contact.last_name,
+                    email: contact.email,
+                    date_of_birth: contact.date_of_birth,
+                    background_check_status: contact.background_check_status,
+                    background_check_expires_at: contact.background_check_expires_at,
+                  },
+                });
+                const label = POSITIONS.find((p) => p.key === pos)?.label ?? pos;
+                const exit = EXIT_REASONS.find((x) => x.value === reg.exit_reason);
+                const theirMoves = (moves ?? []).filter((m) => m.registration_id === reg.id);
+
+                return (
+                  <div key={reg.id} className="border-b border-near-black/5 px-5 py-4 last:border-0">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-near-black">
+                          {ev?.title || "Unknown Event"}
+                        </p>
+                        <p className="text-xs text-near-black/50">
+                          {reg.role} · joined {new Date(reg.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <span
+                        className={`shrink-0 rounded px-2 py-0.5 text-xs font-medium ${
+                          pos === "attended" || pos === "ready"
+                            ? "bg-dark-green/10 text-dark-green"
+                            : pos === "turned_away" || pos === "dropped_out"
+                              ? "bg-[#b00]/10 text-[#b00]"
+                              : "bg-near-black/5 text-near-black/50"
+                        }`}
+                      >
+                        {label}
+                      </span>
+                    </div>
+
+                    {exit && (
+                      <p className="mt-1 text-xs text-near-black/50">{exit.label}</p>
+                    )}
+
+                    {/* How they got there, backwards moves included. This is the record that
+                        makes a reversible board safe rather than merely convenient. */}
+                    {theirMoves.length > 0 && (
+                      <ol className="mt-2 space-y-0.5 border-l border-near-black/10 pl-3">
+                        {theirMoves.map((m) => {
+                          const by = Array.isArray(m.admin_users) ? m.admin_users[0] : m.admin_users;
+                          return (
+                            <li key={m.id} className="text-[11px] text-near-black/45">
+                              {m.from_status ? `${m.from_status} → ` : ""}
+                              <span className="text-near-black/70">{m.to_status}</span>
+                              {m.exit_reason ? ` (${m.exit_reason.replace(/_/g, " ")})` : ""}
+                              {" · "}
+                              {new Date(m.moved_at).toLocaleDateString()}
+                              {by?.email ? ` · ${by.email}` : ""}
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    )}
                   </div>
-                  <span
-                    className={`rounded px-2 py-0.5 text-xs font-medium ${
-                      reg.status === "registered" || reg.status === "attended"
-                        ? "bg-dark-green/10 text-dark-green"
-                        : reg.status === "approved"
-                          ? "bg-gold/15 text-gold"
-                          : reg.status === "denied"
-                            ? "bg-red-100 text-red-600"
-                            : "bg-near-black/5 text-near-black/50"
-                    }`}
-                  >
-                    {reg.status}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
