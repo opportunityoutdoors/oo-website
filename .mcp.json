@@ -20,6 +20,14 @@
     "cannot move money regardless of what any tool asks for. Never put sk_live_ in this slot.",
     "Create one at https://dashboard.stripe.com/test/apikeys under Restricted keys.",
     "",
+    "On the sanity server: added 2026-08-09. It was the last account-touching server still",
+    "running at USER scope, which means every project on this machine shared it. Sanity holds",
+    "this site's content, so a misdirected connector would write pages into another org's",
+    "dataset. Pinned to projectId u7umrp54 / dataset production so it cannot reach anything",
+    "else. The user-scope 'Sanity' entry in ~/.claude.json is now redundant here (project",
+    "scope wins) but still applies to every OTHER repo, so it should be removed once those",
+    "have their own .mcp.json.",
+    "",
     "On the volunteerbadge server: it is an HTTP transport, not stdio, so unlike the others",
     "it CANNOT shell out to read ./.env.local. Claude Code expands ${VAR} from the process",
     "environment, so VOLUNTEERBADGE_MCP_KEY must be exported in the shell that launches",
@@ -32,6 +40,14 @@
     "check by hand, which is exactly the situation that prompted adding it."
   ],
   "mcpServers": {
+    "sanity": {
+      "type": "stdio",
+      "command": "sh",
+      "args": [
+        "-c",
+        "if [ -f ./.env.local ]; then export SANITY_API_TOKEN=\"$(grep -E '^SANITY_API_TOKEN=' ./.env.local | head -1 | cut -d= -f2- | sed -e 's/^\"//' -e 's/\"$//')\"; fi; export SANITY_PROJECT_ID=u7umrp54; export SANITY_DATASET=production; exec npx -y @sanity/mcp-server@latest"
+      ]
+    },
     "supabase": {
       "type": "stdio",
       "command": "sh",
