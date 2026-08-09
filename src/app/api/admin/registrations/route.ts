@@ -148,7 +148,12 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   // Admin surface: reject anyone without an admin_users row. Middleware only matches
   // /admin/:path*, so it never protected these API routes.
-  const { member, error: authError } = await apiRequireMember();
+  //
+  // NOTE: this destroys the registration and, by cascade, its entire timeline. With the board
+  // offering proper exits (turned away, dropped out, each with a reason), deleting is now
+  // almost always the wrong tool: it removes the record of somebody having been here at all.
+  // See task 40.
+  const { error: authError } = await apiRequireMember();
   if (authError) return authError;
 
   const supabase = createServiceClient();
