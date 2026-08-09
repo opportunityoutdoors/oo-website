@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { computePipeline, isMatched, isCleared, type PipelineReg } from "./camp-pipeline";
+import {
+  computePipeline,
+  isMatched,
+  isCleared,
+  position,
+  byPosition,
+  requirements,
+  EXIT_REASONS,
+  type PipelineReg,
+} from "./camp-pipeline";
 
 // The camp funnel.
 //
@@ -180,5 +189,145 @@ describe("isCleared", () => {
         })
       )
     ).toBe(false);
+  });
+});
+
+describe("position", () => {
+  it("puts everyone in exactly one column, always", () => {
+    const people = [
+      reg({ status: "waitlist" }),
+      reg({ status: "meeting_rsvp" }),
+      reg({ status: "approved" }),
+      reg({ status: "registered", payment_status: null }),
+      reg(),
+      reg({ status: "attended" }),
+      reg({ status: "denied" }),
+      reg({ status: "withdrawn", exit_reason: "never_paid" }),
+    ];
+    const grouped = byPosition(people);
+    const total = Object.values(grouped).reduce((n, list) => n + list.length, 0);
+    expect(total).toBe(people.length);
+  });
+
+  it("treats the zoom RSVP as still being on the waitlist", () => {
+    expect(position(reg({ status: "waitlist" }))).toBe("waitlist");
+    expect(position(reg({ status: "meeting_rsvp" }))).toBe("waitlist");
+  });
+
+  it("separates someone still owing requirements from someone ready", () => {
+    expect(position(reg())).toBe("ready");
+    expect(position(reg({ payment_status: null }))).toBe("registered");
+    expect(position(reg({ waiver_signed: false }))).toBe("registered");
+    expect(position(reg({ mentor_id: null }))).toBe("registered");
+    expect(
+      position(
+        reg({
+          contacts: contacts({ background_check_status: "flagged", background_check_expires_at: null }),
+        })
+      )
+    ).toBe("registered");
+  });
+
+  // Ready must mean exactly "can receive a welcome packet", or the board promises something
+  // the send will then refuse.
+  it("agrees with the welcome packet gate about who is ready", () => {
+    const people = [
+      reg(),
+      reg({ payment_status: null }),
+      reg({ contacts: contacts({ background_check_status: "none", background_check_expires_at: null }) }),
+      reg({ mentor_id: null }),
+    ];
+    const ready = people.filter((r) => position(r) === "ready").map((r) => r.id);
+    const through = computePipeline(people).through.map((r) => r.id);
+    expect(ready.sort()).toEqual(through.sort());
+  });
+
+  // Leaving overrides progress. Someone who withdrew is not also "registered but unpaid".
+  it("puts an exit ahead of anything about their progress", () => {
+    expect(position(reg({ status: "denied", payment_status: null }))).toBe("turned_away");
+    expect(position(reg({ status: "withdrawn", exit_reason: "withdrew_after_paying" }))).toBe(
+      "dropped_out"
+    );
+  });
+
+  it("sorts an exit by its reason, not by the status alone", () => {
+    expect(position(reg({ status: "withdrawn", exit_reason: "removed_for_conduct" }))).toBe(
+      "turned_away"
+    );
+    expect(position(reg({ status: "withdrawn", exit_reason: "stopped_responding" }))).toBe(
+      "dropped_out"
+    );
+  });
+
+  // A missing or unrecognised reason must not throw or vanish a card off the board.
+  it("falls back to dropped out when the reason is missing or unknown", () => {
+    expect(position(reg({ status: "withdrawn", exit_reason: null }))).toBe("dropped_out");
+    expect(position(reg({ status: "withdrawn", exit_reason: "something_new" }))).toBe("dropped_out");
+  });
+
+  it("keeps attended out of the exit columns", () => {
+    expect(position(reg({ status: "attended" }))).toBe("attended");
+  });
+
+  it("offers every exit reason a column to live in", () => {
+    for (const r of EXIT_REASONS) {
+      expect(["turned_away", "dropped_out"], r.value).toContain(r.position);
+    }
+  });
+});
+
+describe("requirements", () => {
+  it("does not ask a mentor for a mentor", () => {
+    // Three for a mentor (waiver, payment, check), four for a mentee (plus a match).
+    expect(requirements(reg({ role: "Mentor" }))).toHaveLength(3);
+    expect(requirements(reg({ role: "Mentee" }))).toHaveLength(4);
+  });
+
+  it("marks each one met or not", () => {
+    const r = requirements(reg({ payment_status: null, waiver_signed: true }));
+    expect(r.filter((x) => !x.met)).toHaveLength(1);
+    expect(r.filter((x) => x.met)).toHaveLength(3);
+  });
+
+  // The card renders these verbatim. It used to prefix "no", which produced "no paid".
+  it("words both states so they can be shown as written", () => {
+    const unmet = requirements(reg({ payment_status: null, mentor_id: null }))
+      .filter((x) => !x.met)
+      .map((x) => x.label);
+
+    expect(unmet).toContain("unpaid");
+    expect(unmet).toContain("no mentor");
+    expect(unmet).not.toContain("paid");
+
+    const met = requirements(reg()).filter((x) => x.met).map((x) => x.label);
+    expect(met).toContain("paid");
+    expect(met).toContain("cleared");
+    for (const label of [...unmet, ...met]) {
+      expect(label, `"${label}" reads badly`).not.toMatch(/^no (paid|cleared|matched)$/);
+    }
+  });
+});
+
+describe("position and a screening decline", () => {
+  // The decline lives on the contact, because it is a decision about a person that outlives
+  // any one camp. Without checking it, a declined person sat in Registered showing "no
+  // check", which reads as waiting on paperwork rather than having been turned away.
+  it("turns away someone declined by screening, whatever their registration says", () => {
+    const declined = reg({
+      status: "registered",
+      contacts: contacts({
+        background_check_status: "declined",
+        background_check_expires_at: null,
+      }),
+    });
+    expect(position(declined)).toBe("turned_away");
+  });
+
+  it("still lets a declined person be marked attended if they somehow were", () => {
+    const attended = reg({
+      status: "attended",
+      contacts: contacts({ background_check_status: "declined", background_check_expires_at: null }),
+    });
+    expect(position(attended)).toBe("attended");
   });
 });

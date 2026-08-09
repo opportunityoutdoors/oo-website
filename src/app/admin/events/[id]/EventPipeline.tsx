@@ -6,6 +6,7 @@ import MatchingTab from "./MatchingTab";
 import StatsTab from "./StatsTab";
 import ReviewModal from "./ReviewModal";
 import ReadinessPanel from "./ReadinessPanel";
+import CampBoard from "./CampBoard";
 import { computePipeline, type StageKey } from "@/lib/camp-pipeline";
 import { formatEventDateRange } from "@/lib/format-event-date";
 import { describeCheck } from "@/lib/background-check/display";
@@ -24,6 +25,7 @@ interface Registration {
   welcome_packet_sent: boolean;
   mentor_id: string | null;
   guardian_registration_id: string | null;
+  exit_reason: string | null;
   contacts: {
     id: string;
     email: string;
@@ -386,20 +388,28 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
               page exists to answer and it should not require picking a tab first. Camps
               only: community events have no matching, screening, or welcome packet. */}
           {isCamp && (
+            <>
             <ReadinessPanel
               eventId={eventId}
               eventDate={event.date_start}
               registrations={event.registrations}
-              activeStage={stageFilter}
-              onSelectStage={(stage) => {
-                setStageFilter(stage);
-                // Narrowing the table only makes sense on the table, so a stage click also
-                // leaves Matching or Stats rather than silently doing nothing.
-                if (stage) setActiveTab("all");
-                setSelected(new Set());
-              }}
               onChanged={fetchEvent}
             />
+
+            {/* The board is the navigation now. Columns are where people ARE, so every one
+                is openable whether or not anything is wrong, which is the thing the stage
+                funnel could not do. */}
+            <CampBoard
+              registrations={event.registrations}
+              isPast={Boolean(
+                event.date_start && new Date(event.date_start) < new Date()
+              )}
+              onMoved={fetchEvent}
+              onReview={(contactId, name, status) =>
+                setReviewing({ contactId, name, status })
+              }
+            />
+            </>
           )}
 
           {/* Tabs. Community and workshop events skip the camp pipeline stages but still

@@ -13,6 +13,7 @@ import { evaluateEligibility, mayParticipate } from "./background-check/eligibil
 export type PipelineReg = {
   id: string;
   status: string;
+  exit_reason?: string | null;
   role: string | null;
   payment_status: string | null;
   waiver_signed: boolean;
@@ -21,6 +22,7 @@ export type PipelineReg = {
   mentor_id?: string | null;
   guardian_registration_id?: string | null;
   contacts: {
+    id?: string;
     first_name: string | null;
     last_name: string | null;
     email: string;
@@ -189,4 +191,130 @@ export function computePipeline(registrations: PipelineReg[]): Pipeline {
   const notThrough = active.filter((r) => !matched.includes(r));
 
   return { stages, active, through: matched, sendable, sent, notThrough };
+}
+
+// ── Positions ────────────────────────────────────────────────────────────────
+//
+// Where a person IS, as opposed to what they have satisfied. Exactly one at a time, changed
+// by a human decision rather than by a requirement resolving on its own.
+//
+// The stages above conflated these two ideas, which is what produced a pipeline you could
+// only walk one way: "payment" is not a place anyone stands. Requirements are still computed
+// by computePipeline(); this answers the different question of which column a card is in.
+
+export type Position =
+  | "waitlist"
+  | "invited"
+  | "registered"
+  | "ready"
+  | "attended"
+  | "turned_away"
+  | "dropped_out";
+
+export const POSITIONS: { key: Position; label: string; blurb: string }[] = [
+  { key: "waitlist", label: "Waitlist", blurb: "awaiting your decision" },
+  { key: "invited", label: "Invited", blurb: "awaiting their registration" },
+  { key: "registered", label: "Registered", blurb: "requirements outstanding" },
+  { key: "ready", label: "Ready", blurb: "cleared and matched" },
+  { key: "attended", label: "Attended", blurb: "they came" },
+  { key: "turned_away", label: "Turned away", blurb: "our decision" },
+  { key: "dropped_out", label: "Dropped out", blurb: "their choice or silence" },
+];
+
+/** Why someone left. Mirrors the check constraint in migration 031. */
+export const EXIT_REASONS: {
+  value: string;
+  label: string;
+  position: Extract<Position, "turned_away" | "dropped_out">;
+  /** Shown in the UI when the reason has a consequence beyond the record. */
+  consequence?: string;
+}[] = [
+  { value: "denied_at_review", label: "Denied at review", position: "turned_away" },
+  {
+    value: "screening_declined",
+    label: "Declined after a background check",
+    position: "turned_away",
+    consequence: "Adverse action and refund are handled by the screening flow, not here.",
+  },
+  { value: "removed_for_conduct", label: "Removed for conduct", position: "turned_away" },
+
+  { value: "never_registered", label: "Never registered", position: "dropped_out" },
+  { value: "never_paid", label: "Never paid", position: "dropped_out" },
+  { value: "stopped_responding", label: "Stopped responding", position: "dropped_out" },
+  { value: "cannot_make_it", label: "Told us they cannot make it", position: "dropped_out" },
+  {
+    value: "withdrew_after_paying",
+    label: "Withdrew after paying",
+    position: "dropped_out",
+    consequence: "Not refunded as a rule. Camp costs are committed in advance.",
+  },
+];
+
+/**
+ * Which column a registration belongs in.
+ *
+ * Order matters. Exits are checked first because someone who has left the pipeline is not
+ * also "registered but unpaid": leaving overrides everything about their progress.
+ */
+export function position(r: PipelineReg): Position {
+  if (r.status === "attended") return "attended";
+
+  // A screening decline is recorded on the CONTACT, not the registration, because it is a
+  // decision about a person that outlives any one camp. Without this, a declined person sits
+  // in Registered showing "no check", which reads as somebody waiting on paperwork rather
+  // than somebody OO has turned away and refunded.
+  if (r.contacts?.background_check_status === "declined") return "turned_away";
+
+  if (r.status === "denied") return "turned_away";
+  if (r.status === "withdrawn") {
+    // The reason decides the column, because a withdrawal and a decline are both recorded
+    // as an exit but belong on opposite sides of the board.
+    const known = EXIT_REASONS.find((x) => x.value === r.exit_reason);
+    return known?.position ?? "dropped_out";
+  }
+
+  if (r.status === "waitlist" || r.status === "meeting_rsvp") return "waitlist";
+  if (r.status === "approved") return "invited";
+
+  // Registered. Ready means every requirement is met, which is the same rule the welcome
+  // packet gate uses, so a card in Ready is exactly a card that can receive one.
+  if (r.status === "registered") {
+    const done =
+      r.waiver_signed &&
+      r.payment_status === "paid" &&
+      isCleared(r) &&
+      isMatched(r);
+    return done ? "ready" : "registered";
+  }
+
+  return "registered";
+}
+
+/** Groups registrations into board columns, preserving input order within each. */
+export function byPosition(registrations: PipelineReg[]): Record<Position, PipelineReg[]> {
+  const out = Object.fromEntries(
+    POSITIONS.map((p) => [p.key, [] as PipelineReg[]])
+  ) as Record<Position, PipelineReg[]>;
+
+  for (const r of registrations) out[position(r)].push(r);
+  return out;
+}
+
+/**
+ * What a person has and still owes, for the badges on their card.
+ *
+ * Each requirement carries its own wording for both states rather than the card prefixing
+ * "no", which produced "no paid".
+ */
+export function requirements(r: PipelineReg): { label: string; met: boolean }[] {
+  const pair = (met: boolean, yes: string, no: string) => ({ label: met ? yes : no, met });
+
+  const reqs = [
+    pair(Boolean(r.waiver_signed), "waiver", "no waiver"),
+    pair(r.payment_status === "paid", "paid", "unpaid"),
+    pair(isCleared(r), "cleared", "no check"),
+  ];
+  // A mentor needs no mentor, so showing them an unmet "mentor" badge would be a lie.
+  if (r.role === "Mentee") reqs.push(pair(isMatched(r), "matched", "no mentor"));
+  return reqs;
 }

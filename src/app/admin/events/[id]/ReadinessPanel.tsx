@@ -1,46 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import {
-  computePipeline,
-  nameOf,
-  type PipelineReg,
-  type StageKey,
-} from "@/lib/camp-pipeline";
+import { computePipeline, byPosition, type PipelineReg } from "@/lib/camp-pipeline";
 
-// The camp pipeline, and the page's navigation.
+// A one-line readout, plus the welcome packet send.
 //
-// Clicking a stage filters the registrant table below to the people stuck at it. That is the
-// point: the panel says how many, the table says who, and getting from one to the other
-// should not mean picking a tab that happens to correlate. It also makes the old status tabs
-// redundant, because waitlist, approved and registered are all stages here.
+// This used to be a nine-stage funnel that was also the page's navigation. It was adequate
+// at telling you the state of the camp and bad at getting you to the people in it, because
+// stages went dead once nobody was stuck at them and clicking one showed who was stuck
+// BEFORE it rather than who was in it. The board does the navigating now.
 //
-// Read as a funnel: each stage's denominator is the stage before it, so "5 of 7 cleared"
-// means five of the seven who paid.
+// What survives is the summary, which was the half that worked, and the send, which needs to
+// live next to a count of who it will reach.
 
 export default function ReadinessPanel({
   eventId,
   eventDate,
   registrations,
-  activeStage,
-  onSelectStage,
   onChanged,
 }: {
   eventId: string;
   eventDate: string | null;
   registrations: PipelineReg[];
-  activeStage: StageKey | null;
-  onSelectStage: (stage: StageKey | null) => void;
   onChanged: () => void | Promise<void>;
 }) {
   const [sending, setSending] = useState(false);
 
-  // A camp that has already run is history, not a to-do list. Turkey Camp shows everyone
-  // stuck at the background check stage because it happened before screening existed;
-  // presenting that as outstanding work would be alarming and wrong.
   const isPast = Boolean(eventDate && new Date(eventDate) < new Date());
-
-  const { stages, active, sendable, sent, notThrough } = computePipeline(registrations);
+  const { sendable, sent } = computePipeline(registrations);
+  const cols = byPosition(registrations);
 
   async function sendPackets() {
     if (
@@ -79,115 +67,42 @@ export default function ReadinessPanel({
     }
   }
 
-  if (active.length === 0) {
-    return (
-      <div className="mb-6 rounded-lg border border-near-black/10 bg-white px-5 py-4 text-sm text-near-black/50">
-        Nobody has signed up yet. The pipeline appears as people join the waitlist.
-      </div>
-    );
-  }
+  if (registrations.length === 0) return null;
 
-  const everyoneThrough = notThrough.length === 0;
+  const bits = [
+    `${cols.registered.length + cols.ready.length} registered`,
+    `${cols.ready.length} ready`,
+  ];
+  if (cols.invited.length) bits.push(`${cols.invited.length} yet to register`);
+  if (cols.waitlist.length) bits.push(`${cols.waitlist.length} on the waitlist`);
+  if (sent.length) bits.push(`${sent.length} packet${sent.length === 1 ? "" : "s"} sent`);
 
   return (
-    <div className="mb-6 overflow-hidden rounded-lg border border-near-black/10 bg-white">
-      <div className="flex items-baseline justify-between border-b border-near-black/10 px-5 py-3">
-        <h2 className="text-sm font-semibold text-near-black">Camp pipeline</h2>
-        <span
-          className={`text-xs font-semibold ${
-            isPast
-              ? "text-near-black/40"
-              : everyoneThrough
-                ? "text-dark-green"
-                : "text-[#8B6914]"
-          }`}
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-near-black/10 bg-white px-4 py-2.5">
+      <p className="text-sm text-near-black/70">
+        {isPast && (
+          <span className="mr-2 text-xs font-semibold text-near-black/40">
+            This camp has already run.
+          </span>
+        )}
+        {bits.join(" · ")}
+      </p>
+
+      {!isPast && (
+        <button
+          onClick={sendPackets}
+          disabled={sending || sendable.length === 0}
+          title={
+            sendable.length === 0
+              ? "Nobody has cleared every requirement yet"
+              : "Sends to everyone in Ready who has not had one"
+          }
+          className="shrink-0 rounded bg-dark-green px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-dark-green/90 disabled:opacity-40"
         >
-          {isPast
-            ? "This camp has already run"
-            : everyoneThrough
-              ? "Ready to run"
-              : `${notThrough.length} of ${active.length} not through yet`}
-        </span>
-      </div>
-
-      <ol>
-        {stages.map((s, i) => {
-          const isPacket = s.key === "packet";
-          const selected = activeStage === s.key;
-          const clickable = s.stuck.length > 0;
-
-          return (
-            <li
-              key={s.key}
-              className={`flex items-start justify-between gap-3 border-b border-near-black/5 last:border-0 ${
-                isPacket ? "bg-cream/40" : ""
-              } ${selected ? "bg-dark-green/5" : ""}`}
-            >
-              <button
-                type="button"
-                disabled={!clickable}
-                onClick={() => onSelectStage(selected ? null : s.key)}
-                className={`min-w-0 flex-1 px-5 py-2.5 text-left ${
-                  clickable ? "cursor-pointer hover:bg-near-black/[0.03]" : "cursor-default"
-                }`}
-                title={clickable ? `Show the ${s.stuck.length} waiting here` : undefined}
-              >
-                <span className="mr-2 text-[10px] font-bold text-near-black/25">{i + 1}</span>
-                <span
-                  className={`text-sm ${
-                    selected ? "font-semibold text-dark-green" : "text-near-black"
-                  }`}
-                >
-                  {s.label}
-                </span>
-                {s.stuck.length > 0 && !isPast && (
-                  <p className="mt-0.5 truncate pl-5 text-xs text-near-black/50">
-                    {s.note ? `${s.note}: ` : ""}
-                    {s.stuck.slice(0, 4).map(nameOf).join(", ")}
-                    {s.stuck.length > 4 ? ` and ${s.stuck.length - 4} more` : ""}
-                  </p>
-                )}
-              </button>
-
-              <div className="flex shrink-0 items-center gap-3 py-2.5 pr-5">
-                <span
-                  className={`text-xs font-semibold ${
-                    isPast
-                      ? "text-near-black/40"
-                      : s.stuck.length === 0
-                        ? "text-dark-green"
-                        : "text-[#8B6914]"
-                  }`}
-                >
-                  {s.of === 0 ? "—" : `${s.done} of ${s.of}`}
-                </span>
-
-                {isPacket && (
-                  <button
-                    onClick={sendPackets}
-                    disabled={sending || sendable.length === 0}
-                    title={
-                      sendable.length === 0
-                        ? "Nobody has cleared every stage yet"
-                        : "Sends to everyone who has cleared every stage above"
-                    }
-                    className="rounded bg-dark-green px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-dark-green/90 disabled:opacity-40"
-                  >
-                    {sending
-                      ? "Sending..."
-                      : `Send${sendable.length > 0 ? ` (${sendable.length})` : ""}`}
-                  </button>
-                )}
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-
-      {sent.length > 0 && (
-        <p className="border-t border-near-black/5 px-5 py-2 text-xs text-near-black/50">
-          {sent.length} welcome packet{sent.length === 1 ? "" : "s"} already sent.
-        </p>
+          {sending
+            ? "Sending..."
+            : `Send welcome packets${sendable.length > 0 ? ` (${sendable.length})` : ""}`}
+        </button>
       )}
     </div>
   );
