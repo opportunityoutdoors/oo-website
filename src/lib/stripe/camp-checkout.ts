@@ -27,7 +27,7 @@ export async function createCampCheckoutSession(opts: {
   const { data: reg } = await supabase
     .from("registrations")
     .select(
-      "id, role, token, payment_status, event_id, contacts(email, first_name, last_name, tshirt_size, date_of_birth, background_check_status, background_check_expires_at), events(id, title, slug, registration_fee)"
+      "id, role, token, payment_status, event_id, donation_cents, contacts(email, first_name, last_name, tshirt_size, date_of_birth, background_check_status, background_check_expires_at), events(id, title, slug, registration_fee)"
     )
     .eq("id", opts.registrationId)
     .single();
@@ -62,9 +62,9 @@ export async function createCampCheckoutSession(opts: {
   const charge = computeCampCharge({
     role: reg.role,
     registrationFee: event.registration_fee,
-    // For mentors the shirt is opt-in, and having picked a size IS the opt-in. The form
-    // offers "No thanks" as the empty value for exactly this reason.
-    wantsTshirt: Boolean(contact?.tshirt_size),
+    // Read from the registration, not from the request. The resume link for an abandoned
+    // payment has to charge what the first attempt charged.
+    donationCents: reg.donation_cents ?? 0,
     minorName,
     backgroundCheckCents: eligibility.feeCents,
   });

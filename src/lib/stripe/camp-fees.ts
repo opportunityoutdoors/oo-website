@@ -7,11 +7,21 @@
 // Amounts here are in CENTS, matching lib/stripe/giving.ts.
 
 /**
- * Optional t-shirt for mentors. Mentors are never charged to attend: they are volunteers
- * giving up a weekend, and charging them would be perverse. The shirt is the one thing
- * they can opt into.
+ * What OO suggests a mentor gives toward the cost of running a camp.
+ *
+ * A SUGGESTION, never a charge. This replaced a $25 t-shirt that mentors could opt into,
+ * which was odd on two counts. It billed a volunteer for a shirt to wear while donating a
+ * weekend. And selling a shirt is a retail sale of tangible personal property, which is
+ * taxable in North Carolina even for a 501(c)(3), while a camp fee is exempt because of what
+ * it buys: instruction and participation.
+ *
+ * Every mentor now gets a shirt regardless. That is what makes the suggested amount a gift
+ * rather than a price: nothing is contingent on paying it, so there is no sale to tax and
+ * nothing received in exchange. If the shirt were held back from anyone who declined, this
+ * would be a purchase with a friendlier label, and relabelling does not change what a
+ * transaction is.
  */
-export const MENTOR_TSHIRT_CENTS = 2500;
+export const SUGGESTED_MENTOR_DONATION_CENTS = 2500;
 
 export type FeeLine = { label: string; cents: number };
 
@@ -25,8 +35,11 @@ export type CampChargeInput = {
   role: string | null;
   /** events.registration_fee in DOLLARS, as stored. Null or 0 means a free event. */
   registrationFee: number | null;
-  /** Mentors only: whether they opted into the shirt. */
-  wantsTshirt: boolean;
+  /**
+   * A voluntary contribution toward camp costs, in cents. Zero or absent means they chose
+   * not to, which must be as easy as choosing to.
+   */
+  donationCents?: number;
   /** A guardian registering a minor alongside themselves pays for both. */
   minorName?: string | null;
   /**
@@ -61,11 +74,9 @@ export function computeCampCharge(input: CampChargeInput): CampCharge {
 
   const lines: FeeLine[] = [];
 
-  if (isMentor) {
-    if (input.wantsTshirt) {
-      lines.push({ label: "Mentor t-shirt", cents: MENTOR_TSHIRT_CENTS });
-    }
-  } else if (feeCents > 0) {
+  // Mentors are never charged to attend. They are giving up a weekend; billing them for the
+  // privilege would be perverse, and the shirt they get is not a product.
+  if (!isMentor && feeCents > 0) {
     lines.push({
       label: input.minorName ? "Your registration" : "Registration fee",
       cents: feeCents,
@@ -90,6 +101,14 @@ export function computeCampCharge(input: CampChargeInput): CampCharge {
   const bgCents = Math.max(0, Math.round(input.backgroundCheckCents ?? 0));
   if (bgCents > 0) {
     lines.push({ label: "Background check", cents: bgCents });
+  }
+
+  // Voluntary, and last, so it reads as an addition to a total rather than part of one.
+  // Clamped at zero: a negative "donation" would be a discount, and the only way to reach
+  // one is a tampered form.
+  const donationCents = Math.max(0, Math.round(input.donationCents ?? 0));
+  if (donationCents > 0) {
+    lines.push({ label: "Donation toward camp costs", cents: donationCents });
   }
 
   return {

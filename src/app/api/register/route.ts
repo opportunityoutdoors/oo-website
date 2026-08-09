@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
     minor_date_of_birth,
     survey,
     minor_survey,
+    donation_cents,
   } = body;
 
   if (!token) {
@@ -153,6 +154,10 @@ export async function POST(request: NextRequest) {
       emergency_contact_phone: emergency_contact_phone || null,
       transportation: transportation || null,
       dietary_medical: dietary_medical || null,
+      // Clamped and integer-checked here rather than trusted. The form only ever sends one
+      // of the offered amounts, but this is a public endpoint and a negative donation would
+      // be a discount on the registration fee.
+      donation_cents: Math.max(0, Math.round(Number(donation_cents) || 0)),
     })
     .eq("id", registration.id);
 

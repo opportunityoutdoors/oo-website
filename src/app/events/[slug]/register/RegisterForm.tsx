@@ -8,7 +8,7 @@ import ResumePaymentButton from "@/components/forms/ResumePaymentButton";
 import { scaleQuestions, type SurveyAnswers } from "@/lib/surveys/questions";
 import { evaluateEligibility } from "@/lib/background-check/eligibility";
 import {
-  MENTOR_TSHIRT_CENTS,
+  SUGGESTED_MENTOR_DONATION_CENTS,
   computeCampCharge,
   formatFee,
 } from "@/lib/stripe/camp-fees";
@@ -151,6 +151,9 @@ export default function RegisterForm({
   const [contactShareConsent, setContactShareConsent] = useState(false);
   const [minorTshirtSize, setMinorTshirtSize] = useState("");
   const [minorDietaryMedical, setMinorDietaryMedical] = useState("");
+  // Voluntary, and zero by default. A pre-filled suggestion would be a charge somebody has
+  // to notice and remove, which is not the same thing as being asked.
+  const [donation, setDonation] = useState(0);
   const [survey, setSurvey] = useState<SurveyAnswers>(EMPTY_ANSWERS);
   const [minorSurvey, setMinorSurvey] = useState<SurveyAnswers>(EMPTY_ANSWERS);
   const waiverRef = useRef<HTMLDivElement>(null);
@@ -219,6 +222,7 @@ export default function RegisterForm({
         signature_name: signatureName,
         minor_tshirt_size: minorTshirtSize || null,
         minor_dietary_medical: minorDietaryMedical || null,
+        donation_cents: donation,
         survey,
         minor_survey: registration?.linked_minor ? minorSurvey : null,
       }),
@@ -486,10 +490,10 @@ export default function RegisterForm({
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-[1px] text-near-black/70">
-                T-Shirt Size{registration!.role === "Mentor" ? ` (${formatFee(MENTOR_TSHIRT_CENTS)}, optional)` : ""} {registration!.role !== "Mentor" && <span className="text-red-500">*</span>}
+                T-Shirt Size <span className="text-red-500">*</span>
               </label>
               <select
-                required={registration!.role !== "Mentor"}
+                required
                 value={tshirtSize}
                 onChange={(e) => setTshirtSize(e.target.value)}
                 className="w-full rounded border border-near-black/20 bg-white px-4 py-3 text-sm text-near-black focus:border-dark-green focus:outline-none focus:ring-1 focus:ring-dark-green"
@@ -805,7 +809,7 @@ export default function RegisterForm({
                 const charge = computeCampCharge({
                   role: registration!.role,
                   registrationFee: event.registration_fee,
-                  wantsTshirt: Boolean(tshirtSize),
+                  donationCents: donation,
                   minorName: minor?.contacts.first_name ?? null,
                   backgroundCheckCents: eligibility.feeCents,
                 });
@@ -833,6 +837,54 @@ export default function RegisterForm({
                         </div>
                       ))}
                     </div>
+
+                    {/* The ask. Above the total so the number they see is the one they will
+                        be charged, and defaulted to nothing: a pre-filled amount is a charge
+                        somebody has to notice and remove, which is not the same as being
+                        asked. Declining is a button, not an empty field to work out. */}
+                    <div className="mb-3 rounded border border-near-black/10 bg-cream/40 p-4">
+                      <p className="text-sm font-medium text-near-black">
+                        Help cover the cost of camp
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-near-black/60">
+                        Food, fuel, permits and gear come out of what we raise. Anything you
+                        add here goes straight to running this camp. Entirely optional, and
+                        nothing changes if you skip it.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {[SUGGESTED_MENTOR_DONATION_CENTS, 5000, 10000].map((cents) => (
+                          <button
+                            key={cents}
+                            type="button"
+                            onClick={() => setDonation(donation === cents ? 0 : cents)}
+                            className={`rounded border px-4 py-2 text-sm font-semibold transition-colors ${
+                              donation === cents
+                                ? "border-dark-green bg-dark-green text-white"
+                                : "border-near-black/20 text-near-black/70 hover:border-near-black/40"
+                            }`}
+                          >
+                            {formatFee(cents)}
+                            {cents === SUGGESTED_MENTOR_DONATION_CENTS && (
+                              <span className="ml-1 text-[10px] font-normal opacity-70">
+                                suggested
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => setDonation(0)}
+                          className={`rounded border px-4 py-2 text-sm font-semibold transition-colors ${
+                            donation === 0
+                              ? "border-near-black/40 bg-near-black/5 text-near-black"
+                              : "border-near-black/20 text-near-black/50 hover:border-near-black/40"
+                          }`}
+                        >
+                          Not this time
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="flex items-center justify-between border-t border-near-black/10 pt-3">
                       <p className="text-sm font-bold text-near-black">Total</p>
                       <p className="text-2xl font-extrabold text-dark-green">

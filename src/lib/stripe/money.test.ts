@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeCampCharge, MENTOR_TSHIRT_CENTS } from "./camp-fees";
+import { computeCampCharge, SUGGESTED_MENTOR_DONATION_CENTS } from "./camp-fees";
 import {
   grossUpForFees,
   feeSurchargeCents,
@@ -24,30 +24,62 @@ import {
 
 describe("computeCampCharge", () => {
   it("does not charge a mentor to attend", () => {
-    const c = computeCampCharge({ role: "Mentor", registrationFee: 75, wantsTshirt: false });
+    const c = computeCampCharge({ role: "Mentor", registrationFee: 75 });
     expect(c.totalCents).toBe(0);
   });
 
-  it("charges a mentor only for a shirt they opted into", () => {
-    const c = computeCampCharge({ role: "Mentor", registrationFee: 75, wantsTshirt: true });
-    expect(c.totalCents).toBe(MENTOR_TSHIRT_CENTS);
+  // The shirt used to be a $25 opt-in. Selling one is a taxable retail sale in NC even for a
+  // 501(c)(3); a camp fee is not. Every mentor gets a shirt now and nothing is charged for
+  // it, which is what keeps the suggested donation a gift rather than a price.
+  it("never charges a mentor for a shirt, whatever size they pick", () => {
+    const c = computeCampCharge({ role: "Mentor", registrationFee: 75 });
+    expect(c.lines.some((l) => /shirt/i.test(l.label))).toBe(false);
   });
 
   it("charges a mentee the registration fee", () => {
-    const c = computeCampCharge({ role: "Mentee", registrationFee: 75, wantsTshirt: false });
+    const c = computeCampCharge({ role: "Mentee", registrationFee: 75 });
+    expect(c.totalCents).toBe(7500);
+  });
+
+  it("adds a voluntary donation on top, itemised", () => {
+    const c = computeCampCharge({
+      role: "Mentor",
+      registrationFee: 75,
+      donationCents: SUGGESTED_MENTOR_DONATION_CENTS,
+    });
+    expect(c.totalCents).toBe(SUGGESTED_MENTOR_DONATION_CENTS);
+    expect(c.lines.some((l) => /donation/i.test(l.label))).toBe(true);
+  });
+
+  // Declining must be exactly as easy as agreeing, or it is not voluntary.
+  it("charges nothing when the donation is declined", () => {
+    for (const donationCents of [0, undefined]) {
+      const c = computeCampCharge({ role: "Mentor", registrationFee: 75, donationCents });
+      expect(c.totalCents, `donation ${donationCents}`).toBe(0);
+    }
+  });
+
+  // The only route to a negative donation is a tampered form, where it would read as a
+  // discount on the registration fee.
+  it("refuses to treat a negative donation as a discount", () => {
+    const c = computeCampCharge({
+      role: "Mentee",
+      registrationFee: 75,
+      donationCents: -5000,
+    });
     expect(c.totalCents).toBe(7500);
   });
 
   // The bug that started all of this. A fee of 37.50 dollars is 3750 cents, and the total
   // must never be 375000.
   it("converts dollars to cents once, and only once", () => {
-    const c = computeCampCharge({ role: "Mentee", registrationFee: 37.5, wantsTshirt: false });
+    const c = computeCampCharge({ role: "Mentee", registrationFee: 37.5 });
     expect(c.totalCents).toBe(3750);
   });
 
   it("treats a null, zero or negative fee as free", () => {
     for (const fee of [null, 0, -50]) {
-      const c = computeCampCharge({ role: "Mentee", registrationFee: fee, wantsTshirt: false });
+      const c = computeCampCharge({ role: "Mentee", registrationFee: fee });
       expect(c.totalCents, `fee ${fee}`).toBe(0);
     }
   });
@@ -56,7 +88,6 @@ describe("computeCampCharge", () => {
     const c = computeCampCharge({
       role: "Mentee",
       registrationFee: 75,
-      wantsTshirt: false,
       minorName: "Sam",
     });
     expect(c.totalCents).toBe(15000);
@@ -67,7 +98,6 @@ describe("computeCampCharge", () => {
     const c = computeCampCharge({
       role: "Mentor",
       registrationFee: 75,
-      wantsTshirt: false,
       minorName: "Sam",
     });
     expect(c.totalCents).toBe(7500);
@@ -77,7 +107,6 @@ describe("computeCampCharge", () => {
     const c = computeCampCharge({
       role: "Mentor",
       registrationFee: 75,
-      wantsTshirt: false,
       backgroundCheckCents: 500,
     });
     expect(c.totalCents).toBe(500);
@@ -87,7 +116,6 @@ describe("computeCampCharge", () => {
     const c = computeCampCharge({
       role: "Mentee",
       registrationFee: 75,
-      wantsTshirt: false,
       minorName: "Sam",
       backgroundCheckCents: 500,
     });
