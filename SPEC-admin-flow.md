@@ -65,13 +65,22 @@ applied uniformly.
 
 ### Columns are positions
 
-Six columns, because "not attending" splits along a line that matters:
+Seven columns:
 
 ```
-Waitlist       Invited        Registered     Ready        Turned away    Dropped out
-awaiting YOUR  awaiting       requirements   cleared and  our decision   their choice
-decision       THEIR move     outstanding    matched                     or silence
+Waitlist      Invited       Registered    Ready        Attended      Turned away   Dropped out
+awaiting      awaiting      requirements  cleared and  they came     our           their choice
+YOUR decision THEIR move    outstanding   matched                    decision      or silence
 ```
+
+**Attended is not decoration.** `status = 'attended'` is already what the post-survey cron
+filters on: it sends a day after the event ends, only to people marked attended, and the
+Stats tab warns when a past event has none. That mechanism exists and works.
+
+What does not work is marking it. Attendance can currently only be set as a BULK action:
+select checkboxes, click a button. There is no per-person control at all. Dragging a card
+into Attended fixes that without new machinery, and it is the single most valuable thing the
+board buys, because nothing downstream fires until somebody does it.
 
 Every person is in exactly one column, always. No column can be empty of meaning, none can
 go dead, and every one is openable whether or not anything is wrong. That alone fixes the
@@ -109,10 +118,13 @@ who has not paid is *unpaid in Registered* until a human decides they are not co
 | Never paid | Registered, waiver signed, no money. |
 | Stopped responding | Chased and heard nothing. |
 | Told us they cannot make it | The polite one. Worth distinguishing: these are people to re-invite. |
-| Withdrew after paying | **Needs a refund decision.** Flag it; do not automate it. |
+| Withdrew after paying | **No refund by default.** See below. |
 
-That last row is the one with teeth. Everything else in this column costs nothing; a paid
-withdrawal is money OO is holding and someone has to decide about.
+**On withdrawals and money.** The rule is no refund unless they ask, because OO has usually
+already committed the expense on the strength of their place. That is a reasonable policy for
+a small nonprofit buying food and permits in advance.
+
+It is also the opposite of what the payment screen currently promises. See section 8.
 
 ### Requirements are badges on the card
 
@@ -196,9 +208,10 @@ one layer out.
 
 ## 6. Decisions taken
 
-**Drag and drop.** With a "Move to…" menu on every card as well, not instead. Drag is the
-fast path; the menu is what works on a phone, with a keyboard, and with a screen reader. A
-board that can only be operated by dragging is a board half the time.
+**Drag and drop only.** No menu fallback. This is an internal tool used by about four named
+people on desktop, with six to twenty cards on screen. The usual argument for a keyboard and
+pointer-free path is about reaching users you cannot survey; here the entire user list is
+known and in the room. Revisit only if that changes.
 
 **"Not attending" splits into two columns**, each with a required reason. See above.
 
@@ -208,7 +221,7 @@ board that can only be operated by dragging is a board half the time.
 screening decisions. The screening decline stays as it is: three officers, unanimous, and
 irreversible from this screen.
 
-## 7. Past camps need their own treatment
+## 7. Past camps
 
 Flagged during review, and worth taking seriously: **earlier camps predate steps that now
 exist.** Turkey Camp ran with no background checks, no dates of birth, and six people whose
@@ -219,19 +232,50 @@ Registered covered in red badges, describing a catastrophe that did not happen. 
 build already had this problem in milder form, which is why the pipeline panel greys out for
 past events.
 
-The fix is not to grey it out harder. A finished camp is a different question: not "who is
-ready" but "who came". So for a camp whose end date has passed:
+The fix is small, and deliberately so: past camps are for reference, carry no workflow, and
+will eventually be archived out of sight. So for a camp whose end date has passed, **hide the
+requirement badges**. That is the whole change. Cards still sit in whatever column they ended
+in, and Attended already means what it should.
 
-- The board collapses to **Attended** and **Did not attend**, with the reason retained.
-- Requirement badges are hidden entirely. They describe readiness, and readiness is a
-  question about the future.
-- The default view is the table, since a historical record is something you read and export
-  rather than manipulate.
+Requirements introduced after a camp ran must never be applied to it retrospectively. A camp
+that predates background checks did not fail a background check. Hiding the badges says that
+without needing a separate mode to maintain.
 
-Requirements introduced after a camp ran must never be applied to it retrospectively. A
-camp that predates background checks did not fail a background check.
+## 8. BLOCKING: the payment screen promises a refund we do not intend to give
 
-## 8. Schema changes
+RegisterForm.tsx, on the screen where someone hands over money:
+
+> Processing fees and background check fees are non-refundable. If your registration is
+> cancelled or **you are unable to attend, the registration fee is refunded** less those
+> costs.
+
+That is a direct contradiction of "no refund on withdrawal unless they ask". It is also the
+worst possible place for one: it is the last thing a person reads before paying, which makes
+it the thing they will quote back.
+
+The distinction that is actually true, and that the code already implements, is **who ended
+it**:
+
+- **OO cannot accept you** (declined after a background check). Refunded, less the processing
+  and check fees. Already automated, already correct.
+- **You withdraw or cannot make it.** Not refunded, because the costs are committed. Ask and
+  it will be considered.
+
+Proposed replacement:
+
+> Processing fees and background check fees are non-refundable. If we are unable to accept
+> you, your registration fee is refunded less those costs. If you withdraw or cannot attend,
+> the registration fee is not automatically refunded, because we commit to camp costs in
+> advance. Get in touch and we will do what we can.
+
+Two notes. This changes a promise, so it applies going forward only: anyone who registered
+under the current wording was told they would be refunded. And the last sentence is not
+padding. "Cost should not be the reason someone stays home" already appears elsewhere in this
+flow, and a flat no here would sit badly against it.
+
+Worth a board eye before it ships, since it is a money term rather than copy.
+
+## 9. Schema changes
 
 The current `registration_status` enum is `waitlist, meeting_rsvp, approved, denied,
 registered, attended`. It has no way to say "dropped out", and no way to say why anyone left.
