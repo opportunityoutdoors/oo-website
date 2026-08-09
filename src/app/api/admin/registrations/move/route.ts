@@ -147,8 +147,10 @@ export async function POST(req: NextRequest) {
   }
 
   // After the move, not before. A log of moves that did not happen is worse than no log.
-  const { error: logError } = await supabase.from("registration_moves").insert({
+  const { error: logError } = await supabase.from("registration_events").insert({
     registration_id: registrationId,
+    kind: "status_change",
+    source: "admin",
     from_status: current.status,
     to_status: status,
     exit_reason: leaving ? exitReason : null,

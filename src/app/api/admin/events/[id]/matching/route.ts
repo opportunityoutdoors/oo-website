@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { logRegistrationEvent } from "@/lib/registration-log";
 import { apiRequireMember } from "@/lib/admin/auth";
 
 // GET: Fetch matching state for an event
@@ -54,6 +55,25 @@ export async function POST(
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    // Named rather than an id, because a timeline reading "matched to 4f3a-..." tells a
+    // reader nothing and the mentor row may be long gone by the time anyone looks.
+    const { data: mentorRow } = mentor_id
+      ? await supabase
+          .from("registrations")
+          .select("contacts(first_name, last_name)")
+          .eq("id", mentor_id)
+          .maybeSingle()
+      : { data: null };
+    const mc = Array.isArray(mentorRow?.contacts) ? mentorRow.contacts[0] : mentorRow?.contacts;
+    await logRegistrationEvent({
+      registrationId: mentee_id,
+      kind: "matched",
+      source: "admin",
+      detail: mentor_id
+        ? [mc?.first_name, mc?.last_name].filter(Boolean).join(" ") || "a mentor"
+        : "unmatched",
+    });
 
     // If mentee has a guardian link, match the guardian to the same mentor
     const { data: mentee } = await supabase

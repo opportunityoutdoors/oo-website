@@ -417,6 +417,18 @@ async function handleCampPayment(session: Stripe.Checkout.Session) {
     .neq("payment_status", "paid")
     .select("id");
 
+  // Only when the guarded update actually changed something, so a replayed delivery does not
+  // add a second "paid" to the timeline for one payment.
+  if (!error && updated?.length) {
+    const { logRegistrationEvent } = await import("@/lib/registration-log");
+    await logRegistrationEvent({
+      registrationId,
+      kind: "paid",
+      source: "system",
+      detail: `$${((session.amount_total ?? 0) / 100).toFixed(2)}`,
+    });
+  }
+
   if (error) {
     if (error.code === "23505") {
       console.log(`Camp payment ${paymentIntentId} already recorded; skipping replay`);

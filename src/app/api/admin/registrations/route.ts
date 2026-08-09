@@ -4,14 +4,14 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { renderApproval, renderDenial } from "@/emails";
 import { apiRequireMember } from "@/lib/admin/auth";
+import { logRegistrationEvent } from "@/lib/registration-log";
 
 // Bulk update registration statuses
 export async function PATCH(request: NextRequest) {
   // Admin surface: reject anyone without an admin_users row. Middleware only matches
   // /admin/:path*, so it never protected these API routes.
-  const { error: authError } = await apiRequireMember();
+  const { member, error: authError } = await apiRequireMember();
   if (authError) return authError;
-
 
   const supabase = createServiceClient();
   const body = await request.json();
@@ -25,6 +25,36 @@ export async function PATCH(request: NextRequest) {
   if (!validStatuses.includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
+
+  // Captured before the update, because afterwards there is nothing left to read.
+  const { data: before } = await supabase
+    .from("registrations")
+    .select("id, status")
+    .in("id", ids);
+  const previous = new Map((before ?? []).map((r) => [r.id, r.status as string]));
+
+  /**
+   * Records the transition for every id given.
+   *
+   * Marking somebody attended is its own kind rather than a status change, because it is the
+   * thing the post-survey waits on and "attended" buried in a list of status changes is
+   * harder to find than it deserves to be.
+   */
+  const logAll = (touched: string[]) =>
+    Promise.all(
+      touched.map((id) =>
+        logRegistrationEvent({
+          registrationId: id,
+          kind: status === "attended" ? "attended" : "status_change",
+          source: "admin",
+          actorId: member.id,
+          // Per id, not shared: a bulk approve of nine people leaves nine different rows
+          // behind, and "from" is the half that says what actually changed.
+          fromStatus: previous.get(id) ?? null,
+          toStatus: status,
+        })
+      )
+    ).catch(() => {});
 
   // For approvals, generate unique tokens + cascade to linked minors
   if (status === "approved") {
@@ -67,6 +97,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    await logAll(allApprovedIds);
     return NextResponse.json({ updated: allApprovedIds.length });
   }
 
@@ -101,6 +132,8 @@ export async function PATCH(request: NextRequest) {
       .eq("guardian_registration_id", id);
   }
 
+  await logAll(ids);
+
   // Send denial emails automatically
   if (status === "denied" && data?.length) {
     sendDenialEmails(data).catch((err) =>
@@ -115,9 +148,8 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   // Admin surface: reject anyone without an admin_users row. Middleware only matches
   // /admin/:path*, so it never protected these API routes.
-  const { error: authError } = await apiRequireMember();
+  const { member, error: authError } = await apiRequireMember();
   if (authError) return authError;
-
 
   const supabase = createServiceClient();
   const body = await request.json();

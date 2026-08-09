@@ -4,6 +4,7 @@ import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { renderWelcomePacket } from "@/emails";
 import { apiRequireMember } from "@/lib/admin/auth";
 import { evaluateEligibility, mayParticipate } from "@/lib/background-check/eligibility";
+import { logRegistrationEvent } from "@/lib/registration-log";
 
 /**
  * Why someone was held back, in words an admin can act on.
@@ -80,9 +81,8 @@ export async function POST(
 ) {
   // Admin surface: reject anyone without an admin_users row. Middleware only matches
   // /admin/:path*, so it never protected these API routes.
-  const { error: authError } = await apiRequireMember();
+  const { member, error: authError } = await apiRequireMember();
   if (authError) return authError;
-
 
   const { id: eventId } = await params;
   const supabase = createServiceClient();
@@ -346,6 +346,12 @@ export async function POST(
       .eq("id", reg.id);
 
     sentCount++;
+    await logRegistrationEvent({
+      registrationId: reg.id,
+      kind: "packet_sent",
+      source: "admin",
+      actorId: member?.id ?? null,
+    });
   }
 
   // withheld travels with the success response, not only the failure one. "Sent 8" for a

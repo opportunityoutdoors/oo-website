@@ -188,6 +188,33 @@ export async function recordReview(input: ReviewInput): Promise<ReviewOutcome> {
       `${input.decision}, ${before} -> ${after}, by ${input.decidedBy ?? "unknown"}`
   );
 
+  // A screening decision is about the person, so it lands on every registration they hold.
+  // Deliberate: somebody reading one camp's history should see that a panel decided
+  // something, even if the decision was prompted by a different camp entirely.
+  try {
+    const { data: theirRegs } = await supabase
+      .from("registrations")
+      .select("id")
+      .eq("contact_id", input.contactId);
+
+    const { logRegistrationEvent } = await import("@/lib/registration-log");
+    await Promise.all(
+      (theirRegs ?? []).map((r) =>
+        logRegistrationEvent({
+          registrationId: r.id,
+          kind: "panel_decision",
+          source: "admin",
+          actorId: input.decidedBy,
+          detail: input.decision,
+        })
+      )
+    );
+  } catch {
+    // The decision and its reasoning are already saved in background_check_reviews, which is
+    // the record the policy requires. A missing timeline row is a display gap, not a lost
+    // decision, and must not fail the thing that mattered.
+  }
+
   // Only a non-report disqualification refunds here. A report-driven decline refunds when
   // the provider's adverse_action.completed webhook arrives, at the end of the dispute
   // window, not now.

@@ -3,6 +3,28 @@ import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/server";
 import { position, POSITIONS, EXIT_REASONS } from "@/lib/camp-pipeline";
 
+/**
+ * Timeline rows in words rather than database vocabulary.
+ *
+ * A profile is read by board members deciding something about a person, not by whoever wrote
+ * the schema. "check_result" is not a sentence.
+ */
+const EVENT_LABEL: Record<string, string> = {
+  created: "Joined the waitlist",
+  status_change: "Moved",
+  meeting_selected: "Chose a meeting slot",
+  registered: "Completed registration",
+  waiver_signed: "Signed the waiver",
+  paid: "Paid",
+  refunded: "Refunded",
+  check_ordered: "Background check ordered",
+  check_result: "Background check came back",
+  panel_decision: "Panel decision",
+  matched: "Matched with",
+  packet_sent: "Welcome packet sent",
+  attended: "Attended",
+};
+
 export const metadata = { title: "Contact Detail" };
 
 // Reads searchParams (`from`) and live registration data, neither of which survives being
@@ -70,10 +92,10 @@ export default async function ContactDetailPage({
   // Board moves for this person's registrations, including backwards ones.
   const { data: moves } = registrations?.length
     ? await supabase
-        .from("registration_moves")
+        .from("registration_events")
         .select("*, admin_users(email)")
         .in("registration_id", registrations.map((r) => r.id))
-        .order("moved_at", { ascending: false })
+        .order("occurred_at", { ascending: false })
     : { data: [] };
 
   const name = [contact.first_name, contact.last_name].filter(Boolean).join(" ") || "Unknown";
@@ -348,20 +370,38 @@ export default async function ContactDetailPage({
                       <p className="mt-1 text-xs text-near-black/50">{exit.label}</p>
                     )}
 
-                    {/* How they got there, backwards moves included. This is the record that
-                        makes a reversible board safe rather than merely convenient. */}
+                    {/* The whole sequence, newest first. Everything that happened to this
+                        registration, whoever or whatever caused it. Rows dated before
+                        2026-08-09 were reconstructed from timestamps that already existed,
+                        so somebody who registered years ago still has a history. */}
                     {theirMoves.length > 0 && (
-                      <ol className="mt-2 space-y-0.5 border-l border-near-black/10 pl-3">
+                      <ol className="mt-2 space-y-1 border-l border-near-black/10 pl-3">
                         {theirMoves.map((m) => {
                           const by = Array.isArray(m.admin_users) ? m.admin_users[0] : m.admin_users;
+                          const actor =
+                            m.source === "system"
+                              ? "automatic"
+                              : m.source === "participant"
+                                ? "them"
+                                : (by?.email ?? "unknown");
+
                           return (
-                            <li key={m.id} className="text-[11px] text-near-black/45">
-                              {m.from_status ? `${m.from_status} → ` : ""}
-                              <span className="text-near-black/70">{m.to_status}</span>
-                              {m.exit_reason ? ` (${m.exit_reason.replace(/_/g, " ")})` : ""}
+                            <li key={m.id} className="text-[11px] leading-snug text-near-black/50">
+                              <span className="text-near-black/75">{EVENT_LABEL[m.kind] ?? m.kind}</span>
+                              {m.kind === "status_change" && m.to_status
+                                ? ` ${m.from_status ? `${m.from_status} → ` : ""}${m.to_status}`
+                                : ""}
+                              {m.exit_reason ? ` (${String(m.exit_reason).replace(/_/g, " ")})` : ""}
+                              {m.detail ? ` · ${m.detail}` : ""}
                               {" · "}
-                              {new Date(m.moved_at).toLocaleDateString()}
-                              {by?.email ? ` · ${by.email}` : ""}
+                              {new Date(m.occurred_at).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                              {" · "}
+                              <span className={m.source === "system" ? "italic" : ""}>{actor}</span>
+                              {m.note ? <span className="block text-near-black/45">{m.note}</span> : null}
                             </li>
                           );
                         })}
