@@ -26,3 +26,4 @@ verifying.
 - 2026-08-09 — Withdrawals are not automatically refunded, because camp costs are committed in advance; the payment screen now says so.
 - 2026-08-09 — Not pursuing Stripe's 2.2% nonprofit rate: camp fees and store sales mean donations will not reach the 80% threshold.
 - 2026-08-22 — Project tracking lives in `docs/`: SPEC.md is the roadmap, STATUS.md the current state, DECISIONS.md append-only, BACKLOG.md everything not current.
+- 2026-08-22 — `docs/` stays gitignored for its PII, with the four tracking files exempted by name rather than moved elsewhere.

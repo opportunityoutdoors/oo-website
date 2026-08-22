@@ -1,27 +1,28 @@
 # Status
 
-**Last worked on:** 2026-08-09 (last commit). Reviewed 2026-08-22.
+**Last worked on:** 2026-08-22. Code last changed 2026-08-09.
 **Status:** Active
 
 ## Done recently
 
-- Camp admin board rework shipped whole: seven position columns, drag and drop, requirement
-  badges, categorised exits, a transition timeline, and the table given back its own filtering.
+- Camp admin board rework shipped whole: position columns, drag and drop, requirement badges,
+  categorised exits, a transition timeline, and the table given back its own filtering.
 - Registration rebuilt as four steps, with unit tests around the money and screening logic.
-- Refund copy on the payment screen corrected to match what OO actually does.
-- Mentors are asked about a shirt rather than charged for one.
+- Refund copy fixed; mentors asked about a shirt rather than charged for one.
 - Cast and Crunch event-details email sent for the 2026-08-14 event.
+- Project tracking set up (SPEC, STATUS, DECISIONS, BACKLOG) and CLAUDE.md given the
+  essentials it lacked.
 
 ## In progress
 
-Nothing open in the working tree; `main` is clean.
+Nothing; `main` is clean.
 
 ## Next up
 
 - Monthly newsletter template and an admin draft generator (Resend phase 3).
 - Attach the print guide PDF to the welcome packet email.
 - Mentor/mentee ratio guidance in the admin approval view.
-- Direct Mail teardown: cancel the e57 subscription, drop the dead env vars from Vercel.
+- Direct Mail teardown: cancel e57, drop the dead env vars from Vercel.
 
 ## Blocked
 
