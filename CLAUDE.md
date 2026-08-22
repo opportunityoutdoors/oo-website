@@ -1,5 +1,52 @@
 @AGENTS.md
 
+## What this is
+
+The website and back office for **Opportunity Outdoors**, a North Carolina 501(c)(3) that
+runs mentored hunt and fish camps. Public marketing site plus an admin at `/admin` that
+carries the whole camp workflow: waitlist, pre-camp meetings, approval, registration,
+payment, background screening, mentor matching, welcome packets, and post-camp surveys.
+Also handles donations, a mentee nurture sequence, and a partner-events feed.
+
+## Stack
+
+Next.js 16 (App Router) - Sanity (content, Studio embedded at `/admin/studio`) - Supabase
+(Postgres, the operational source of truth) - Stripe (donations and camp fees) - Resend
+(all email, React Email templates in `src/emails/`) - VolunteerBadge (background checks) -
+Google Calendar (pre-camp meeting invites) - Tailwind 4 - deployed on Vercel.
+
+Sanity is the source of truth for event configuration; Supabase mirrors it via the
+`/api/revalidate` webhook. Everything about a person lives in Supabase.
+
+## Commands
+
+```bash
+npm run dev            # local dev server
+npm run build          # production build
+npm test               # vitest, pure logic only
+npm run fixture -- create|status|reset|destroy   # ZZ TEST Fixture Camp, see TESTING.md
+npm run stripe         # project-scoped Stripe CLI wrapper
+npm run vercel         # project-scoped Vercel wrapper (reads over REST)
+```
+
+Deploy is Vercel on push to `main`. Cron jobs are declared in `vercel.json` and run in UTC
+against production.
+
+## Quirks
+
+- **Never run a bare `stripe` or `vercel` CLI.** Use `scripts/stripe.sh` / `scripts/vercel.sh`,
+  which pass this project's credentials explicitly from `.env.local`. A global login has
+  already pointed at the wrong business once.
+- **MCP servers are pinned in `.mcp.json`** and read credentials from `.env.local`. Nothing
+  account-touching is allowed at user scope.
+- **Sanity date-only fields are midnight UTC.** Format them through
+  `src/lib/format-event-date.ts` or dates render a day early outside UTC.
+- **Camp location is never disclosed** before the welcome packet, and the packet gate refuses
+  anyone not cleared to attend.
+- Testing philosophy and the pre-push checklist are in [TESTING.md](TESTING.md). Prefer the
+  check that observes the outcome, not the attempt.
+
+
 
 <!-- CMC:SECTION_START -->
 ## Memory Compiler
