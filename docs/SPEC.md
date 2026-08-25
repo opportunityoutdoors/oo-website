@@ -91,3 +91,11 @@ Sources this was assembled from, which stay as the detailed reference:
 - [x] Screening decisions recorded in writing, as the policy requires
 - [ ] Board adopts the background screening policy (draft v0.4, needs a vote)
 - [ ] Decide the NC sales tax items above at the same meeting
+
+## Verification
+
+- [x] `verify-oo` skill at `.claude/skills/verify-oo/`: launches the app, signs into the
+      admin without a password, drives a feature, and captures evidence to `.verify/`
+- [x] Feature map at `.claude/skills/verify-oo/features/`, covering the camp board,
+      registration, screening, the welcome packet, and the waitlist
+- [ ] Map donations, the nurture sequence, surveys, and partner events

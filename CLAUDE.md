@@ -45,6 +45,9 @@ against production.
   anyone not cleared to attend.
 - Testing philosophy and the pre-push checklist are in [TESTING.md](TESTING.md). Prefer the
   check that observes the outcome, not the attempt.
+- **Run the `verify-oo` skill before reporting any task complete.** It drives the real site
+  and admin against the ZZ TEST fixture camp and writes evidence to `.verify/`. A passing
+  build is not a verified change.
 
 
 

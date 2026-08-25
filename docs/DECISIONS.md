@@ -27,3 +27,5 @@ verifying.
 - 2026-08-09 — Not pursuing Stripe's 2.2% nonprofit rate: camp fees and store sales mean donations will not reach the 80% threshold.
 - 2026-08-22 — Project tracking lives in `docs/`: SPEC.md is the roadmap, STATUS.md the current state, DECISIONS.md append-only, BACKLOG.md everything not current.
 - 2026-08-22 — `docs/` stays gitignored for its PII, with the four tracking files exempted by name rather than moved elsewhere.
+- 2026-08-25 — Verification is a project skill, `verify-oo`, not a test suite: it drives the real app against the fixture camp and proves changes by the database, keeping the no-E2E decision of 2026-08-08 intact.
+- 2026-08-25 — Admin verification signs in by minting a Supabase session with the service role, never by typing a password, so no credential is stored for it.

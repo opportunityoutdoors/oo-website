@@ -74,3 +74,6 @@ nurture-previews.html
 
 resend-import.csv
 resend-unsubscribed.txt
+
+# verification evidence (local only)
+.verify/
