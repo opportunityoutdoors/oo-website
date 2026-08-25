@@ -15,7 +15,7 @@
 
 ## In progress
 
-Nothing; the working tree carries the new `verify-oo` skill, uncommitted.
+Nothing. `main` is clean.
 
 ## Next up
 
