@@ -12,7 +12,8 @@
     "vercel": "./scripts/vercel.sh",
     "test": "vitest run",
     "test:watch": "vitest",
-    "fixture": "node scripts/test-fixture.mjs"
+    "fixture": "node scripts/test-fixture.mjs",
+    "gh": "./scripts/gh.sh"
   },
   "dependencies": {
     "@portabletext/react": "^6.0.3",
