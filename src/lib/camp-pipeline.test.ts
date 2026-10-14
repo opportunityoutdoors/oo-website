@@ -3,6 +3,7 @@ import {
   computePipeline,
   emailUnconfirmed,
   shirtTally,
+  normalizeShirtSize,
   isMatched,
   isCleared,
   position,
@@ -389,5 +390,30 @@ describe("shirtTally", () => {
     const t = shirtTally([withSize(null), withSize("4XL")]);
     expect(t.noSize).toBe(1);
     expect(t.sizes.find((s) => s.size === "Other")?.count).toBe(1);
+  });
+});
+
+describe("staff", () => {
+  it("is Ready on registration and owes nothing", () => {
+    const r = reg({ role: "Staff", payment_status: null, waiver_signed: false, mentor_id: null });
+    expect(position(r)).toBe("ready");
+    expect(requirements(r)).toEqual([]);
+  });
+
+  it("counts toward shirts without paying", () => {
+    const r = reg({ role: "Staff", payment_status: null, contacts: { ...contacts(), tshirt_size: "Large" } as PipelineReg["contacts"] });
+    const t = shirtTally([r]);
+    expect(t.done).toBe(1);
+    expect(t.sizes.find((s) => s.size === "L")?.count).toBe(1);
+  });
+});
+
+describe("normalizeShirtSize", () => {
+  it("maps the older word sizes", () => {
+    expect(normalizeShirtSize("Large")).toBe("L");
+    expect(normalizeShirtSize("Small")).toBe("S");
+    expect(normalizeShirtSize("XXL")).toBe("2XL");
+    expect(normalizeShirtSize(" xl ")).toBe("XL");
+    expect(normalizeShirtSize("")).toBeNull();
   });
 });

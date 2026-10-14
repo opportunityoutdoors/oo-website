@@ -8,6 +8,7 @@ import ReviewModal from "./ReviewModal";
 import ReadinessPanel from "./ReadinessPanel";
 import CampBoard from "./CampBoard";
 import ExitDialog from "./ExitDialog";
+import BoardPanel from "./BoardPanel";
 import { emailUnconfirmed, position, nameOf, shirtTally, POSITIONS, type Position } from "@/lib/camp-pipeline";
 import { formatEventDateRange } from "@/lib/format-event-date";
 import { describeCheck } from "@/lib/background-check/display";
@@ -392,6 +393,8 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
           </div>
 
           {isCamp && <ShirtPanel registrations={event.registrations} />}
+
+          {isCamp && <BoardPanel eventId={eventId} onChanged={fetchEvent} />}
 
           {isCamp && event.meeting_slots && event.meeting_slots.length > 0 && (
             <div className="rounded-lg border border-near-black/10 bg-white p-5">

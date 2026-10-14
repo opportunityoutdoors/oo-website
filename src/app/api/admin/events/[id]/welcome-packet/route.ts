@@ -116,7 +116,10 @@ export async function POST(
       "*, contacts(id, email, first_name, last_name, phone, date_of_birth, background_check_status, background_check_expires_at)"
     )
     .eq("event_id", eventId)
-    .in("status", ["registered", "attended"]);
+    .in("status", ["registered", "attended"])
+    // Board staff are not sent a packet: they owe no check, so the location gate below would
+    // refuse them, and they already know where camp is.
+    .or("role.is.null,role.neq.Staff");
 
   if (specificIds?.length) {
     query = query.in("id", specificIds);

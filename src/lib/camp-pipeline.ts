@@ -285,6 +285,10 @@ export function position(r: PipelineReg): Position {
   if (r.status === "waitlist" || r.status === "meeting_rsvp") return "waitlist";
   if (r.status === "approved") return "invited";
 
+  // Board members going as admin staff owe nothing: no waiver, fee, check, or mentee.
+  // Decided 2026-10-14. Registered is therefore Ready for them.
+  if (r.status === "registered" && r.role === STAFF_ROLE) return "ready";
+
   // Registered. Ready means every requirement is met, which is the same rule the welcome
   // packet gate uses, so a card in Ready is exactly a card that can receive one.
   if (r.status === "registered") {
@@ -298,6 +302,9 @@ export function position(r: PipelineReg): Position {
 
   return "registered";
 }
+
+/** Role for a board member at camp as admin staff rather than as a mentor. */
+export const STAFF_ROLE = "Staff";
 
 /** Groups registrations into board columns, preserving input order within each. */
 export function byPosition(registrations: PipelineReg[]): Record<Position, PipelineReg[]> {
@@ -338,6 +345,7 @@ export function emailUnconfirmed(r: PipelineReg): boolean {
  * "no", which produced "no paid".
  */
 export function requirements(r: PipelineReg): { label: string; met: boolean }[] {
+  if (r.role === STAFF_ROLE) return [];
   const pair = (met: boolean, yes: string, no: string) => ({ label: met ? yes : no, met });
 
   const reqs = [
@@ -352,6 +360,20 @@ export function requirements(r: PipelineReg): { label: string; met: boolean }[] 
 
 /** Sizes in the order the registration form offers them. */
 export const SHIRT_SIZES = ["S", "M", "L", "XL", "2XL", "3XL"] as const;
+
+/**
+ * Older contacts hold sizes as words ("Large", "Small", "XXL"), from before the form offered
+ * S to 3XL. Mapped here so they count in the right column instead of under Other.
+ */
+export function normalizeShirtSize(value: string | null | undefined): string | null {
+  const v = value?.trim().toUpperCase().replace(/[\s-]/g, "");
+  if (!v) return null;
+  const words: Record<string, string> = {
+    SMALL: "S", MEDIUM: "M", LARGE: "L", XLARGE: "XL", EXTRALARGE: "XL",
+    XXL: "2XL", XXLARGE: "2XL", XXXL: "3XL", XXXLARGE: "3XL",
+  };
+  return words[v] ?? v;
+}
 
 export type ShirtTally = {
   /** Everyone approved or further along, who will be at camp unless they drop out. */
@@ -376,13 +398,15 @@ export function shirtTally(
     ["invited", "registered", "ready", "attended"].includes(position(r))
   );
   const done = active.filter(
-    (r) => (r.status === "registered" || r.status === "attended") && r.payment_status === "paid"
+    (r) =>
+      (r.status === "registered" || r.status === "attended") &&
+      (r.payment_status === "paid" || r.role === STAFF_ROLE)
   );
 
   const counts = new Map<string, number>();
   let noSize = 0;
   for (const r of done) {
-    const raw = r.contacts?.tshirt_size?.trim().toUpperCase();
+    const raw = normalizeShirtSize(r.contacts?.tshirt_size);
     if (!raw) {
       noSize += 1;
       continue;
