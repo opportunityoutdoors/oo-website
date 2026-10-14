@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   computePipeline,
   emailUnconfirmed,
+  shirtTally,
   isMatched,
   isCleared,
   position,
@@ -352,5 +353,41 @@ describe("emailUnconfirmed", () => {
   it("is never true for a minor, whose guardian carries it", () => {
     const r = reg({ status: "waitlist", created_at: signedUp, guardian_registration_id: "g1", contacts: contacts({ email: null as unknown as string }) });
     expect(emailUnconfirmed(r)).toBe(false);
+  });
+});
+
+describe("shirtTally", () => {
+  const withSize = (size: string | null, over: Partial<PipelineReg> = {}) =>
+    reg({ ...over, contacts: { ...contacts(), tshirt_size: size } as PipelineReg["contacts"] });
+
+  it("counts sizes only for people registered and paid", () => {
+    const t = shirtTally([
+      withSize("M"),
+      withSize("m"),
+      withSize("XL"),
+      withSize("L", { payment_status: "pending" }),
+      withSize("S", { status: "approved", payment_status: null }),
+    ]);
+    expect(t.expected).toBe(5);
+    expect(t.done).toBe(3);
+    expect(t.sizes.find((s) => s.size === "M")?.count).toBe(2);
+    expect(t.sizes.find((s) => s.size === "XL")?.count).toBe(1);
+    expect(t.sizes.find((s) => s.size === "L")?.count).toBe(0);
+  });
+
+  it("leaves out the waitlist and anyone who left", () => {
+    const t = shirtTally([
+      withSize("M", { status: "waitlist" }),
+      withSize("M", { status: "withdrawn", exit_reason: "cannot_attend" }),
+      withSize("M"),
+    ]);
+    expect(t.expected).toBe(1);
+    expect(t.done).toBe(1);
+  });
+
+  it("flags paid people with no size, and odd sizes as Other", () => {
+    const t = shirtTally([withSize(null), withSize("4XL")]);
+    expect(t.noSize).toBe(1);
+    expect(t.sizes.find((s) => s.size === "Other")?.count).toBe(1);
   });
 });

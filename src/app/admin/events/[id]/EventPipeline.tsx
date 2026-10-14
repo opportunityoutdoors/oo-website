@@ -8,7 +8,7 @@ import ReviewModal from "./ReviewModal";
 import ReadinessPanel from "./ReadinessPanel";
 import CampBoard from "./CampBoard";
 import ExitDialog from "./ExitDialog";
-import { emailUnconfirmed, position, nameOf, POSITIONS, type Position } from "@/lib/camp-pipeline";
+import { emailUnconfirmed, position, nameOf, shirtTally, POSITIONS, type Position } from "@/lib/camp-pipeline";
 import { formatEventDateRange } from "@/lib/format-event-date";
 import { describeCheck } from "@/lib/background-check/display";
 
@@ -390,6 +390,8 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
               );
             })()}
           </div>
+
+          {isCamp && <ShirtPanel registrations={event.registrations} />}
 
           {isCamp && event.meeting_slots && event.meeting_slots.length > 0 && (
             <div className="rounded-lg border border-near-black/10 bg-white p-5">
@@ -824,6 +826,45 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
  * Label above value rather than beside it, so a row of these stays readable as the labels
  * vary in length. "Mentee slots (3:1)" and "Ratio" do not line up side by side.
  */
+/**
+ * The t-shirt order. Sizes count only people registered and paid, and the bar shows how many
+ * of everyone approved have got there, so it is clear when the count is final.
+ */
+function ShirtPanel({ registrations }: { registrations: Registration[] }) {
+  const t = shirtTally(registrations);
+  if (t.expected === 0) return null;
+  const pct = Math.round((t.done / t.expected) * 100);
+  const final = t.done === t.expected && t.noSize === 0;
+
+  return (
+    <div className="rounded-lg border border-near-black/10 bg-white p-5">
+      <div className="mb-2 flex items-baseline justify-between gap-4">
+        <h2 className="text-xs font-bold uppercase tracking-[1px] text-near-black/40">T-shirts</h2>
+        <span className={`text-xs ${final ? "font-semibold text-dark-green" : "text-near-black/50"}`}>
+          {final ? "Final: everyone is registered and paid" : `${t.done} of ${t.expected} registered and paid`}
+        </span>
+      </div>
+      <div
+        className="mb-4 h-2 overflow-hidden rounded bg-near-black/10"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={t.expected}
+        aria-valuenow={t.done}
+        aria-label="Registered and paid"
+      >
+        <div className="h-full bg-dark-green" style={{ width: `${pct}%` }} />
+      </div>
+      <dl className="flex flex-wrap items-end gap-x-8 gap-y-3">
+        {t.sizes.map((s) => (
+          <Figure key={s.size} label={s.size} value={s.count} muted={s.count === 0} />
+        ))}
+        <Figure label="Total" value={t.done - t.noSize} />
+        {t.noSize > 0 && <Figure label="No size given" value={t.noSize} tone="bad" />}
+      </dl>
+    </div>
+  );
+}
+
 function Figure({
   label,
   value,

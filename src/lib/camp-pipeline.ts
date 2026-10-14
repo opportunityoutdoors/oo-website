@@ -349,3 +349,51 @@ export function requirements(r: PipelineReg): { label: string; met: boolean }[] 
   if (r.role === "Mentee") reqs.push(pair(isMatched(r), "matched", "no mentor"));
   return reqs;
 }
+
+/** Sizes in the order the registration form offers them. */
+export const SHIRT_SIZES = ["S", "M", "L", "XL", "2XL", "3XL"] as const;
+
+export type ShirtTally = {
+  /** Everyone approved or further along, who will be at camp unless they drop out. */
+  expected: number;
+  /** Of those, registered and paid, which is when their size is final. */
+  done: number;
+  /** Size counts among the done, in SHIRT_SIZES order, then "Other" for anything else. */
+  sizes: { size: string; count: number }[];
+  /** Done people with no size on file, who need asking before the order goes in. */
+  noSize: number;
+};
+
+/**
+ * The t-shirt order for a camp. Counts only people registered and paid, the same "paid" rule
+ * Ready uses, so the numbers do not move under you once the order is placed. The size is the
+ * one on the contact, which the registration form sets.
+ */
+export function shirtTally(
+  registrations: (PipelineReg & { contacts: (PipelineReg["contacts"] & { tshirt_size?: string | null }) | null })[]
+): ShirtTally {
+  const active = registrations.filter((r) =>
+    ["invited", "registered", "ready", "attended"].includes(position(r))
+  );
+  const done = active.filter(
+    (r) => (r.status === "registered" || r.status === "attended") && r.payment_status === "paid"
+  );
+
+  const counts = new Map<string, number>();
+  let noSize = 0;
+  for (const r of done) {
+    const raw = r.contacts?.tshirt_size?.trim().toUpperCase();
+    if (!raw) {
+      noSize += 1;
+      continue;
+    }
+    const size = (SHIRT_SIZES as readonly string[]).includes(raw) ? raw : "Other";
+    counts.set(size, (counts.get(size) ?? 0) + 1);
+  }
+
+  const sizes = [...SHIRT_SIZES, "Other"]
+    .map((size) => ({ size, count: counts.get(size) ?? 0 }))
+    .filter((s) => s.size !== "Other" || s.count > 0);
+
+  return { expected: active.length, done: done.length, sizes, noSize };
+}
