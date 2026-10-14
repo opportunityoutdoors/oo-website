@@ -22,6 +22,7 @@ import {
 } from "./templates/RegistrationConfirmation";
 import { Approval, type ApprovalProps } from "./templates/Approval";
 import { Denial, type DenialProps } from "./templates/Denial";
+import { ConfirmEmail, type ConfirmEmailProps } from "./templates/ConfirmEmail";
 import { AdminInvite, type AdminInviteProps } from "./templates/AdminInvite";
 import {
   WelcomePacket,
@@ -86,6 +87,10 @@ export function renderApproval(props: ApprovalProps): Promise<string> {
 
 export function renderDenial(props: DenialProps): Promise<string> {
   return render(<Denial {...props} />);
+}
+
+export function renderConfirmEmail(props: ConfirmEmailProps): Promise<string> {
+  return render(<ConfirmEmail {...props} />);
 }
 
 export function renderAdminInvite(props: AdminInviteProps): Promise<string> {

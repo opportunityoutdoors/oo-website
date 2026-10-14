@@ -14,6 +14,10 @@ import {
   validateSurveyAnswers,
   type SurveyAnswers,
 } from "@/lib/surveys/questions";
+import { formatMeetingTime } from "@/lib/format-event-date";
+import { ADULT_AGE, ageOn, refuseWaitlistPeople } from "@/lib/minor-guard";
+import { escapeLike, findContactByEmail } from "@/lib/contacts/find";
+import { confirmationUrl } from "@/lib/email-confirmation";
 
 /* ─── Types ─── */
 
@@ -150,19 +154,19 @@ async function writeToSupabase(
     contactData.last_name = parts.slice(1).join(" ");
   }
 
-  // Find existing contact by email, or create new
+  // Find existing contact by email, or create new. Case-insensitive: an exact match made a
+  // second person every time somebody typed a capital letter.
   let contact: { id: string } | null = null;
-  const { data: existing } = await supabase
-    .from("contacts")
-    .select("id")
-    .eq("email", email)
-    .single();
+  const existing = await findContactByEmail(supabase, email);
 
   if (existing) {
-    // Update existing contact
+    // Update existing contact. The stored email is kept: the match ignores case, and a
+    // resubmission typed in a different case must not rewrite the address on file.
+    const { email: _sameAddress, ...updateData } = contactData;
+    void _sameAddress;
     const { data: updated, error: updateError } = await supabase
       .from("contacts")
-      .update(contactData)
+      .update(updateData)
       .eq("id", existing.id)
       .select("id")
       .single();
@@ -352,6 +356,11 @@ async function writeToSupabase(
               meetingLabel: str("meetingDate"),
               meetingSlots: slots,
               meetingChangeToken,
+              // A failure here must not cost them the confirmation email itself.
+              confirmUrl: await confirmationUrl(supabase, contactId).catch((err) => {
+                console.error("Confirm link error:", err);
+                return null;
+              }),
             });
           } catch (err) {
             console.error("Waitlist confirmation email error:", err);
@@ -627,6 +636,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
     }
 
+    // A camp waitlist signup must come from an adult. Enforced here rather than in the form,
+    // because the form is only a suggestion to anyone determined to get past it.
+    if (formType === "camp-waitlist") {
+      const refusal = await refuseCampWaitlist(data);
+      if (refusal) return NextResponse.json({ error: refusal }, { status: 400 });
+    }
+
     // The pre-event survey is mandatory, so enforce it here rather than trusting the
     // form's required attributes. A registration without a baseline has no post response
     // to pair with and would quietly drag the confidence delta toward nothing.
@@ -703,6 +719,63 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/* ─── Camp waitlist: adults only ─── */
+
+const CONTACT_US =
+  "We could not add you to the waitlist. Please contact us at info@opportunityoutdoors.org.";
+
+/**
+ * The reason to refuse a camp waitlist signup, or null.
+ *
+ * The form checks come from minor-guard. The two lookups here stop a minor who was refused,
+ * or who is already on file as a minor, from trying again with a different birth date.
+ */
+async function refuseCampWaitlist(data: Record<string, unknown>): Promise<string | null> {
+  const str = (key: string) => sanitize(data[key]);
+  const today = new Date();
+
+  const refusal = refuseWaitlistPeople(
+    {
+      firstName: str("firstName"),
+      lastName: str("lastName"),
+      dateOfBirth: str("dateOfBirth"),
+      bringingMinor: Boolean(data.bringingMinor),
+      minorFirstName: str("minorFirstName"),
+      minorLastName: str("minorLastName"),
+      minorDob: str("minorDob"),
+    },
+    today
+  );
+  if (refusal) return refusal;
+
+  const supabase = createServiceClient();
+  const isMinorOnFile = (dob: string | null) => {
+    const age = dob ? ageOn(dob, today) : null;
+    return age !== null && age < ADULT_AGE;
+  };
+
+  // This email already belongs to someone whose recorded birth date makes them a minor.
+  const byEmail = await findContactByEmail(supabase, str("email"), "id, date_of_birth");
+  if (byEmail && isMinorOnFile(byEmail.date_of_birth ?? null)) return CONTACT_US;
+
+  // Same name and phone as a minor on file: the same person with a new email.
+  const digits = (v: string | null) => (v ?? "").replace(/\D/g, "").slice(-10);
+  const phone = digits(str("phone"));
+  if (phone.length === 10) {
+    const { data: sameName } = await supabase
+      .from("contacts")
+      .select("phone, date_of_birth")
+      .ilike("first_name", escapeLike(str("firstName")))
+      .ilike("last_name", escapeLike(str("lastName")))
+      .not("date_of_birth", "is", null);
+    if ((sameName ?? []).some((c) => digits(c.phone) === phone && isMinorOnFile(c.date_of_birth))) {
+      return CONTACT_US;
+    }
+  }
+
+  return null;
+}
+
 /* ─── Waitlist Confirmation Email ─── */
 
 interface MeetingSlot {
@@ -719,7 +792,9 @@ async function sendWaitlistConfirmation({
   meetingLabel,
   meetingSlots,
   meetingChangeToken,
+  confirmUrl,
 }: {
+  confirmUrl: string | null;
   email: string;
   firstName: string;
   eventTitle: string;
@@ -741,14 +816,7 @@ async function sendWaitlistConfirmation({
   const selectedSlot = meetingSlots.find((s) => s.label === meetingLabel);
   const meetLink = selectedSlot?.meetingLink;
   const meetingDate = selectedSlot?.date
-    ? new Date(selectedSlot.date).toLocaleDateString("en-US", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      })
+    ? formatMeetingTime(selectedSlot.date)
     : meetingLabel;
 
   await resend.emails.send({
@@ -762,6 +830,7 @@ async function sendWaitlistConfirmation({
       meetingDate,
       meetLink,
       meetingChangeUrl,
+      confirmUrl,
     }),
   });
 }

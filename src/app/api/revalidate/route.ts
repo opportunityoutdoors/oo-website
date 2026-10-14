@@ -151,23 +151,30 @@ async function updateEventInSupabase(sanityId: string) {
           if (!slot.calendarEventId && slot.date) {
             // Create new calendar event
             const endTime = new Date(new Date(slot.date).getTime() + 60 * 60 * 1000).toISOString();
-            const { eventId } = await createCalendarEvent({
+            const { eventId, meetLink } = await createCalendarEvent({
               summary: `${event.title} — ${slot.label || "Pre-Camp Meeting"}`,
               description: `Pre-camp virtual meeting for ${event.title}. Attendance is required for all participants.`,
               start: slot.date,
               end: endTime,
               meetLink: slot.meetingLink || undefined,
+              createMeet: true,
             });
             slot.calendarEventId = eventId;
+            if (meetLink) slot.meetingLink = meetLink;
             slotsUpdated = true;
           } else if (slot.calendarEventId && slot.date) {
             // Update existing calendar event if date changed
             const endTime = new Date(new Date(slot.date).getTime() + 60 * 60 * 1000).toISOString();
-            await updateCalendarEvent(slot.calendarEventId, {
+            const { meetLink } = await updateCalendarEvent(slot.calendarEventId, {
               summary: `${event.title} — ${slot.label || "Pre-Camp Meeting"}`,
               start: slot.date,
               end: endTime,
             });
+            // Picks up a Meet somebody added in Calendar by hand, so the emails can link it.
+            if (meetLink && !slot.meetingLink) {
+              slot.meetingLink = meetLink;
+              slotsUpdated = true;
+            }
           }
         } catch (calErr) {
           console.error("Calendar event error for slot:", slot.label, calErr);

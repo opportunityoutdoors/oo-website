@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { renderApproval, renderDenial } from "@/emails";
+import { unconfirmedNames, unconfirmedRefusal } from "@/lib/email-confirmation";
 import { apiRequireMember } from "@/lib/admin/auth";
 import { logRegistrationEvent } from "@/lib/registration-log";
 
@@ -24,6 +25,16 @@ export async function PATCH(request: NextRequest) {
   const validStatuses = ["waitlist", "meeting_rsvp", "approved", "denied", "registered", "attended"];
   if (!validStatuses.includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
+
+  // Nobody is approved until the address their invitation goes to is proven. Refused whole
+  // rather than approving the rest, so a bulk approve never half-happens without anyone
+  // noticing which half.
+  if (status === "approved") {
+    const names = await unconfirmedNames(supabase, ids);
+    if (names.length) {
+      return NextResponse.json({ error: unconfirmedRefusal(names) }, { status: 400 });
+    }
   }
 
   // Captured before the update, because afterwards there is nothing left to read.

@@ -5,6 +5,7 @@ import Link from "next/link";
 import ExitDialog from "./ExitDialog";
 import {
   byPosition,
+  emailUnconfirmed,
   nameOf,
   position,
   requirements,
@@ -216,6 +217,15 @@ function Card({
           <span className="shrink-0 text-[10px] text-near-black/35">{reg.role}</span>
         )}
       </div>
+
+      {/* Shown on the waitlist, because it is what blocks approval. */}
+      {!isPast && !gone && emailUnconfirmed(reg) && position(reg) === "waitlist" && (
+        <p className="mt-1.5">
+          <span className="rounded bg-[#b00]/10 px-1.5 py-0.5 text-[10px] text-[#b00]">
+            email unconfirmed
+          </span>
+        </p>
+      )}
 
       {/* Requirements describe readiness, which is a question about the future. A camp that
           ran before background checks existed did not fail one. */}

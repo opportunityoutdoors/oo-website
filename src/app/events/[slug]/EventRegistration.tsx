@@ -6,6 +6,7 @@ import FormField from "@/components/forms/FormField";
 import SurveyQuestions, { EMPTY_ANSWERS } from "@/components/forms/SurveyQuestions";
 import { US_STATES } from "@/lib/constants/us-states";
 import type { SurveyAnswers } from "@/lib/surveys/questions";
+import { formatMeetingTime } from "@/lib/format-event-date";
 
 interface EventRegistrationProps {
   event: {
@@ -163,6 +164,7 @@ function WaitlistForm({
 }) {
   const router = useRouter();
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [bringingMinor, setBringingMinor] = useState(false);
   const [form, setForm] = useState({
     firstName: "",
@@ -188,13 +190,7 @@ function WaitlistForm({
   const meetingOptions =
     event.meetingSlots?.map((slot) => {
       const dateStr = slot.date
-        ? new Date(slot.date).toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-          })
+        ? formatMeetingTime(slot.date)
         : "";
       const displayLabel = dateStr
         ? `${dateStr}${slot.label ? ` — ${slot.label}` : ""}`
@@ -207,6 +203,7 @@ function WaitlistForm({
     if (form.honeypot) return;
 
     setStatus("loading");
+    setErrorMessage(null);
     try {
       const res = await fetch("/api/submit-form", {
         method: "POST",
@@ -234,8 +231,12 @@ function WaitlistForm({
       });
 
       if (res.ok) {
-        router.push("/thank-you");
+        router.push("/thank-you?type=waitlist");
       } else {
+        // The server says why when it refuses, e.g. an under-18 signup. Show that, not a
+        // generic retry message that invites them to try again.
+        const body = await res.json().catch(() => null);
+        setErrorMessage(typeof body?.error === "string" ? body.error : null);
         setStatus("error");
       }
     } catch {
@@ -325,7 +326,7 @@ function WaitlistForm({
         )}
 
         {status === "error" && (
-          <p className="text-sm text-red-500">Something went wrong. Please try again.</p>
+          <p className="text-sm text-red-500">{errorMessage ?? "Something went wrong. Please try again."}</p>
         )}
 
         <button

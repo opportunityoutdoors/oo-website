@@ -19,20 +19,48 @@ Sources this was assembled from, which stay as the detailed reference:
 
 ## Phase 2 — Waitlist
 
+- [ ] Meeting emails carry no Meet link. Found 2026-10-13. Google side proven 2026-10-14: a
+      ZZ TEST Calendar event created with `createMeet` returned a `meet.google.com` link,
+      and a re-read returned the same link. The step where `revalidate/route.ts` stores the
+      link on the slot is unproven until the next Sanity publish of a camp. Publishing 2026
+      Deer Camp also stores the Meet that was added to its events by hand.
+- [ ] Re-send the confirmation email after a meeting change (Calendar notifies, we do not).
+      Measured 2026-10-13: still open. `waitlist/change-meeting/route.ts:32-98` moves the
+      Calendar attendee and sends nothing. The sender is private to `submit-form/route.ts`
+      and must move to a shared file first. 23 people are on the 2026 Deer Camp waitlist.
 - [x] Waitlist form on the event page, gated by `waitlistOpens` / `waitlistCloses`
 - [x] Submission upserts the contact and creates a `waitlist` registration
 - [x] Add the participant as an attendee on the selected meeting's Calendar event
 - [x] Waitlist confirmation email with meeting date, Meet link, and a change link
 - [x] Tokenized meeting-change page that moves the Calendar attendee
 - [x] Waitlist-close reminder email, sent by the daily `waitlist-reminder` cron
-- [ ] Re-send the confirmation email after a meeting change (Calendar notifies, we do not)
+- [x] Meeting emails print the meeting in Eastern time. Fixed 2026-10-14 with
+      `formatMeetingTime()` in `src/lib/format-event-date.ts`. The delivered Deer Camp email
+      of 2026-10-09 said "Friday, October 16, 2026 at 12:00 AM". The fixture email now says
+      "Tuesday, October 13, 2026 at 8:00 PM ET".
+- [x] Minors cannot sign up as the adult. Done 2026-10-14 in `src/lib/minor-guard.ts`. The
+      waitlist refuses an adult under 18, a minor of 18 or more, and a minor with the adult's
+      name. It also refuses an email or name and phone on file for someone under 18. The
+      registration form refuses an under-18 token holder and no longer overwrites a birth
+      date on file. Proven against the fixture camp: 5 refusals, 1 valid signup.
+- [x] Contact lookup ignores letter case. Done 2026-10-14 in `src/lib/contacts/find.ts`. The 4
+      case-only pairs were merged (623 to 619 contacts), and migration 037 makes a case
+      variant fail loudly. Admins see name-and-phone pairs at `/admin/contacts/duplicates`,
+      with a merge that runs as one transaction (migration 036). 2 pairs are left there.
+- [x] Email confirmed before approval. Done 2026-10-14. The waitlist email carries a confirm
+      link, the board badges unconfirmed people, and both approval paths refuse them. A
+      "Send confirm links" button on the event page re-sends the link. Applies only to signups
+      from 2026-10-14 on (`EMAIL_CONFIRMATION_STARTS`), so 0 of the 23 Deer Camp registrations
+      are blocked. Proven against the fixture camp, end to end.
 
 ## Phase 3 — Meetings and approval
 
 - [x] Meeting attendance recorded by moving a person to `meeting_rsvp`
 - [x] Rolling approval generates a token and sends the registration invite email
 - [x] Denial email
-- [ ] Show mentor/mentee counts and remaining mentee slots in the admin, at the 3:1 ratio
+- [x] Show mentor/mentee counts and remaining mentee slots in the admin, at the 3:1 ratio.
+      Measured 2026-10-13: already built in commit 7448c2b, at
+      `admin/events/[id]/EventPipeline.tsx:323-347`. Slots count registered mentors only.
 
 ## Phase 4 — Registration, payment, screening
 
@@ -52,7 +80,10 @@ Sources this was assembled from, which stay as the detailed reference:
 - [x] Manual match and unmatch in the admin
 - [x] Role-specific welcome packet email with camp locations and perks, gated on screening
 - [x] Mentors are asked about a shirt rather than charged for one
-- [ ] Attach the print guide PDF to the welcome packet email
+- [ ] Attach the print guide PDF to the welcome packet email. Measured 2026-10-13: still open
+      and blocked on the file. No print guide PDF is in the repo and the Sanity `event`
+      schema has no field for one. The send at `welcome-packet/route.ts:320` has no
+      attachments.
 
 ## Phase 6 — Camp admin board
 
@@ -73,9 +104,15 @@ Sources this was assembled from, which stay as the detailed reference:
 - [x] Phase 2: event campaigns as Broadcasts
 - [x] Phase 4: pre and post camp surveys on their own cron
 - [x] Phase 5: mentee nurture sequence
-- [ ] Phase 3: monthly newsletter template and an admin draft generator from Sanity events and blog
-- [ ] Settle the event-email send cadence
-- [ ] Direct Mail teardown: cancel the e57 subscription, drop `DIRECT_MAIL_*` and dead `GOOGLE_SHEETS_*` vars from Vercel
+- [ ] Direct Mail teardown: cancel the e57 subscription, drop `DIRECT_MAIL_*` and dead `GOOGLE_SHEETS_*` vars from Vercel.
+      Measured 2026-10-13: `src/` has 0 references to either prefix. `scripts/setup-sheets.mjs`
+      has 3 and is dead, so delete it. The Vercel variables are not measured, because
+      `scripts/vercel.sh` has no command that lists them. Moved first because it is the
+      only item here that needs no design.
+- [ ] Phase 3: monthly newsletter template and an admin draft generator from Sanity events and blog.
+      Measured 2026-10-13: nothing built. 0 of 15 templates in `src/emails/templates/` is a
+      newsletter, and no design document exists for it.
+- [ ] Settle the event-email send cadence. Measured 2026-10-13: a decision, with no code.
 
 ## Phase 8 — Fundraising and store
 
@@ -98,4 +135,6 @@ Sources this was assembled from, which stay as the detailed reference:
       admin without a password, drives a feature, and captures evidence to `.verify/`
 - [x] Feature map at `.claude/skills/verify-oo/features/`, covering the camp board,
       registration, screening, the welcome packet, and the waitlist
-- [ ] Map donations, the nurture sequence, surveys, and partner events
+- [ ] Map donations, the nurture sequence, surveys, and partner events. Measured 2026-10-13:
+      still open, 5 features mapped. `features/README.md` lists 7 unmapped surfaces, which
+      adds admin invites, the Studio, and the marketing pages to these 4.

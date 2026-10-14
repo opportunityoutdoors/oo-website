@@ -29,3 +29,9 @@ verifying.
 - 2026-08-22 — `docs/` stays gitignored for its PII, with the four tracking files exempted by name rather than moved elsewhere.
 - 2026-08-25 — Verification is a project skill, `verify-oo`, not a test suite: it drives the real app against the fixture camp and proves changes by the database, keeping the no-E2E decision of 2026-08-08 intact.
 - 2026-08-25 — Admin verification signs in by minting a Supabase session with the service role, never by typing a password, so no credential is stored for it.
+- 2026-10-13. The publish webhook asks Google to create the Meet link for each meeting slot and stores it on the slot. The hand-entered Sanity link stays as an override.
+- 2026-10-14. A camp registrant must confirm their email by clicking a link before approval. Both approval paths refuse otherwise. Chosen over typing the email twice, because only a click proves the address receives mail.
+- 2026-10-14. A minor cannot join a camp waitlist as the adult. A guardian signs up and adds the minor. The birth date on file wins over a later form.
+- 2026-10-14. Contacts match by email without regard to letter case, enforced by a unique index on lower(email). Same name and phone pairs are shown to an admin to merge by hand, never merged automatically.
+- 2026-10-14. Pre-camp meeting times display in Eastern time, labelled ET. Date-only event fields keep the UTC rule.
+- 2026-10-14. Email confirmation applies only to signups made on or after 2026-10-14. Current 2026 Deer Camp enrollees are not asked to confirm, by decision of John Trice.

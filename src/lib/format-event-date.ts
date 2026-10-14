@@ -101,3 +101,24 @@ export function eventDateBadge(iso: string): { month: string; day: number } {
     day: utc(iso).day,
   };
 }
+
+/**
+ * A pre-camp meeting time, e.g. "Tuesday, October 13, 2026 at 8:00 PM ET".
+ *
+ * Meeting slots are real datetimes, not date-only values, so the UTC rule above is wrong for
+ * them. Pinned to Eastern because the camps and the people are in North Carolina, and because
+ * the server sending the email runs in UTC: unpinned, an 8 PM Tuesday meeting went out as
+ * "Wednesday at 12:00 AM".
+ */
+export function formatMeetingTime(iso: string): string {
+  const when = new Date(iso).toLocaleString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "America/New_York",
+  });
+  return `${when} ET`;
+}

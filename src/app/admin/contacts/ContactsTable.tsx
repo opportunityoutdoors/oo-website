@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 
 interface Contact {
@@ -240,7 +241,12 @@ export default function ContactsTable() {
         <h1 className="font-heading text-3xl font-[900] uppercase tracking-tight text-near-black">
           Contacts
         </h1>
-        <span className="text-sm text-near-black/40">{total} total</span>
+        <span className="flex items-center gap-4 text-sm text-near-black/40">
+          <Link href="/admin/contacts/duplicates" className="text-dark-green hover:underline">
+            Possible duplicates
+          </Link>
+          {total} total
+        </span>
       </div>
 
       {/* Filters */}

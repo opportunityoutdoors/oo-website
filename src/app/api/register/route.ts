@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { ADULT_AGE, UNDER_18_MESSAGE, ageOn } from "@/lib/minor-guard";
 import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { renderRegistrationConfirmation } from "@/emails";
 import {
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
   // Verify token and status
   const { data: registration } = await supabase
     .from("registrations")
-    .select("id, contact_id, event_id, role, status, events(event_type)")
+    .select("id, contact_id, event_id, role, status, guardian_registration_id, events(event_type), contacts(date_of_birth)")
     .eq("token", token)
     .single();
 
@@ -105,6 +106,16 @@ export async function POST(request: NextRequest) {
 
   if (registration.status !== "approved") {
     return NextResponse.json({ error: "Not eligible for registration" }, { status: 403 });
+  }
+
+  // The person holding this token registers as the adult, so they must be one. The birth date
+  // on file wins over the one typed here: a minor changing it on this form is the case this
+  // stops. A minor's own registration is done by their guardian, never with their own token.
+  const contactRel = registration.contacts as { date_of_birth: string | null } | { date_of_birth: string | null }[] | null;
+  const dobOnFile = (Array.isArray(contactRel) ? contactRel[0] : contactRel)?.date_of_birth ?? null;
+  const registrantAge = ageOn(dobOnFile ?? (typeof date_of_birth === "string" ? date_of_birth : ""), new Date());
+  if (registration.guardian_registration_id || (registrantAge !== null && registrantAge < ADULT_AGE)) {
+    return NextResponse.json({ error: UNDER_18_MESSAGE }, { status: 403 });
   }
 
   const eventRel = registration.events as { event_type: string } | { event_type: string }[] | null;
@@ -173,7 +184,7 @@ export async function POST(request: NextRequest) {
   // whether they are screened at all.
   const contactPatch: Record<string, unknown> = {};
   if (tshirt_size) contactPatch.tshirt_size = tshirt_size;
-  if (date_of_birth) contactPatch.date_of_birth = date_of_birth;
+  if (date_of_birth && !dobOnFile) contactPatch.date_of_birth = date_of_birth;
   if (Object.keys(contactPatch).length > 0) {
     await supabase
       .from("contacts")
@@ -184,7 +195,7 @@ export async function POST(request: NextRequest) {
   // Handle linked minor
   const { data: linkedMinor } = await supabase
     .from("registrations")
-    .select("id, contact_id")
+    .select("id, contact_id, contacts(date_of_birth)")
     .eq("guardian_registration_id", registration.id)
     .single();
 
@@ -211,7 +222,10 @@ export async function POST(request: NextRequest) {
     // report is never run on a child.
     const minorPatch: Record<string, unknown> = {};
     if (minor_tshirt_size) minorPatch.tshirt_size = minor_tshirt_size;
-    if (minor_date_of_birth) minorPatch.date_of_birth = minor_date_of_birth;
+    // Only filled when missing, for the same reason as the adult's above.
+    const minorRel = linkedMinor.contacts as { date_of_birth: string | null } | { date_of_birth: string | null }[] | null;
+    const minorDobOnFile = (Array.isArray(minorRel) ? minorRel[0] : minorRel)?.date_of_birth ?? null;
+    if (minor_date_of_birth && !minorDobOnFile) minorPatch.date_of_birth = minor_date_of_birth;
     if (Object.keys(minorPatch).length > 0) {
       await supabase
         .from("contacts")

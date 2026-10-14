@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   computePipeline,
+  emailUnconfirmed,
   isMatched,
   isCleared,
   position,
@@ -329,5 +330,27 @@ describe("position and a screening decline", () => {
       contacts: contacts({ background_check_status: "declined", background_check_expires_at: null }),
     });
     expect(position(attended)).toBe("attended");
+  });
+});
+
+describe("emailUnconfirmed", () => {
+  const signedUp = "2026-11-01T15:00:00Z";
+
+  it("is true for an adult who never clicked the link", () => {
+    expect(emailUnconfirmed(reg({ status: "waitlist", created_at: signedUp }))).toBe(true);
+  });
+
+  it("is false for anyone who signed up before confirmation existed", () => {
+    expect(emailUnconfirmed(reg({ status: "waitlist", created_at: "2026-10-06T22:14:11Z" }))).toBe(false);
+  });
+
+  it("is false once the address is confirmed", () => {
+    const r = reg({ status: "waitlist", created_at: signedUp, contacts: contacts({ email_confirmed_at: "2026-11-01T16:00:00Z" }) });
+    expect(emailUnconfirmed(r)).toBe(false);
+  });
+
+  it("is never true for a minor, whose guardian carries it", () => {
+    const r = reg({ status: "waitlist", created_at: signedUp, guardian_registration_id: "g1", contacts: contacts({ email: null as unknown as string }) });
+    expect(emailUnconfirmed(r)).toBe(false);
   });
 });

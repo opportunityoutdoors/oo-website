@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiRequireMember } from "@/lib/admin/auth";
 import { createServiceClient } from "@/lib/supabase/server";
 import { EXIT_REASONS, type Position } from "@/lib/camp-pipeline";
+import { unconfirmedNames, unconfirmedRefusal } from "@/lib/email-confirmation";
 
 // Moving a card between columns on the camp board.
 //
@@ -110,6 +111,14 @@ export async function POST(req: NextRequest) {
       },
       { status: 400 }
     );
+  }
+
+  // Same gate as the bulk approve in ../route.ts.
+  if (status === "approved") {
+    const names = await unconfirmedNames(supabase, [registrationId]);
+    if (names.length) {
+      return NextResponse.json({ error: unconfirmedRefusal(names) }, { status: 400 });
+    }
   }
 
   const patch: Record<string, unknown> = { status };

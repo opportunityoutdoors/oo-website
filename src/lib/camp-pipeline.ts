@@ -21,6 +21,7 @@ export type PipelineReg = {
   welcome_packet_sent?: boolean;
   mentor_id?: string | null;
   guardian_registration_id?: string | null;
+  created_at?: string | null;
   contacts: {
     id?: string;
     first_name: string | null;
@@ -29,6 +30,7 @@ export type PipelineReg = {
     date_of_birth: string | null;
     background_check_status: string | null;
     background_check_expires_at: string | null;
+    email_confirmed_at?: string | null;
   } | null;
 };
 
@@ -305,6 +307,28 @@ export function byPosition(registrations: PipelineReg[]): Record<Position, Pipel
 
   for (const r of registrations) out[position(r)].push(r);
   return out;
+}
+
+/**
+ * Email confirmation applies to signups from this moment on. Everyone who signed up before it
+ * (the whole 2026 Deer Camp waitlist) was never sent a link and is approved as before. Decided
+ * 2026-10-14: start with the next new event, ask nothing of current enrollees.
+ */
+export const EMAIL_CONFIRMATION_STARTS = "2026-10-14T00:00:00Z";
+
+/** Whether a signup made at `createdAt` must confirm its email before approval. */
+export function confirmationRequired(createdAt: string | null | undefined): boolean {
+  return Boolean(createdAt) && new Date(createdAt as string) >= new Date(EMAIL_CONFIRMATION_STARTS);
+}
+
+/**
+ * True when this person's own email is unconfirmed, which blocks approval. A minor has no
+ * email of their own, so it is never true for one: their guardian's card carries it.
+ */
+export function emailUnconfirmed(r: PipelineReg): boolean {
+  if (r.guardian_registration_id) return false;
+  if (!confirmationRequired(r.created_at)) return false;
+  return !r.contacts?.email_confirmed_at;
 }
 
 /**

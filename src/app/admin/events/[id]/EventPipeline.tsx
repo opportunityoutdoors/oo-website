@@ -8,7 +8,7 @@ import ReviewModal from "./ReviewModal";
 import ReadinessPanel from "./ReadinessPanel";
 import CampBoard from "./CampBoard";
 import ExitDialog from "./ExitDialog";
-import { position, nameOf, POSITIONS, type Position } from "@/lib/camp-pipeline";
+import { emailUnconfirmed, position, nameOf, POSITIONS, type Position } from "@/lib/camp-pipeline";
 import { formatEventDateRange } from "@/lib/format-event-date";
 import { describeCheck } from "@/lib/background-check/display";
 
@@ -41,6 +41,7 @@ interface Registration {
     background_check_expires_at: string | null;
     background_check_invited_at: string | null;
     background_check_url: string | null;
+    email_confirmed_at: string | null;
   };
 }
 
@@ -200,24 +201,39 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
   async function bulkUpdateStatus(status: string) {
     if (selected.size === 0) return;
     setActionLoading(true);
-    await fetch("/api/admin/registrations", {
+    const res = await fetch("/api/admin/registrations", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids: [...selected], status }),
     });
-    setSelected(new Set());
+    // A refusal (e.g. an unconfirmed email) has to be seen, not swallowed.
+    if (!res.ok) alert((await res.json().catch(() => null))?.error ?? "Could not update.");
+    else setSelected(new Set());
     await fetchEvent();
     setActionLoading(false);
   }
 
 
+  /** Emails a confirm link to everyone on the waitlist who has not confirmed yet. */
+  async function sendConfirmRequests(count: number) {
+    if (!confirm(`Email a confirm link to ${count} ${count === 1 ? "person" : "people"} on the waitlist?`)) return;
+    setActionLoading(true);
+    const res = await fetch(`/api/admin/events/${eventId}/email-confirmations`, { method: "POST" });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) alert(data?.error ?? "Could not send.");
+    else alert(`Sent ${data.sent}.${data.failed?.length ? ` Failed: ${data.failed.join(", ")}` : ""}`);
+    await fetchEvent();
+    setActionLoading(false);
+  }
+
   async function updateSingle(id: string, status: string) {
     setActionLoading(true);
-    await fetch("/api/admin/registrations", {
+    const res = await fetch("/api/admin/registrations", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids: [id], status }),
     });
+    if (!res.ok) alert((await res.json().catch(() => null))?.error ?? "Could not update.");
     await fetchEvent();
     setActionLoading(false);
   }
@@ -326,6 +342,13 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
               const approvedMentees = event.registrations.filter((r) => r.role === "Mentee" && (r.status === "approved" || r.status === "registered")).length;
               const maxMenteeSlots = registeredMentors * 3;
               const availableMenteeSlots = Math.max(0, maxMenteeSlots - approvedMentees);
+              // Adults on the waitlist who cannot be approved until they click their link.
+              const unconfirmed = event.registrations.filter(
+                (r) =>
+                  (r.status === "waitlist" || r.status === "meeting_rsvp") &&
+                  r.contacts?.email &&
+                  emailUnconfirmed(r)
+              ).length;
               const ratio = mentors > 0 ? `${(mentees / mentors).toFixed(1)}:1` : mentees > 0 ? "No mentors" : "—";
 
               return (
@@ -339,6 +362,21 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                   {isCamp && (
                     <>
                       <span className="h-8 w-px self-center bg-near-black/10" />
+                      <Figure
+                        label="Email unconfirmed"
+                        value={unconfirmed}
+                        tone={unconfirmed > 0 ? "bad" : "good"}
+                      />
+                      {unconfirmed > 0 && (
+                        <button
+                          type="button"
+                          disabled={actionLoading}
+                          onClick={() => sendConfirmRequests(unconfirmed)}
+                          className="self-center rounded border border-dark-green/30 px-2.5 py-1 text-xs font-medium text-dark-green hover:bg-dark-green/5 disabled:opacity-40"
+                        >
+                          Send confirm links
+                        </button>
+                      )}
                       <Figure label="Registered mentors" value={registeredMentors} />
                       <Figure label="Mentee slots (3:1)" value={maxMenteeSlots} />
                       <Figure

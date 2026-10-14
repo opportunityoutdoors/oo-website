@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 const SCOPES = ["https://www.googleapis.com/auth/calendar"];
 
 interface CalendarEvent {
@@ -80,10 +81,12 @@ function getCalendarId(): string {
 
 /**
  * Create a Google Calendar event.
- * Meet link is managed manually in Sanity — included in the event description.
+ * Pass `createMeet` to have Google attach a Meet conference; the link comes back as
+ * `meetLink`. A `meetLink` passed in is one somebody set by hand in Sanity, which wins
+ * and goes in the description instead.
  * Returns the calendar event ID.
  */
-export async function createCalendarEvent(event: CalendarEvent & { meetLink?: string }): Promise<{ eventId: string; meetLink: string | null }> {
+export async function createCalendarEvent(event: CalendarEvent & { meetLink?: string; createMeet?: boolean }): Promise<{ eventId: string; meetLink: string | null }> {
   const token = await getAccessToken();
   const calendarId = getCalendarId();
 
@@ -92,16 +95,27 @@ export async function createCalendarEvent(event: CalendarEvent & { meetLink?: st
     event.meetLink ? `\n\nJoin Meeting: ${event.meetLink}` : "",
   ].join("");
 
-  const body = {
+  const wantsMeet = Boolean(event.createMeet) && !event.meetLink;
+
+  const body: Record<string, unknown> = {
     summary: event.summary,
     description,
     start: { dateTime: event.start, timeZone: "America/New_York" },
     end: { dateTime: event.end || new Date(new Date(event.start).getTime() + 60 * 60 * 1000).toISOString(), timeZone: "America/New_York" },
     attendees: event.attendees?.map((email) => ({ email })) || [],
   };
+  if (wantsMeet) {
+    body.conferenceData = {
+      createRequest: {
+        requestId: randomUUID(),
+        conferenceSolutionKey: { type: "hangoutsMeet" },
+      },
+    };
+  }
 
+  // Google ignores conferenceData unless conferenceDataVersion=1 is on the request.
   const res = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?sendUpdates=all`,
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?sendUpdates=all${wantsMeet ? "&conferenceDataVersion=1" : ""}`,
     {
       method: "POST",
       headers: {
@@ -117,7 +131,15 @@ export async function createCalendarEvent(event: CalendarEvent & { meetLink?: st
     throw new Error(`Calendar API error: ${JSON.stringify(data)}`);
   }
 
-  return { eventId: data.id, meetLink: event.meetLink || null };
+  return { eventId: data.id, meetLink: event.meetLink || meetLinkOf(data) };
+}
+
+function meetLinkOf(data: CalendarEventResponse): string | null {
+  return (
+    data.hangoutLink ||
+    data.conferenceData?.entryPoints?.find((e) => e.entryPointType === "video")?.uri ||
+    null
+  );
 }
 
 /**
@@ -126,7 +148,7 @@ export async function createCalendarEvent(event: CalendarEvent & { meetLink?: st
 export async function updateCalendarEvent(
   calendarEventId: string,
   updates: Partial<CalendarEvent>
-): Promise<void> {
+): Promise<{ meetLink: string | null }> {
   const token = await getAccessToken();
   const calendarId = getCalendarId();
 
@@ -152,6 +174,10 @@ export async function updateCalendarEvent(
     const data = await res.json();
     throw new Error(`Calendar API update error: ${JSON.stringify(data)}`);
   }
+
+  // PATCH returns the whole event, so a Meet added by hand in Calendar is readable here.
+  const data: CalendarEventResponse = await res.json();
+  return { meetLink: meetLinkOf(data) };
 }
 
 /**
@@ -230,5 +256,24 @@ export async function removeAttendee(calendarEventId: string, email: string): Pr
   if (!res.ok) {
     const data = await res.json();
     throw new Error(`Calendar API remove attendee error: ${JSON.stringify(data)}`);
+  }
+}
+
+/**
+ * Delete a calendar event. Attendees are not notified.
+ */
+export async function deleteCalendarEvent(calendarEventId: string): Promise<void> {
+  const token = await getAccessToken();
+  const calendarId = getCalendarId();
+
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${calendarEventId}?sendUpdates=none`,
+    { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
+  );
+
+  // 410 means it is already gone, which is the outcome asked for.
+  if (!res.ok && res.status !== 410) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(`Calendar API delete error: ${JSON.stringify(data)}`);
   }
 }

@@ -22,11 +22,14 @@ export default async function ThankYouPage({
 }) {
   const { type } = await searchParams;
   const isEvent = type === "event";
+  const isWaitlist = type === "waitlist";
 
-  const heading = isEvent ? "You're Registered." : "You're In.";
+  const heading = isEvent ? "You're Registered." : isWaitlist ? "Check Your Inbox." : "You're In.";
   const message = isEvent
     ? "We've got your spot. We'll send any final details before the event, and a confirmation is on its way to your inbox. In the meantime, here are a few ways to stay connected:"
-    : "Thanks for reaching out. We've got your info and a board member will follow up within 48 hours. In the meantime, here are a few ways to stay connected:";
+    : isWaitlist
+      ? "You're on the waitlist. We just emailed you a link to confirm your email address. Click it, or we cannot approve you for camp. No email in a few minutes? Check spam, then write to info@opportunityoutdoors.org. In the meantime, here are a few ways to stay connected:"
+      : "Thanks for reaching out. We've got your info and a board member will follow up within 48 hours. In the meantime, here are a few ways to stay connected:";
 
   return (
     <>

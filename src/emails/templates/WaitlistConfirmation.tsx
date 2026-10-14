@@ -18,6 +18,8 @@ export interface WaitlistConfirmationProps {
   meetingDate: string;
   meetLink?: string | null;
   meetingChangeUrl: string;
+  /** Absent when the address is already confirmed. */
+  confirmUrl?: string | null;
 }
 
 export function WaitlistConfirmation({
@@ -26,14 +28,26 @@ export function WaitlistConfirmation({
   meetingDate,
   meetLink,
   meetingChangeUrl,
+  confirmUrl,
 }: WaitlistConfirmationProps) {
   return (
     <EmailLayout preview={`You're on the waitlist for ${eventTitle}`}>
       <Greeting name={firstName} />
       <P>
-        Thanks for signing up for the <strong>{eventTitle}</strong> waitlist!
+        Thanks for signing up for the <strong>{eventTitle}</strong>{" "}waitlist!
         We&apos;re glad you&apos;re interested.
       </P>
+      {confirmUrl ? (
+        <>
+          <P>
+            <strong>First, confirm your email.</strong> Your camp invitation, waiver, and
+            welcome packet all come to this address, so we cannot approve you until you
+            click below.
+          </P>
+          <BrandButton href={confirmUrl}>Confirm My Email</BrandButton>
+        </>
+      ) : null}
+
       <P>Here&apos;s what happens next:</P>
 
       <ol
@@ -46,6 +60,11 @@ export function WaitlistConfirmation({
           margin: "0 0 16px",
         }}
       >
+        {confirmUrl ? (
+          <li>
+            <strong>Confirm your email</strong> (required)
+          </li>
+        ) : null}
         <li>
           <strong>Attend your pre-camp virtual meeting</strong> (required)
         </li>

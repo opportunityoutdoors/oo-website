@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { renderWaitlistReminder } from "@/emails";
+import { formatMeetingTime } from "@/lib/format-event-date";
 
 export async function GET(request: NextRequest) {
   // Verify cron secret to prevent unauthorized access
@@ -108,13 +109,7 @@ export async function GET(request: NextRequest) {
       const selectedSlot = meetingSlots.find((s) => s.label === reg.meeting_date_selected);
 
       const meetingDate = selectedSlot?.date
-        ? new Date(selectedSlot.date).toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-          })
+        ? formatMeetingTime(selectedSlot.date)
         : reg.meeting_date_selected || "TBD";
 
       const meetLink = selectedSlot?.meetingLink;
