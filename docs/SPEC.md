@@ -96,6 +96,13 @@ Sources this was assembled from, which stay as the detailed reference:
 - [x] Per-person history on the contact profile
 - [x] Requirement badges hidden on past camps, which predate the requirements
 - [x] Summary header stops being the navigation
+- [x] T-shirt count on the camp page. Done 2026-10-14: sizes for people registered and paid,
+      with a progress bar of how many of everyone approved have got there. Older word sizes
+      ("Large", "XXL") map to S to 3XL. Proven on the fixture camp.
+- [x] Board members on a camp as Mentor or Staff. Done 2026-10-14: a Board panel on the camp
+      page, listing the 6 board members from Sanity. Staff owe nothing and land in Ready.
+      Staff and Not going proven on the fixture camp. Mentor sends a real invite, so it is
+      pointed at in code (`board/route.ts`) and not run.
 
 ## Phase 7 — Email platform on Resend
 

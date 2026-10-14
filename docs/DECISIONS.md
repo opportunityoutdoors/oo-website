@@ -35,3 +35,6 @@ verifying.
 - 2026-10-14. Contacts match by email without regard to letter case, enforced by a unique index on lower(email). Same name and phone pairs are shown to an admin to merge by hand, never merged automatically.
 - 2026-10-14. Pre-camp meeting times display in Eastern time, labelled ET. Date-only event fields keep the UTC rule.
 - 2026-10-14. Email confirmation applies only to signups made on or after 2026-10-14. Current 2026 Deer Camp enrollees are not asked to confirm, by decision of John Trice.
+- 2026-10-14. The board list for camps is the Board Members documents in Sanity, the same list as the About page.
+- 2026-10-14. A board member goes to a camp as Mentor, who walks the normal mentor path, or as Staff, who owes nothing: no waiver, fee, check, or mentee. Staff are left out of the ratio, matching, and welcome packets.
+- 2026-10-14. Board emails are not stored in Sanity, because the dataset is public. A server-only board_links table ties each board member to a contact.

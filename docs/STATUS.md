@@ -5,6 +5,8 @@
 
 ## Done recently
 
+- 2026-10-14, committed, not pushed: t-shirt count with a progress bar, and a Board panel
+  to put board members on a camp as Mentor or Staff. Migration 038 applied.
 - 2026-10-14, deployed: meeting times in Eastern, minor stops on waitlist and registration,
   email confirmation before approval, case-insensitive contacts with an admin merge page,
   Meet links created by Calendar. Migrations 035 to 037 applied. Email confirmation starts
@@ -15,7 +17,6 @@
   categorised exits, a transition timeline, and the table given back its own filtering.
 - Registration rebuilt as four steps, with unit tests around the money and screening logic.
 - Refund copy fixed; mentors asked about a shirt rather than charged for one.
-- Project tracking set up, and CLAUDE.md given the essentials it lacked.
 - `verify-oo` skill added: launches the app, signs into the admin without a password, drives
   a feature, and proves it by the database. Five features mapped.
 
