@@ -117,8 +117,9 @@ export async function POST(
     )
     .eq("event_id", eventId)
     .in("status", ["registered", "attended"])
-    // Board staff are not sent a packet: they owe no check, so the location gate below would
+    // Board members are not sent a packet: they owe no check, so the location gate below would
     // refuse them, and they already know where camp is.
+    .or("is_board_member.is.null,is_board_member.eq.false")
     .or("role.is.null,role.neq.Staff");
 
   if (specificIds?.length) {

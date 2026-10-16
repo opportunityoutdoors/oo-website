@@ -22,6 +22,7 @@ export type PipelineReg = {
   mentor_id?: string | null;
   guardian_registration_id?: string | null;
   created_at?: string | null;
+  is_board_member?: boolean | null;
   contacts: {
     id?: string;
     first_name: string | null;
@@ -285,9 +286,9 @@ export function position(r: PipelineReg): Position {
   if (r.status === "waitlist" || r.status === "meeting_rsvp") return "waitlist";
   if (r.status === "approved") return "invited";
 
-  // Board members going as admin staff owe nothing: no waiver, fee, check, or mentee.
-  // Decided 2026-10-14. Registered is therefore Ready for them.
-  if (r.status === "registered" && r.role === STAFF_ROLE) return "ready";
+  // Board members going to camp are pre-registered and owe nothing: no waiver, fee, or
+  // check, whether they go as mentor or staff. Decided 2026-10-14 and 2026-10-16.
+  if (r.status === "registered" && isBoard(r)) return "ready";
 
   // Registered. Ready means every requirement is met, which is the same rule the welcome
   // packet gate uses, so a card in Ready is exactly a card that can receive one.
@@ -305,6 +306,11 @@ export function position(r: PipelineReg): Position {
 
 /** Role for a board member at camp as admin staff rather than as a mentor. */
 export const STAFF_ROLE = "Staff";
+
+/** A board member on this camp, as mentor or staff. Staff is only ever a board member. */
+export function isBoard(r: PipelineReg): boolean {
+  return Boolean(r.is_board_member) || r.role === STAFF_ROLE;
+}
 
 /** Groups registrations into board columns, preserving input order within each. */
 export function byPosition(registrations: PipelineReg[]): Record<Position, PipelineReg[]> {
@@ -345,7 +351,7 @@ export function emailUnconfirmed(r: PipelineReg): boolean {
  * "no", which produced "no paid".
  */
 export function requirements(r: PipelineReg): { label: string; met: boolean }[] {
-  if (r.role === STAFF_ROLE) return [];
+  if (isBoard(r)) return [];
   const pair = (met: boolean, yes: string, no: string) => ({ label: met ? yes : no, met });
 
   const reqs = [
@@ -400,7 +406,7 @@ export function shirtTally(
   const done = active.filter(
     (r) =>
       (r.status === "registered" || r.status === "attended") &&
-      (r.payment_status === "paid" || r.role === STAFF_ROLE)
+      (r.payment_status === "paid" || isBoard(r))
   );
 
   const counts = new Map<string, number>();

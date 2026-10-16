@@ -7,12 +7,16 @@ type Member = {
   name: string;
   title: string | null;
   email: string | null;
+  tshirtSize: string | null;
   registration: { id: string; role: string | null; status: string } | null;
 };
 
+const SIZES = ["S", "M", "L", "XL", "2XL", "3XL"];
+
 /**
- * Which board members are going to this camp, and as what. Mentor sends the normal
- * registration invite. Staff owes nothing and lands in Ready. Not going removes them.
+ * Which board members are going to this camp, and as what. Both Mentor and Staff are
+ * pre-registered with no email and land in Ready. Not going removes them. The shirt size
+ * is saved on their contact and counted with everyone else's.
  */
 export default function BoardPanel({ eventId, onChanged }: { eventId: string; onChanged: () => void }) {
   const [members, setMembers] = useState<Member[] | null>(null);
@@ -57,7 +61,8 @@ export default function BoardPanel({ eventId, onChanged }: { eventId: string; on
     <div className="rounded-lg border border-near-black/10 bg-white p-5">
       <h2 className="mb-1 text-xs font-bold uppercase tracking-[1px] text-near-black/40">Board</h2>
       <p className="mb-3 text-xs text-near-black/50">
-        Mentor sends the registration invite. Staff needs nothing and goes straight to Ready.
+        Board members going are pre-registered: no email, nothing to fill in. Mentors can be
+        matched with mentees. Staff cannot.
       </p>
       <ul className="divide-y divide-near-black/5">
         {members.map((m) => {
@@ -71,6 +76,24 @@ export default function BoardPanel({ eventId, onChanged }: { eventId: string; on
                   {m.registration && ` · ${m.registration.status}`}
                 </p>
               </div>
+              {m.email && (
+                <select
+                  aria-label={`${m.name} shirt size`}
+                  value={m.tshirtSize ?? ""}
+                  disabled={busy === m.id}
+                  onChange={(e) => post(m.id, { action: "size", size: e.target.value || null })}
+                  className={`rounded border px-2 py-1 text-sm ${
+                    m.registration && !m.tshirtSize ? "border-[#b00]/50 text-[#b00]" : "border-near-black/15"
+                  }`}
+                >
+                  <option value="">Shirt size</option>
+                  {SIZES.map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              )}
               {m.email ? (
                 <select
                   aria-label={`${m.name} at this camp`}
@@ -81,11 +104,7 @@ export default function BoardPanel({ eventId, onChanged }: { eventId: string; on
                     post(
                       m.id,
                       { action: "set", as },
-                      as === "Mentor"
-                        ? `Add ${m.name} as a mentor? This emails them the registration invite.`
-                        : as === null
-                          ? `Take ${m.name} off this camp?`
-                          : undefined
+                      as === null ? `Take ${m.name} off this camp?` : undefined
                     );
                   }}
                   className="rounded border border-near-black/15 px-2 py-1 text-sm"

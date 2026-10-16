@@ -99,10 +99,10 @@ Sources this was assembled from, which stay as the detailed reference:
 - [x] T-shirt count on the camp page. Done 2026-10-14: sizes for people registered and paid,
       with a progress bar of how many of everyone approved have got there. Older word sizes
       ("Large", "XXL") map to S to 3XL. Proven on the fixture camp.
-- [x] Board members on a camp as Mentor or Staff. Done 2026-10-14: a Board panel on the camp
-      page, listing the 6 board members from Sanity. Staff owe nothing and land in Ready.
-      Staff and Not going proven on the fixture camp. Mentor sends a real invite, so it is
-      pointed at in code (`board/route.ts`) and not run.
+- [x] Board members on a camp as Mentor or Staff. Done 2026-10-14, revised 2026-10-16: a
+      Board panel on the camp page lists the 6 board members from Sanity, with a shirt size
+      for each. Both roles are pre-registered with no email, owe nothing, land in Ready, get
+      no welcome packet, and count for shirts. Proven on the fixture camp: no email sent.
 
 ## Phase 7 — Email platform on Resend
 

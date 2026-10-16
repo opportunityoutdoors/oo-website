@@ -1,18 +1,16 @@
-import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { apiRequireMember } from "@/lib/admin/auth";
 import { boardMembers } from "@/lib/board/members";
 import { findContactByEmail } from "@/lib/contacts/find";
-import { STAFF_ROLE } from "@/lib/camp-pipeline";
-import { sendApprovalEmails } from "@/lib/email/approval";
+import { normalizeShirtSize, SHIRT_SIZES, STAFF_ROLE } from "@/lib/camp-pipeline";
 import { logRegistrationEvent } from "@/lib/registration-log";
 
 // The board on one camp: who is going, and as what.
 //
-// A board member goes as a Mentor, who walks the normal mentor path (registration invite,
-// waiver, background check, mentees), or as Staff, who owes nothing and is Ready at once.
-// Decided 2026-10-14. Board members come from Sanity; board_links ties each to a contact.
+// A board member goes as a Mentor, who can be matched with mentees, or as Staff, who cannot.
+// Either way they are pre-registered with no email and owe nothing, so they are Ready at once.
+// Decided 2026-10-14 and 2026-10-16. Board members come from Sanity; board_links ties each to a contact.
 
 type Reg = { id: string; role: string | null; status: string; payment_status: string | null };
 
@@ -28,7 +26,7 @@ export async function GET(
   const members = await boardMembers();
   const { data: links } = await supabase
     .from("board_links")
-    .select("sanity_id, contact_id, contacts(email)")
+    .select("sanity_id, contact_id, contacts(email, tshirt_size)")
     .in("sanity_id", members.map((m) => m.id));
   const linkBySanity = new Map((links ?? []).map((l) => [l.sanity_id as string, l]));
 
@@ -50,6 +48,7 @@ export async function GET(
       return {
         ...m,
         email: (c as { email: string | null } | null)?.email ?? null,
+        tshirtSize: normalizeShirtSize((c as { tshirt_size: string | null } | null)?.tshirt_size),
         registration: reg ? { id: reg.id, role: reg.role, status: reg.status } : null,
       };
     }),
@@ -93,6 +92,20 @@ export async function POST(
       .upsert({ sanity_id: sanityId, contact_id: contact!.id });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ linked: true });
+  }
+
+  // ── Set this board member's t-shirt size, kept on their contact like everyone else's ──
+  if (body.action === "size") {
+    const size = typeof body.size === "string" && (SHIRT_SIZES as readonly string[]).includes(body.size) ? body.size : null;
+    const { data: sizeLink } = await supabase
+      .from("board_links")
+      .select("contact_id")
+      .eq("sanity_id", sanityId)
+      .maybeSingle();
+    if (!sizeLink) return NextResponse.json({ error: "Link an email for this board member first." }, { status: 400 });
+    const { error } = await supabase.from("contacts").update({ tshirt_size: size }).eq("id", sizeLink.contact_id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true });
   }
 
   // ── Set how this board member is going: "Mentor", "Staff", or null for not going ──
@@ -161,16 +174,14 @@ export async function POST(
     return NextResponse.json({ ok: true });
   }
 
-  // Mentor: approved, with a registration token, and sent the normal invite.
-  if (existing?.role === "Mentor") return NextResponse.json({ ok: true });
-  const token = randomBytes(24).toString("hex");
-  const patch = { role: "Mentor", status: "approved", token, is_board_member: true };
-  let regId: string;
+  // Mentor: pre-registered, with no invite. Board members do not get the registration email
+  // (decided 2026-10-16); they owe nothing, so there is nothing for them to fill in.
+  if (existing?.role === "Mentor" && existing.status === "registered") return NextResponse.json({ ok: true });
+  const patch = { role: "Mentor", status: "registered", is_board_member: true };
   if (existing) {
     const { error } = await supabase.from("registrations").update(patch).eq("id", existing.id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    regId = existing.id;
-    await log(regId, existing.status, "approved", "Board member set to mentor");
+    await log(existing.id, existing.status, "registered", "Board member set to mentor");
   } else {
     const { data, error } = await supabase
       .from("registrations")
@@ -178,20 +189,7 @@ export async function POST(
       .select("id")
       .single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    regId = data.id;
-    await log(regId, null, "approved", "Board member added as mentor");
+    await log(data.id, null, "registered", "Board member added as mentor");
   }
-
-  const { data: invite } = await supabase
-    .from("registrations")
-    .select("token, contacts(email, first_name), events(title, slug, cost)")
-    .eq("id", regId)
-    .single();
-  try {
-    await sendApprovalEmails(invite ? [invite as never] : []);
-  } catch (err) {
-    console.error("Board mentor invite error:", err);
-    return NextResponse.json({ ok: true, warning: "Added, but the invite email failed to send." });
-  }
-  return NextResponse.json({ ok: true, invited: true });
+  return NextResponse.json({ ok: true });
 }

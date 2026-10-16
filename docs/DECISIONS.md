@@ -38,3 +38,4 @@ verifying.
 - 2026-10-14. The board list for camps is the Board Members documents in Sanity, the same list as the About page.
 - 2026-10-14. A board member goes to a camp as Mentor, who walks the normal mentor path, or as Staff, who owes nothing: no waiver, fee, check, or mentee. Staff are left out of the ratio, matching, and welcome packets.
 - 2026-10-14. Board emails are not stored in Sanity, because the dataset is public. A server-only board_links table ties each board member to a contact.
+- 2026-10-16. Board members going to a camp are pre-registered as Mentor or Staff and are never sent the registration email. Neither role owes a waiver, fee, or check. Their shirt size is set on the Board panel and counted.

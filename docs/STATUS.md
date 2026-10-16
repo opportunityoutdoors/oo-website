@@ -1,12 +1,12 @@
 # Status
 
-**Last worked on:** 2026-10-14. Code changed and deployed 2026-10-14.
+**Last worked on:** 2026-10-16. Code changed and deployed 2026-10-16.
 **Status:** Active
 
 ## Done recently
 
-- 2026-10-14, committed, not pushed: t-shirt count with a progress bar, and a Board panel
-  to put board members on a camp as Mentor or Staff. Migration 038 applied.
+- 2026-10-16, deployed: t-shirt count with a progress bar, and a Board panel to put board
+  members on a camp as Mentor or Staff, pre-registered with no email. Migration 038 applied.
 - 2026-10-14, deployed: meeting times in Eastern, minor stops on waitlist and registration,
   email confirmation before approval, case-insensitive contacts with an admin merge page,
   Meet links created by Calendar. Migrations 035 to 037 applied. Email confirmation starts

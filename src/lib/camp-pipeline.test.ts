@@ -393,6 +393,21 @@ describe("shirtTally", () => {
   });
 });
 
+describe("board mentor", () => {
+  it("is Ready on registration, owes nothing, and counts for shirts", () => {
+    const r = reg({
+      role: "Mentor",
+      is_board_member: true,
+      payment_status: null,
+      waiver_signed: false,
+      contacts: { ...contacts(), background_check_status: null, tshirt_size: "XL" } as PipelineReg["contacts"],
+    });
+    expect(position(r)).toBe("ready");
+    expect(requirements(r)).toEqual([]);
+    expect(shirtTally([r]).sizes.find((s) => s.size === "XL")?.count).toBe(1);
+  });
+});
+
 describe("staff", () => {
   it("is Ready on registration and owes nothing", () => {
     const r = reg({ role: "Staff", payment_status: null, waiver_signed: false, mentor_id: null });
