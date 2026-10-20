@@ -116,8 +116,20 @@ This Agreement shall be governed by and construed in accordance with the laws of
 12. Severability
 If any provision of this Agreement is found to be invalid, illegal, or unenforceable, such finding shall not affect the validity or enforceability of the remaining provisions.
 
-13. Entire Agreement and Acknowledgment
-This Agreement constitutes the entire agreement between the Participant and the Organization with respect to the subject matter hereof. I have carefully read this Agreement, fully understand its contents, and am aware that it contains a release of liability, an assumption of risk, and an indemnification obligation. I sign this Agreement voluntarily and of my own free will, as a condition of my participation in the Event.`;
+13. Code of Conduct
+I agree to follow the Opportunity Outdoors Code of Conduct at all times during the Event:
+
+• Firearm Safety. Firearms stay unloaded in camp and in vehicles. Load only at your spot. Control your muzzle at all times.
+• Follow the Law. Hunt with a valid license. Follow game land rules and bag limits, and report every harvest.
+• Minors. Anyone under 18 has a parent or guardian with them at all times, in camp and in the field.
+• Hunt Ethically. Fair chase only. Take ethical shots and make every effort to recover your game.
+• Respect Others. Zero tolerance for harassment, discrimination, or bullying. No politics or religion at camp.
+• Leave No Trace. Pack out what you pack in. Respect the land and give other public-land hunters room.
+
+I understand that if I break this code, I will be asked to leave the Event, and my registration fee will not be refunded.
+
+14. Entire Agreement and Acknowledgment
+This Agreement constitutes the entire agreement between the Participant and the Organization with respect to the subject matter hereof. I have carefully read this Agreement, fully understand its contents, and am aware that it contains a release of liability, an assumption of risk, an indemnification obligation, and a code of conduct. I sign this Agreement voluntarily and of my own free will, as a condition of my participation in the Event.`;
 
 const TSHIRT_SIZES = ["S", "M", "L", "XL", "2XL", "3XL"];
 
@@ -987,7 +999,11 @@ export default function RegisterForm({
           {step < 4 ? (
             // A plain button, never type="submit". An Enter keypress in a text field on step
             // one would otherwise submit the whole registration from the first screen.
+            // The keys keep this and the submit button as separate DOM nodes. Without them
+            // React turns this node into type="submit" while its click is still running, and
+            // the browser then submits from step 3, skipping Review and pay.
             <button
+              key="continue"
               type="button"
               onClick={goNext}
               className="flex-1 rounded bg-dark-green px-8 py-4 text-[13px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:bg-dark-green/90"
@@ -996,6 +1012,7 @@ export default function RegisterForm({
             </button>
           ) : (
             <button
+              key="submit"
               type="submit"
               disabled={submitting || !waiverSigned || !signatureName.trim() || !waiverScrolled || !contactShareConsent || (registration!.role === "Mentor" ? !mentorCommitment : !menteeCommitment)}
               className="flex-1 rounded bg-dark-green px-8 py-4 text-[13px] font-bold uppercase tracking-[1.5px] text-white transition-colors hover:bg-dark-green/90 disabled:opacity-50"
