@@ -7,10 +7,12 @@ export interface ApprovalProps {
   firstName?: string;
   eventTitle: string;
   cost?: string | null;
+  /** Mentors never pay the registration fee (lib/stripe/camp-fees.ts), so they are not quoted it. */
+  isMentor?: boolean;
   registerUrl: string;
 }
 
-export function Approval({ firstName, eventTitle, cost, registerUrl }: ApprovalProps) {
+export function Approval({ firstName, eventTitle, cost, isMentor, registerUrl }: ApprovalProps) {
   return (
     <EmailLayout preview={`You're in! Complete your ${eventTitle} registration`}>
       <Greeting name={firstName} />
@@ -21,7 +23,8 @@ export function Approval({ firstName, eventTitle, cost, registerUrl }: ApprovalP
       <P>
         To lock in your spot, you need to complete your registration. This
         includes signing the waiver
-        {cost ? ` and paying the registration fee (${cost})` : ""}.
+        {!isMentor && cost ? ` and paying the registration fee (${cost})` : ""}.
+        {isMentor ? " Mentors pay no registration fee." : ""}
       </P>
 
       <BrandButton href={registerUrl}>Complete Registration</BrandButton>

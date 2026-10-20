@@ -78,6 +78,12 @@ Sources this was assembled from, which stay as the detailed reference:
       and returns who failed, and the admin shows that list. Proven on the fixture camp: a
       drag and a bulk Approve each delivered an invite carrying the new token. A real send
       failure has not been seen. Links no longer carry the "//" from production's site URL.
+- [x] Mentor invites no longer quote the registration fee. Found 2026-10-20 after the first
+      two Deer Camp mentors were told "paying the registration fee ($100)", which mentors never
+      pay. `Approval.tsx` now says "Mentors pay no registration fee." Proven on the fixture
+      with a $100 fee: a mentor's invite carries the new line, step 4 shows Free plus a $5
+      background check, and Stripe asks for $5. Earlier checks missed it because every
+      fixture run used a mentee on a camp with no `cost`.
 
 ## Phase 4 — Registration, payment, screening
 

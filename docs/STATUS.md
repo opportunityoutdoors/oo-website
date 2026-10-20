@@ -5,6 +5,8 @@
 
 ## Done recently
 
+- 2026-10-20, pushed: mentor invites stop quoting the $100 fee. Konnor Spencer and Abdullah
+  Alqadi already got the wrong copy and need a note.
 - 2026-10-20, pushed: approval invites are awaited and batched, failures are shown, and a
   drag into Invited now sends the invite. Markus Howell's duplicate contact merged.
 - 2026-10-20: the board adopted the background screening policy, draft v0.4.

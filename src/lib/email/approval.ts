@@ -16,6 +16,7 @@ type One<T> = T | T[] | null;
 const one = <T>(v: One<T>): T | null => (Array.isArray(v) ? (v[0] ?? null) : v);
 
 type ApprovalRow = {
+  role: string | null;
   token: string | null;
   contacts: One<{ email: string | null; first_name: string | null; last_name: string | null }>;
   events: One<{ title: string; slug: string | null; cost: string | null }>;
@@ -62,7 +63,7 @@ export async function approveRegistrations(
   // The adults only. A minor's invite is the guardian's, and a minor may have no email.
   const { data } = await supabase
     .from("registrations")
-    .select("token, contacts(email, first_name, last_name), events(title, slug, cost)")
+    .select("role, token, contacts(email, first_name, last_name), events(title, slug, cost)")
     .in("id", ids);
 
   const { emailed, failed } = await sendApprovalEmails((data ?? []) as ApprovalRow[]);
@@ -110,6 +111,7 @@ export async function sendApprovalEmails(
           firstName: contact?.first_name || "there",
           eventTitle,
           cost: event?.cost ?? null,
+          isMentor: reg.role === "Mentor",
           registerUrl: `${baseUrl}/events/${event?.slug || "event"}/register?token=${reg.token}`,
         }),
       };
