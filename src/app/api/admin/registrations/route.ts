@@ -1,9 +1,8 @@
-import { randomBytes } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { renderDenial } from "@/emails";
-import { sendApprovalEmails } from "@/lib/email/approval";
+import { approveRegistrations } from "@/lib/email/approval";
 import { unconfirmedNames, unconfirmedRefusal } from "@/lib/email-confirmation";
 import { apiRequireMember } from "@/lib/admin/auth";
 import { logRegistrationEvent } from "@/lib/registration-log";
@@ -68,49 +67,12 @@ export async function PATCH(request: NextRequest) {
       )
     ).catch(() => {});
 
-  // For approvals, generate unique tokens + cascade to linked minors
+  // Tokens, linked minors and the invite email, all awaited. `failed` names anyone whose
+  // invite did not send, so the admin can see who has to be contacted by hand.
   if (status === "approved") {
-    const allApprovedIds = [...ids];
-
-    for (const id of ids) {
-      const token = randomBytes(24).toString("hex");
-      await supabase
-        .from("registrations")
-        .update({ status, token })
-        .eq("id", id);
-
-      // Find linked minors (where guardian_registration_id = this id)
-      const { data: linkedMinors } = await supabase
-        .from("registrations")
-        .select("id")
-        .eq("guardian_registration_id", id);
-
-      if (linkedMinors?.length) {
-        for (const minor of linkedMinors) {
-          const minorToken = randomBytes(24).toString("hex");
-          await supabase
-            .from("registrations")
-            .update({ status, token: minorToken })
-            .eq("id", minor.id);
-          allApprovedIds.push(minor.id);
-        }
-      }
-    }
-
-    // Fetch updated registrations — only send emails to those with email (not minors)
-    const { data } = await supabase
-      .from("registrations")
-      .select("*, contacts(email, first_name), events(title, slug, cost)")
-      .in("id", ids); // Only parent IDs, not minors
-
-    if (data?.length) {
-      sendApprovalEmails(data).catch((err) =>
-        console.error("Approval email error:", err)
-      );
-    }
-
-    await logAll(allApprovedIds);
-    return NextResponse.json({ updated: allApprovedIds.length });
+    const { approvedIds, emailed, failed } = await approveRegistrations(supabase, ids);
+    await logAll(approvedIds);
+    return NextResponse.json({ updated: approvedIds.length, emailed, failed });
   }
 
   // When moving back to waitlist, clear waiver and token data

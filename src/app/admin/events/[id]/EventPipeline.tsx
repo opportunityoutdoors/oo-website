@@ -208,10 +208,24 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
       body: JSON.stringify({ ids: [...selected], status }),
     });
     // A refusal (e.g. an unconfirmed email) has to be seen, not swallowed.
-    if (!res.ok) alert((await res.json().catch(() => null))?.error ?? "Could not update.");
-    else setSelected(new Set());
+    const data = await res.json().catch(() => null);
+    if (!res.ok) alert(data?.error ?? "Could not update.");
+    else {
+      setSelected(new Set());
+      alertApproval(data);
+    }
     await fetchEvent();
     setActionLoading(false);
+  }
+
+  /** After an approval: how many invites went, and who has to be contacted by hand. */
+  function alertApproval(data: { emailed?: number; failed?: string[] } | null) {
+    if (data?.emailed === undefined) return;
+    const failed = data.failed ?? [];
+    alert(
+      `Invite sent to ${data.emailed}.` +
+        (failed.length ? `\nNot sent, contact them by hand:\n${failed.join("\n")}` : "")
+    );
   }
 
 
@@ -234,7 +248,9 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids: [id], status }),
     });
-    if (!res.ok) alert((await res.json().catch(() => null))?.error ?? "Could not update.");
+    const data = await res.json().catch(() => null);
+    if (!res.ok) alert(data?.error ?? "Could not update.");
+    else alertApproval(data);
     await fetchEvent();
     setActionLoading(false);
   }

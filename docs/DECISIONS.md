@@ -46,3 +46,4 @@ verifying.
 - 2026-10-20. The code of conduct goes into the camp waiver as section 13, not a separate document or checkbox, so the stored waiver text records exactly what each person agreed to. It starts with registrations after the deploy.
 - 2026-10-20. Send cadence and the verify-oo feature map move to the backlog. Cadence waits for the email strategy, and each surface is mapped the first time a change touches it.
 - 2026-10-20. The board adopted the background screening policy, draft v0.4, as reported by John Trice. The vendor retention period stays open and does not affect the adoption.
+- 2026-10-20. Approving someone always goes through approveRegistrations: a token, linked minors, and an invite sent in one awaited Resend batch, with every failure shown to the admin. A drag into Invited is an approval, not only a status change.

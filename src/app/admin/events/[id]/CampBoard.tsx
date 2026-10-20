@@ -65,6 +65,11 @@ export default function CampBoard({ eventId, registrations, isPast, onMoved, onR
         setError(data.error ?? "Could not move that card.");
         return false;
       }
+      // Approved, but the invite did not go out. Shown rather than swallowed, because the
+      // person has no other way to get their registration link.
+      if (data.failed?.length) {
+        setError(`Approved, but the invite email did not send to: ${data.failed.join(", ")}.`);
+      }
       await onMoved();
       return true;
     } finally {

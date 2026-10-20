@@ -3,6 +3,8 @@ import { apiRequireMember } from "@/lib/admin/auth";
 import { createServiceClient } from "@/lib/supabase/server";
 import { EXIT_REASONS, type Position } from "@/lib/camp-pipeline";
 import { unconfirmedNames, unconfirmedRefusal } from "@/lib/email-confirmation";
+import { approveRegistrations } from "@/lib/email/approval";
+import { logRegistrationEvent } from "@/lib/registration-log";
 
 // Moving a card between columns on the camp board.
 //
@@ -174,6 +176,26 @@ export async function POST(req: NextRequest) {
       `Registration ${registrationId} moved ${current.status} -> ${status} but the move was ` +
         `NOT logged: ${logError.message}`
     );
+  }
+
+  // A card dragged into Invited is an approval, the same as the bulk Approve: a token, linked
+  // minors carried along, and the invite email. Before 2026-10-20 it only changed the status,
+  // so the person had no registration link and was never told.
+  if (status === "approved") {
+    const { minors, emailed, failed } = await approveRegistrations(supabase, [registrationId]);
+    await Promise.all(
+      minors.map((m) =>
+        logRegistrationEvent({
+          registrationId: m.id,
+          kind: "status_change",
+          source: "admin",
+          actorId: member.id,
+          fromStatus: m.fromStatus,
+          toStatus: status,
+        })
+      )
+    );
+    return NextResponse.json({ ok: true, status, logged: !logError, emailed, failed });
   }
 
   return NextResponse.json({ ok: true, status, logged: !logError });

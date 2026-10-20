@@ -61,12 +61,23 @@ Sources this was assembled from, which stay as the detailed reference:
 
 ## Phase 3 — Meetings and approval
 
+- [ ] Turning someone away sends no email. Found 2026-10-20. The board exit in
+      `registrations/move/route.ts` sends nothing. Only the old bulk `denied` status in
+      `registrations/route.ts:150` sends the denial email, without waiting. Placed after the
+      invite fix because Grayson Millikan and Markus Howell are the only two turned away now.
 - [x] Meeting attendance recorded by moving a person to `meeting_rsvp`
 - [x] Rolling approval generates a token and sends the registration invite email
 - [x] Denial email
 - [x] Show mentor/mentee counts and remaining mentee slots in the admin, at the 3:1 ratio.
       Measured 2026-10-13: already built in commit 7448c2b, at
       `admin/events/[id]/EventPipeline.tsx:323-347`. Slots count registered mentors only.
+- [x] Approval invites are awaited, batched, and reported. Found and fixed 2026-10-20, before
+      the Deer Camp approvals. The bulk Approve no longer starts the emails and returns, and
+      a drag into Invited now approves fully: a token, linked minors, and the invite. Both
+      use `approveRegistrations` in `lib/email/approval.ts`, which sends one Resend batch
+      and returns who failed, and the admin shows that list. Proven on the fixture camp: a
+      drag and a bulk Approve each delivered an invite carrying the new token. A real send
+      failure has not been seen. Links no longer carry the "//" from production's site URL.
 
 ## Phase 4 — Registration, payment, screening
 
