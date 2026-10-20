@@ -20,8 +20,6 @@
   email confirmation before approval, case-insensitive contacts with an admin merge page,
   Meet links created by Calendar. Migrations 035 to 037 applied. Email confirmation starts
   with signups from 2026-10-14, so the current Deer Camp enrollees are not asked.
-- 2026 Deer Camp waitlist email sent 2026-10-06 as a Resend broadcast to 570 subscribed
-  contacts. The waitlist closes 2026-10-11.
 
 ## In progress
 
