@@ -39,3 +39,8 @@ verifying.
 - 2026-10-14. A board member goes to a camp as Mentor, who walks the normal mentor path, or as Staff, who owes nothing: no waiver, fee, check, or mentee. Staff are left out of the ratio, matching, and welcome packets.
 - 2026-10-14. Board emails are not stored in Sanity, because the dataset is public. A server-only board_links table ties each board member to a contact.
 - 2026-10-16. Board members going to a camp are pre-registered as Mentor or Staff and are never sent the registration email. Neither role owes a waiver, fee, or check. Their shirt size is set on the Board panel and counted.
+- 2026-10-20. The print guide PDF item is dropped. Its only source is a one-line note in the workflow spec, with no file and no description.
+- 2026-10-20. The Direct Mail teardown is closed, by John Trice: Direct Mail is no longer in use.
+- 2026-10-20. The monthly newsletter waits in the backlog until there is an email strategy.
+- 2026-10-20. 2026 Deer Camp needs no Meet proof and no meeting re-send. John added its Meet links to the invites by hand, and its meetings are over.
+- 2026-10-20. The code of conduct goes into the camp waiver as section 13, not a separate document or checkbox, so the stored waiver text records exactly what each person agreed to. It starts with registrations after the deploy.

@@ -1,10 +1,12 @@
 # Status
 
-**Last worked on:** 2026-10-16. Code changed and deployed 2026-10-16.
+**Last worked on:** 2026-10-20. Code changed and pushed to main 2026-10-20.
 **Status:** Active
 
 ## Done recently
 
+- 2026-10-20, pushed: the code of conduct is section 13 of the camp waiver, and step 3
+  Continue no longer skips Review and pay. Both proven on the fixture camp.
 - 2026-10-16, deployed: t-shirt count with a progress bar, and a Board panel to put board
   members on a camp as Mentor or Staff, pre-registered with no email. Migration 038 applied.
 - 2026-10-14, deployed: meeting times in Eastern, minor stops on waitlist and registration,
@@ -27,10 +29,7 @@ so the guardian is added through the admin, then the false adult record is remov
 
 ## Next up
 
-- Re-send the confirmation email after a meeting change.
-- Prove the Meet link is stored on the next Sanity publish of a camp.
-- Direct Mail teardown: cancel e57, drop the dead env vars from Vercel.
-- Monthly newsletter template and an admin draft generator (Resend phase 3). Needs a design.
+- For the next camp: Meet links on the admin sync path, and a re-send after a meeting change.
 
 ## Blocked
 

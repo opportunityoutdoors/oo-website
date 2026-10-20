@@ -22,12 +22,18 @@ Sources this was assembled from, which stay as the detailed reference:
 - [ ] Meeting emails carry no Meet link. Found 2026-10-13. Google side proven 2026-10-14: a
       ZZ TEST Calendar event created with `createMeet` returned a `meet.google.com` link,
       and a re-read returned the same link. The step where `revalidate/route.ts` stores the
-      link on the slot is unproven until the next Sanity publish of a camp. Publishing 2026
-      Deer Camp also stores the Meet that was added to its events by hand.
+      link on the slot is unproven until the next Sanity publish of a camp.
+      Measured 2026-10-20: open for the next camp only. 2026 Deer Camp needs nothing: John
+      added its Meet links to the invites by hand, and its meetings are over. A second path
+      also writes slots: `GET /api/admin/events` (`admin/events/route.ts:68-80`) upserts
+      every Sanity event and creates Calendar events with no `createMeet`. A slot that this
+      path creates first never gets a Meet. Fix that path, then prove both paths on ZZ TEST.
 - [ ] Re-send the confirmation email after a meeting change (Calendar notifies, we do not).
-      Measured 2026-10-13: still open. `waitlist/change-meeting/route.ts:32-98` moves the
-      Calendar attendee and sends nothing. The sender is private to `submit-form/route.ts`
-      and must move to a shared file first. 23 people are on the 2026 Deer Camp waitlist.
+      Measured 2026-10-20: still open, same shape. `waitlist/change-meeting/route.ts`
+      (99 lines) moves the Calendar attendee at lines 67-95 and sends nothing. The sender
+      `sendWaitlistConfirmation` is still private at `submit-form/route.ts:787` and must
+      move to a shared file first. Not needed for 2026 Deer Camp, because its meetings are
+      over. Kept for the next camp.
 - [x] Waitlist form on the event page, gated by `waitlistOpens` / `waitlistCloses`
 - [x] Submission upserts the contact and creates a `waitlist` registration
 - [x] Add the participant as an attendee on the selected meeting's Calendar event
@@ -73,6 +79,17 @@ Sources this was assembled from, which stay as the detailed reference:
 - [x] Automatic refund on an adverse action, less processing and check fees
 - [x] Registration fee copy states who gets a refund and who does not
 - [x] Camp details withheld from anyone not cleared to attend
+- [x] Code of conduct in the camp waiver. Built 2026-10-20, pushed to main the same day. The six rules
+      and the no-refund removal line are section 13 of `WAIVER_TEXT` in
+      `register/RegisterForm.tsx`, and "Entire Agreement" is now section 14. Proven on the
+      fixture camp: the waiver step shows section 13, and the submitted registration stored
+      all 6322 characters in `registrations.waiver_text`. Earlier signers keep their text.
+      Board members at a camp sign no waiver, by decision of 2026-10-16.
+- [x] Step 3 "Continue" no longer submits the registration. Found and fixed 2026-10-20. The
+      Continue and Complete Registration buttons shared one DOM node, so the click that moved
+      to step 4 became a form submit and skipped Review and pay. Each button now has its own
+      `key`. Proven on the fixture camp: Continue on step 3 stops at Review and pay with no
+      `POST /api/register` and no database change, and Complete Registration then submits.
 
 ## Phase 5 — Matching and welcome
 
@@ -80,10 +97,6 @@ Sources this was assembled from, which stay as the detailed reference:
 - [x] Manual match and unmatch in the admin
 - [x] Role-specific welcome packet email with camp locations and perks, gated on screening
 - [x] Mentors are asked about a shirt rather than charged for one
-- [ ] Attach the print guide PDF to the welcome packet email. Measured 2026-10-13: still open
-      and blocked on the file. No print guide PDF is in the repo and the Sanity `event`
-      schema has no field for one. The send at `welcome-packet/route.ts:320` has no
-      attachments.
 
 ## Phase 6 — Camp admin board
 
@@ -106,20 +119,16 @@ Sources this was assembled from, which stay as the detailed reference:
 
 ## Phase 7 — Email platform on Resend
 
+- [ ] Settle the event-email send cadence. Measured 2026-10-20: a decision, with no code.
 - [x] Phase 0: shared React Email layout, all transactional email migrated onto it
 - [x] Phase 1: Direct Mail removed, contacts imported, live signup sync enabled
 - [x] Phase 2: event campaigns as Broadcasts
 - [x] Phase 4: pre and post camp surveys on their own cron
 - [x] Phase 5: mentee nurture sequence
-- [ ] Direct Mail teardown: cancel the e57 subscription, drop `DIRECT_MAIL_*` and dead `GOOGLE_SHEETS_*` vars from Vercel.
-      Measured 2026-10-13: `src/` has 0 references to either prefix. `scripts/setup-sheets.mjs`
-      has 3 and is dead, so delete it. The Vercel variables are not measured, because
-      `scripts/vercel.sh` has no command that lists them. Moved first because it is the
-      only item here that needs no design.
-- [ ] Phase 3: monthly newsletter template and an admin draft generator from Sanity events and blog.
-      Measured 2026-10-13: nothing built. 0 of 15 templates in `src/emails/templates/` is a
-      newsletter, and no design document exists for it.
-- [ ] Settle the event-email send cadence. Measured 2026-10-13: a decision, with no code.
+- [x] Direct Mail teardown. Closed 2026-10-20 by John Trice: Direct Mail is no longer in use.
+      `src/` has 0 references to `DIRECT_MAIL_*` or `GOOGLE_SHEETS_*`. The dead
+      `scripts/setup-sheets.mjs` is still in the repo. Phase 3, the newsletter, moved to
+      BACKLOG.md until there is an email strategy.
 
 ## Phase 8 — Fundraising and store
 
@@ -142,6 +151,6 @@ Sources this was assembled from, which stay as the detailed reference:
       admin without a password, drives a feature, and captures evidence to `.verify/`
 - [x] Feature map at `.claude/skills/verify-oo/features/`, covering the camp board,
       registration, screening, the welcome packet, and the waitlist
-- [ ] Map donations, the nurture sequence, surveys, and partner events. Measured 2026-10-13:
+- [ ] Map donations, the nurture sequence, surveys, and partner events. Measured 2026-10-20:
       still open, 5 features mapped. `features/README.md` lists 7 unmapped surfaces, which
       adds admin invites, the Studio, and the marketing pages to these 4.
