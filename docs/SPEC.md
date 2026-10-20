@@ -119,7 +119,6 @@ Sources this was assembled from, which stay as the detailed reference:
 
 ## Phase 7 — Email platform on Resend
 
-- [ ] Settle the event-email send cadence. Measured 2026-10-20: a decision, with no code.
 - [x] Phase 0: shared React Email layout, all transactional email migrated onto it
 - [x] Phase 1: Direct Mail removed, contacts imported, live signup sync enabled
 - [x] Phase 2: event campaigns as Broadcasts
@@ -151,6 +150,3 @@ Sources this was assembled from, which stay as the detailed reference:
       admin without a password, drives a feature, and captures evidence to `.verify/`
 - [x] Feature map at `.claude/skills/verify-oo/features/`, covering the camp board,
       registration, screening, the welcome packet, and the waitlist
-- [ ] Map donations, the nurture sequence, surveys, and partner events. Measured 2026-10-20:
-      still open, 5 features mapped. `features/README.md` lists 7 unmapped surfaces, which
-      adds admin invites, the Studio, and the marketing pages to these 4.

@@ -10,6 +10,9 @@ lives in [SPEC.md](SPEC.md).
 - Mentor/mentee ratio guidance in the admin, so approvals show remaining mentee slots.
 - Re-send the meeting confirmation email after a participant changes their meeting date.
 - Settle the send cadence for event emails, so announcements and reminders stop being ad hoc.
+  Waits for the same email strategy as the newsletter.
+- Map donations, the nurture sequence, surveys, and partner events in the `verify-oo` feature
+  map. Map each one the first time a change touches it, as `features/README.md` says.
 - Delete the dead `scripts/setup-sheets.mjs`, left over from the Direct Mail teardown.
 - Fill the gaps in `.env.local.example`: Supabase and Google Calendar vars are missing from it.
 - Replace the create-next-app boilerplate in README.md with something about this project.
