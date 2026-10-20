@@ -47,3 +47,4 @@ verifying.
 - 2026-10-20. Send cadence and the verify-oo feature map move to the backlog. Cadence waits for the email strategy, and each surface is mapped the first time a change touches it.
 - 2026-10-20. The board adopted the background screening policy, draft v0.4, as reported by John Trice. The vendor retention period stays open and does not affect the adoption.
 - 2026-10-20. Approving someone always goes through approveRegistrations: a token, linked minors, and an invite sent in one awaited Resend batch, with every failure shown to the admin. A drag into Invited is an approval, not only a status change.
+- 2026-10-20. Recorded from commit 355f4f8 of 2026-08-09: every mentor gets a camp shirt unconditionally, and the optional $25, $50 or $100 at registration is a donation toward camp costs, not a shirt purchase. The shirt never depends on paying, so nothing is received in exchange and there is no taxable sale.
