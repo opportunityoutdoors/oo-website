@@ -6,7 +6,7 @@ Sources this was assembled from, which stay as the detailed reference:
 - [OO-PreCamp-Workflow-Spec.md](OO-PreCamp-Workflow-Spec.md) — the camp workflow, v1.1, 2026-04-03
 - [../SPEC-admin-flow.md](../SPEC-admin-flow.md) — the camp board rework, 2026-08-09
 - [NC-Sales-Tax-Findings.md](NC-Sales-Tax-Findings.md) — sales tax research
-- [OO-Background-Screening-Policy.md](OO-Background-Screening-Policy.md) — screening policy draft (gitignored)
+- [OO-Background-Screening-Policy.md](OO-Background-Screening-Policy.md) — screening policy, adopted (gitignored)
 
 ## Phase 1 — Event setup
 
@@ -139,10 +139,11 @@ Sources this was assembled from, which stay as the detailed reference:
 
 ## Phase 9 — Governance and compliance
 
+- [ ] Decide the NC sales tax items above at the same meeting
 - [x] Admin auth, role-based invites, last-admin guard, RLS on admin tables
 - [x] Screening decisions recorded in writing, as the policy requires
-- [ ] Board adopts the background screening policy (draft v0.4, needs a vote)
-- [ ] Decide the NC sales tax items above at the same meeting
+- [x] Board adopts the background screening policy. Approval of draft v0.4 reported by John
+      Trice on 2026-10-20. The vendor retention period in section 11.2 is still open.
 
 ## Verification
 

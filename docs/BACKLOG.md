@@ -13,6 +13,8 @@ lives in [SPEC.md](SPEC.md).
   Waits for the same email strategy as the newsletter.
 - Map donations, the nurture sequence, surveys, and partner events in the `verify-oo` feature
   map. Map each one the first time a change touches it, as `features/README.md` says.
+- Ask ScreenForge (`support@screenforgelabs.com`) for their data retention period, the one
+  open item in screening policy section 11.2.
 - Delete the dead `scripts/setup-sheets.mjs`, left over from the Direct Mail teardown.
 - Fill the gaps in `.env.local.example`: Supabase and Google Calendar vars are missing from it.
 - Replace the create-next-app boilerplate in README.md with something about this project.

@@ -5,6 +5,7 @@
 
 ## Done recently
 
+- 2026-10-20: the board adopted the background screening policy, draft v0.4.
 - 2026-10-20, pushed: the code of conduct is section 13 of the camp waiver, and step 3
   Continue no longer skips Review and pay. Both proven on the fixture camp.
 - 2026-10-16, deployed: t-shirt count with a progress bar, and a Board panel to put board
@@ -33,6 +34,5 @@ so the guardian is added through the admin, then the false adult record is remov
 
 ## Blocked
 
-- Background screening policy adoption, awaiting a board vote.
 - NC sales tax: E-585 refund claim and NCDOR registration, same meeting. Some of the
   refundable tax is expiring against the three-year bar.
