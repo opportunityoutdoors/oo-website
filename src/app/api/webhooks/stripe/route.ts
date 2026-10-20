@@ -309,8 +309,32 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     return;
   }
 
-  const refundedCents = charge.amount_refunded ?? 0;
-  const fullyRefunded = refundedCents >= (charge.amount ?? 0);
+  let refundedCents = charge.amount_refunded ?? 0;
+  let fullyRefunded = refundedCents >= (charge.amount ?? 0);
+
+  // A mentor's camp gift shares its payment with the registration, so a refund on that
+  // payment is mostly not a refund of the gift. Count it against the gift only up to the
+  // gift's own amount: a screening refund returns the gift first, because the check fee is
+  // kept, and a $5 check plus a $25 gift must never show as a $30 refunded donation.
+  const { data: camp } = await supabase
+    .from("registrations")
+    .select("id")
+    .eq("stripe_payment_id", paymentIntentId)
+    .maybeSingle();
+  if (camp) {
+    const { data: gift } = await supabase
+      .from("donations")
+      .select("amount")
+      .eq("stripe_payment_intent_id", paymentIntentId)
+      .maybeSingle();
+    const giftCents = Math.round(Number(gift?.amount ?? 0) * 100);
+    refundedCents = Math.min(refundedCents, giftCents);
+    fullyRefunded = giftCents > 0 && refundedCents >= giftCents;
+    if (refundedCents === 0) {
+      console.log(`Refund for ${paymentIntentId} is a camp refund with no gift to adjust`);
+      return;
+    }
+  }
 
   const { data: updated, error } = await supabase
     .from("donations")
@@ -463,6 +487,15 @@ async function handleCampPayment(session: Stripe.Checkout.Session) {
     `Camp payment recorded: registration ${registrationId}, ${session.amount_total} cents`
   );
 
+  // Never throws. The registration is already marked paid, so a replayed delivery returns
+  // above before reaching this line, and an error here would only make Stripe retry into
+  // that early return. A missing gift row is logged loudly instead.
+  try {
+    await recordCampGift(session, registrationId, paymentIntentId);
+  } catch (err) {
+    console.error(`Camp payment ${paymentIntentId}: gift NOT recorded as a donation:`, err);
+  }
+
   // Background checks are ordered here, after the money has settled, because that is the
   // point at which someone is committed. Ordering earlier means paying to screen people who
   // never turn up.
@@ -494,6 +527,54 @@ async function handleCampPayment(session: Stripe.Checkout.Session) {
         `No background check ordered for registration ${registrationId}: ${outcome.reason}`
       );
     }
+  });
+}
+
+/**
+ * The optional gift a mentor adds at registration, recorded as the donation it is.
+ *
+ * It rides on the camp payment, so the session is tagged camp_registration and the gift
+ * never reached the donations table or got a receipt. It is a gift because every mentor
+ * gets a shirt whether or not they give (decision of 2026-08-09), so the receipt's "no goods
+ * or services" sentence is true. Only the gift is recorded: the background check is not.
+ */
+async function recordCampGift(
+  session: Stripe.Checkout.Session,
+  registrationId: string,
+  paymentIntentId: string | null
+) {
+  const supabase = createServiceClient();
+  const { data: reg } = await supabase
+    .from("registrations")
+    .select("donation_cents, contacts(email, first_name, last_name), events(title)")
+    .eq("id", registrationId)
+    .single();
+
+  const giftCents = Math.max(0, Math.round(Number(reg?.donation_cents ?? 0)));
+  if (!reg || giftCents === 0) return;
+
+  const contact = Array.isArray(reg.contacts) ? reg.contacts[0] : reg.contacts;
+  const event = Array.isArray(reg.events) ? reg.events[0] : reg.events;
+  const email = contact?.email ?? session.customer_details?.email ?? null;
+  if (!email) {
+    console.error(`Camp gift on ${paymentIntentId} has no email; not recorded as a donation`);
+    return;
+  }
+
+  await recordDonation({
+    email,
+    name: [contact?.first_name, contact?.last_name].filter(Boolean).join(" ") || null,
+    amountCents: giftCents,
+    feeCoveredCents: 0,
+    recurring: false,
+    paymentIntentId,
+    checkoutSessionId: session.id,
+    subscriptionId: null,
+    customerId: idOf(session.customer),
+    campaign: `camp: ${event?.title ?? "registration"}`,
+    // Camp checkout is card-only (see handleCheckoutCompleted).
+    paymentMethodType: "card",
+    status: "succeeded",
   });
 }
 

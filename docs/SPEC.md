@@ -107,6 +107,12 @@ Sources this was assembled from, which stay as the detailed reference:
       to step 4 became a form submit and skipped Review and pay. Each button now has its own
       `key`. Proven on the fixture camp: Continue on step 3 stops at Review and pay with no
       `POST /api/register` and no database change, and Complete Registration then submits.
+- [x] A mentor's optional gift at registration is recorded as a donation. Done 2026-10-20.
+      The webhook writes a `donations` row for the gift alone, campaign `camp: <title>`, and
+      sends the standard receipt. A camp refund counts against the gift only up to its
+      amount. The donation box now says "Every mentor gets a shirt either way." Proven with
+      a paid $30 test checkout on the fixture: a $25 donation row, receipted, and a $25
+      receipt delivered. The refund cap is not proven; a test refund call to Stripe hung.
 
 ## Phase 5 — Matching and welcome
 

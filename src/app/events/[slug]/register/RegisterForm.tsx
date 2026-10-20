@@ -871,7 +871,7 @@ export default function RegisterForm({
                       <p className="mt-1 text-xs leading-relaxed text-near-black/60">
                         Food, fuel, permits and gear come out of what we raise. Anything you
                         add here goes straight to running this camp. Entirely optional, and
-                        nothing changes if you skip it.
+                        nothing changes if you skip it. Every mentor gets a shirt either way.
                       </p>
                       <div className="mt-3 flex flex-wrap gap-2">
                         {[SUGGESTED_MENTOR_DONATION_CENTS, 5000, 10000].map((cents) => (
