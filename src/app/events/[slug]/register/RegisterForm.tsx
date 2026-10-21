@@ -7,6 +7,7 @@ import SurveyQuestions, { EMPTY_ANSWERS } from "@/components/forms/SurveyQuestio
 import ResumePaymentButton from "@/components/forms/ResumePaymentButton";
 import { scaleQuestions, type SurveyAnswers } from "@/lib/surveys/questions";
 import { evaluateEligibility } from "@/lib/background-check/eligibility";
+import { INVITE_SEARCH } from "@/lib/background-check/invite-email";
 import {
   SUGGESTED_MENTOR_DONATION_CENTS,
   computeCampCharge,
@@ -932,7 +933,9 @@ export default function RegisterForm({
                             <p className="mt-3 text-sm font-medium text-near-black/70">
                               After you pay, watch for a separate email from VolunteerBadge,
                               our background check provider, with a link to complete your
-                              background check.
+                              background check. Its subject says &quot;Volunteer Application&quot;,
+                              and it is for everyone coming to camp. Search for
+                              &quot;{INVITE_SEARCH}&quot; if you cannot find it.
                             </p>
                           )}
                         </>

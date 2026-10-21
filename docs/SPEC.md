@@ -120,6 +120,16 @@ Sources this was assembled from, which stay as the detailed reference:
       the order exists, which the webhook places about 3.6 seconds after payment. Proven on
       the fixture: the form line and the email notice. The after-payment page is not proven,
       because it needs a paid checkout.
+- [x] Reminders to finish a background check, inside the 7-day link. Done 2026-10-21.
+      The daily background check cron now emails a paid registrant whose check is still
+      `invited`: once from day 3, and once in the link's last 30 hours, each with the
+      direct link and the search help. An expired link sends nothing and alerts staff once,
+      whatever the camp date. Migration 039 adds the reminder count and the
+      `check_reminder` timeline kind. Every search instruction now matches the real invite:
+      "Opportunity Outdoors via VolunteerBadge", subject "Volunteer Application". Proven on
+      the fixture by running the reminder and alert steps at day 3, 6 and 7.5: one first
+      reminder, one final, one staff alert, no repeats. Not run through the full cron
+      locally, because the local test key would poll Konnor's live check.
 
 ## Phase 5 — Matching and welcome
 

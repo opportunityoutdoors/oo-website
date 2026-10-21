@@ -1,3 +1,5 @@
+import { INVITE_LINK_DAYS, INVITE_SEARCH_HELP } from "@/lib/background-check/invite-email";
+
 /**
  * The outstanding background check, shown on the page immediately after payment.
  *
@@ -43,7 +45,11 @@ export default function BackgroundCheckStep({ url }: { url: string | null }) {
           <p className="mt-4 text-sm leading-relaxed text-near-black/50">
             VolunteerBadge, our background check provider, has also emailed you
             this link in a separate email, so you can finish later if now is not
-            a good time. Your spot is held either way.
+            a good time. The link works for {INVITE_LINK_DAYS} days. Your spot is
+            held either way.
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-near-black/50">
+            {INVITE_SEARCH_HELP}
           </p>
         </>
       ) : (
@@ -52,8 +58,8 @@ export default function BackgroundCheckStep({ url }: { url: string | null }) {
         <p className="mt-5 rounded border border-near-black/10 bg-white px-5 py-4 text-sm leading-relaxed text-near-black/70">
           We are setting up your background check now. Watch for a separate
           email from VolunteerBadge, our background check provider, with your
-          link. It usually arrives within a few minutes. Check your spam folder,
-          and if it has not appeared within the hour, email{" "}
+          link. It usually arrives within a few minutes. {INVITE_SEARCH_HELP} If
+          it has not appeared within the hour, email{" "}
           <a
             href="mailto:info@opportunityoutdoors.org"
             className="font-semibold text-dark-green hover:underline"

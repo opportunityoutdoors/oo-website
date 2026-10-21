@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { describeCheck } from "./display";
+import { inviteLinkExpiry } from "./invite-email";
 
 // Staff alerts for background checks that need a human.
 //
@@ -32,7 +33,7 @@ export async function sendBackgroundCheckAlerts(): Promise<{
   const { data: rows } = await supabase
     .from("registrations")
     .select(
-      "id, payment_status, events(id, title, date_start), contacts(id, email, first_name, last_name, date_of_birth, background_check_status, background_check_expires_at, background_check_invited_at, background_check_alerted_at)"
+      "id, payment_status, events(id, title, date_start), contacts(id, email, first_name, last_name, date_of_birth, background_check_status, background_check_expires_at, background_check_invited_at, background_check_url_expires_at, background_check_alerted_at)"
     )
     .eq("payment_status", "paid");
 
@@ -56,6 +57,7 @@ export async function sendBackgroundCheckAlerts(): Promise<{
       status: c.background_check_status,
       expiresAt: c.background_check_expires_at,
       invitedAt: c.background_check_invited_at,
+      linkExpiresAt: c.background_check_url_expires_at,
       paid: true,
       eventDate: ev?.date_start ?? null,
     });
@@ -65,7 +67,16 @@ export async function sendBackgroundCheckAlerts(): Promise<{
     // Do not re-alert about the same person every single day. One nag, then silence until
     // their state changes, because a daily email about a known problem trains people to
     // ignore the channel.
-    if (c.background_check_alerted_at) continue;
+    //
+    // The one exception is an expired link. Staff may already have been told the check was
+    // slow, but a dead link is new news that needs a different action, so it alerts once
+    // more if the earlier alert came before the link expired.
+    if (c.background_check_alerted_at) {
+      const expiry = inviteLinkExpiry(c.background_check_url_expires_at, c.background_check_invited_at);
+      const expiredSinceAlert =
+        d.label === "Link expired" && expiry && new Date(c.background_check_alerted_at) < expiry;
+      if (!expiredSinceAlert) continue;
+    }
 
     seen.add(c.id);
     const row: AlertRow = {

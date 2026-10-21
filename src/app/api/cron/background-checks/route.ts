@@ -106,12 +106,19 @@ export async function GET(req: NextRequest) {
     // itself thirty seconds ago is exactly the kind of noise that gets a channel muted.
     const result = await reconcileStuckChecks();
 
+    // Reminders before alerts: a link still alive gets the registrant nudged; one that has
+    // died goes to staff, who can send a new one.
+    const { sendBackgroundCheckReminders } = await import(
+      "@/lib/background-check/remind"
+    );
+    const reminders = await sendBackgroundCheckReminders();
+
     const { sendBackgroundCheckAlerts } = await import(
       "@/lib/background-check/alert"
     );
     const alerts = await sendBackgroundCheckAlerts();
 
-    return NextResponse.json({ ...result, alerts });
+    return NextResponse.json({ ...result, reminders, alerts });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("Background check cron failed:", message);

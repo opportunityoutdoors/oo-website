@@ -1,6 +1,7 @@
 import * as React from "react";
 import { EmailLayout } from "../Layout";
 import { BrandButton, Callout, CalloutLabel, CalloutLine, P } from "../components";
+import { INVITE_LINK_DAYS } from "@/lib/background-check/invite-email";
 
 export type AlertPerson = {
   name: string;
@@ -90,8 +91,10 @@ export function BackgroundCheckAlert({
       ) : (
         <P>
           The link was emailed to them when they paid, and it is also on their
-          confirmation page. Invites expire after 14 days, so if one has lapsed
-          it needs re-sending from the admin.
+          confirmation page. VolunteerBadge links expire after {INVITE_LINK_DAYS} days.
+          We remind them on day 3 and again just before the link expires. Once it
+          has lapsed, get them a new link from VolunteerBadge: the admin has no
+          button for that.
         </P>
       )}
 

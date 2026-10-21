@@ -20,6 +20,7 @@ export type EventKind =
   | "paid"
   | "refunded"
   | "check_ordered"
+  | "check_reminder"
   | "check_result"
   | "panel_decision"
   | "matched"

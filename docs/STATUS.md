@@ -5,6 +5,9 @@
 
 ## Done recently
 
+- 2026-10-21, pushed: day 3 and final background check reminders from us, a staff alert
+  when a link expires, and search help that matches VolunteerBadge's real email.
+  Migration 039 applied.
 - 2026-10-21, pushed: the form, confirmation email, and after-payment page all say a separate
   VolunteerBadge email is coming for the background check.
 - 2026-10-20, pushed: a mentor's optional gift is recorded and receipted as a donation, and the

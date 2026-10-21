@@ -54,7 +54,7 @@ export async function GET(
   const { data: registrations } = await supabase
     .from("registrations")
     .select(
-      "*, contacts(id, email, first_name, last_name, phone, city, state, tshirt_size, date_of_birth, background_check_status, background_check_expires_at, background_check_invited_at, background_check_url, email_confirmed_at)"
+      "*, contacts(id, email, first_name, last_name, phone, city, state, tshirt_size, date_of_birth, background_check_status, background_check_expires_at, background_check_invited_at, background_check_url, background_check_url_expires_at, email_confirmed_at)"
     )
     .eq("event_id", id)
     .order("created_at", { ascending: true });

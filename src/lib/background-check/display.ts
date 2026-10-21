@@ -1,4 +1,5 @@
 import { evaluateEligibility, type BackgroundCheckStatus } from "./eligibility";
+import { inviteLinkExpiry } from "./invite-email";
 
 // One vocabulary for describing where a person's background check stands.
 //
@@ -35,6 +36,8 @@ export function describeCheck(input: {
   status: BackgroundCheckStatus | string | null;
   expiresAt: string | null;
   invitedAt: string | null;
+  /** contacts.background_check_url_expires_at. Without it, 7 days from the invite. */
+  linkExpiresAt?: string | null;
   /** Paid registrants are the ones who matter: unpaid people are not attending yet. */
   paid: boolean;
   /** Used to age an invite. An unfinished check three days out is urgent; a month out is not. */
@@ -103,6 +106,21 @@ export function describeCheck(input: {
       tone: "ok",
       needsAttention: false,
     };
+  }
+
+  // The invite link died before they finished. Needs a human whatever the event date: no
+  // reminder can help, because there is no working link left to send.
+  if (input.status === "invited") {
+    const expiry = inviteLinkExpiry(input.linkExpiresAt ?? null, input.invitedAt);
+    if (expiry && expiry <= new Date()) {
+      const on = expiry.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" });
+      return {
+        label: "Link expired",
+        detail: `Their VolunteerBadge link expired on ${on} and the check was never finished. Get them a new link from VolunteerBadge.`,
+        tone: "act",
+        needsAttention: true,
+      };
+    }
   }
 
   if (input.status === "invited" || input.status === "pending") {

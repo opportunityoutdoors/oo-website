@@ -56,6 +56,10 @@ import {
   BackgroundCheckAlert,
   type BackgroundCheckAlertProps,
 } from "./templates/BackgroundCheckAlert";
+import {
+  BackgroundCheckReminder,
+  type BackgroundCheckReminderProps,
+} from "./templates/BackgroundCheckReminder";
 
 export function renderWaitlistReminder(
   props: WaitlistReminderProps
@@ -139,4 +143,10 @@ export function renderBackgroundCheckAlert(
   props: BackgroundCheckAlertProps
 ): Promise<string> {
   return render(<BackgroundCheckAlert {...props} />);
+}
+
+export function renderBackgroundCheckReminder(
+  props: BackgroundCheckReminderProps
+): Promise<string> {
+  return render(<BackgroundCheckReminder {...props} />);
 }

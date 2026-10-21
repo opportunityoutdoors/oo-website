@@ -93,6 +93,9 @@ export async function orderBackgroundCheckIfNeeded(
         background_check_url: result.applicantUrl,
         background_check_invited_at: new Date().toISOString(),
         background_check_url_expires_at: result.expiresAt?.toISOString() ?? null,
+        // A new link starts its own day 3 and final reminders (remind.ts).
+        background_check_reminders_sent: 0,
+        background_check_reminded_at: null,
       })
       .eq("id", contactId);
 

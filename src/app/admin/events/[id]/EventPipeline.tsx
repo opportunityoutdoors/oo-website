@@ -41,6 +41,7 @@ interface Registration {
     background_check_status: string | null;
     background_check_expires_at: string | null;
     background_check_invited_at: string | null;
+    background_check_url_expires_at?: string | null;
     background_check_url: string | null;
     email_confirmed_at: string | null;
   };
@@ -648,6 +649,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                       status: reg.contacts?.background_check_status ?? null,
                       expiresAt: reg.contacts?.background_check_expires_at ?? null,
                       invitedAt: reg.contacts?.background_check_invited_at ?? null,
+                      linkExpiresAt: reg.contacts?.background_check_url_expires_at ?? null,
                       paid: reg.payment_status === "paid",
                       eventDate: event.date_start,
                     });

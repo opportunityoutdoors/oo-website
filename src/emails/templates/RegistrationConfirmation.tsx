@@ -1,6 +1,7 @@
 import * as React from "react";
 import { EmailLayout } from "../Layout";
 import { Callout, CalloutLine, Greeting, P, Signoff } from "../components";
+import { INVITE_LINK_DAYS, INVITE_SEARCH_HELP } from "@/lib/background-check/invite-email";
 
 export interface RegistrationConfirmationProps {
   firstName?: string;
@@ -57,8 +58,9 @@ export function RegistrationConfirmation({
           <CalloutLine>
             Once your payment goes through, VolunteerBadge, our background check provider,
             will email you a link. It takes about three minutes, and it must be done before
-            camp. Check your spam folder if it has not arrived within the hour.
+            camp. The link works for {INVITE_LINK_DAYS} days.
           </CalloutLine>
+          <CalloutLine>{INVITE_SEARCH_HELP}</CalloutLine>
         </Callout>
       ) : null}
 
