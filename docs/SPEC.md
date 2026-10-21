@@ -113,6 +113,13 @@ Sources this was assembled from, which stay as the detailed reference:
       amount. The donation box now says "Every mentor gets a shirt either way." Proven with
       a paid $30 test checkout on the fixture: a $25 donation row, receipted, and a $25
       receipt delivered. The refund cap is not proven; a test refund call to Stripe hung.
+- [x] Registrants are told a separate background check email is coming. Done 2026-10-21,
+      after Konnor Spencer's confirmation said nothing about it. Review and pay, the
+      confirmation email, and the after-payment page each name VolunteerBadge as the sender.
+      The after-payment page now shows its check box whenever a check is owed, not only once
+      the order exists, which the webhook places about 3.6 seconds after payment. Proven on
+      the fixture: the form line and the email notice. The after-payment page is not proven,
+      because it needs a paid checkout.
 
 ## Phase 5 — Matching and welcome
 

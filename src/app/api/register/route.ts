@@ -4,6 +4,10 @@ import { ADULT_AGE, UNDER_18_MESSAGE, ageOn } from "@/lib/minor-guard";
 import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { renderRegistrationConfirmation } from "@/emails";
 import {
+  evaluateEligibility,
+  type BackgroundCheckStatus,
+} from "@/lib/background-check/eligibility";
+import {
   toResponseRow,
   validateSurveyAnswers,
   type SurveyAnswers,
@@ -267,7 +271,7 @@ export async function POST(request: NextRequest) {
   // Fetch full info for confirmation email
   const { data: fullReg } = await supabase
     .from("registrations")
-    .select("*, contacts(email, first_name, last_name), events(title, date_start, date_end, location)")
+    .select("*, contacts(email, first_name, last_name, date_of_birth, background_check_status, background_check_expires_at), events(title, date_start, date_end, location)")
     .eq("id", registration.id)
     .single();
 
@@ -331,7 +335,14 @@ export async function POST(request: NextRequest) {
 // Send registration confirmation with waiver PDF attachment
 async function sendRegistrationConfirmation(
   registration: {
-    contacts: { email: string; first_name: string | null; last_name: string | null } | null;
+    contacts: {
+      email: string;
+      first_name: string | null;
+      last_name: string | null;
+      date_of_birth?: string | null;
+      background_check_status?: string | null;
+      background_check_expires_at?: string | null;
+    } | null;
     events: { title: string; date_start: string | null; date_end: string | null; location: string | null } | null;
     role: string | null;
     waiver_signed_at: string | null;
@@ -398,6 +409,31 @@ async function sendRegistrationConfirmation(
       isMentor: registration.role === "Mentor",
       eventDate,
       location: registration.events?.location ?? null,
+      needsBackgroundCheck: owesBackgroundCheck(registration.contacts),
     }),
   });
+}
+
+/**
+ * Whether this person has a background check ahead of them: one to order after payment, or
+ * one already invited and not yet finished. The same rule that decides the $5 line.
+ */
+function owesBackgroundCheck(
+  contact: {
+    date_of_birth?: string | null;
+    background_check_status?: string | null;
+    background_check_expires_at?: string | null;
+  } | null
+): boolean {
+  if (!contact) return false;
+  const eligibility = evaluateEligibility({
+    dateOfBirth: contact.date_of_birth ?? null,
+    status: (contact.background_check_status ?? "none") as BackgroundCheckStatus,
+    expiresAt: contact.background_check_expires_at ?? null,
+  });
+  return (
+    eligibility.kind === "needs_check" ||
+    (eligibility.kind === "in_progress" &&
+      (eligibility.status === "invited" || eligibility.status === "pending"))
+  );
 }

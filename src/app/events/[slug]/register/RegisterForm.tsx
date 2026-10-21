@@ -928,6 +928,13 @@ export default function RegisterForm({
                             Your registration is saved either way. Card details are
                             entered on Stripe and never touch this site.
                           </p>
+                          {eligibility.kind === "needs_check" && (
+                            <p className="mt-3 text-sm font-medium text-near-black/70">
+                              After you pay, watch for a separate email from VolunteerBadge,
+                              our background check provider, with a link to complete your
+                              background check.
+                            </p>
+                          )}
                         </>
                       ) : (
                         <>

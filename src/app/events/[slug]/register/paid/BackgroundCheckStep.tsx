@@ -41,17 +41,19 @@ export default function BackgroundCheckStep({ url }: { url: string | null }) {
             Start Background Check
           </a>
           <p className="mt-4 text-sm leading-relaxed text-near-black/50">
-            We have also emailed you this link, so you can finish later if now is
-            not a good time. Your spot is held either way.
+            VolunteerBadge, our background check provider, has also emailed you
+            this link in a separate email, so you can finish later if now is not
+            a good time. Your spot is held either way.
           </p>
         </>
       ) : (
         // No link yet. The invite is created after payment, so a fast redirect can land here
         // first. Saying so beats an inert button or an empty space.
         <p className="mt-5 rounded border border-near-black/10 bg-white px-5 py-4 text-sm leading-relaxed text-near-black/70">
-          We are setting up your background check now. The link will arrive by
-          email within a few minutes. If it has not appeared within the hour,
-          email{" "}
+          We are setting up your background check now. Watch for a separate
+          email from VolunteerBadge, our background check provider, with your
+          link. It usually arrives within a few minutes. Check your spam folder,
+          and if it has not appeared within the hour, email{" "}
           <a
             href="mailto:info@opportunityoutdoors.org"
             className="font-semibold text-dark-green hover:underline"

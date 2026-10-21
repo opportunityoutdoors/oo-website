@@ -6,6 +6,10 @@ import { formatFee } from "@/lib/stripe/camp-fees";
 import ResumePayment from "./ResumePayment";
 import BackgroundCheckStep from "./BackgroundCheckStep";
 import { createServiceClient } from "@/lib/supabase/server";
+import {
+  evaluateEligibility,
+  type BackgroundCheckStatus,
+} from "@/lib/background-check/eligibility";
 
 export const metadata: Metadata = {
   title: "Registration Payment",
@@ -62,12 +66,24 @@ export default async function CampPaidPage({
         const supabase = createServiceClient();
         const { data } = await supabase
           .from("registrations")
-          .select("contacts(background_check_status, background_check_url)")
+          .select(
+            "contacts(date_of_birth, background_check_status, background_check_expires_at, background_check_url)"
+          )
           .eq("id", regId)
           .single();
         const contact = Array.isArray(data?.contacts) ? data?.contacts[0] : data?.contacts;
         if (contact) {
+          // "needs_check" too, not only an order that already exists. The webhook orders the
+          // check a few seconds after payment, and this page usually loads first: on
+          // 2026-10-21 the first live order landed 3.6s after payment, so a status-only test
+          // left the box off for the very person it was written for.
+          const eligibility = evaluateEligibility({
+            dateOfBirth: contact.date_of_birth ?? null,
+            status: (contact.background_check_status ?? "none") as BackgroundCheckStatus,
+            expiresAt: contact.background_check_expires_at ?? null,
+          });
           checkPending =
+            eligibility.kind === "needs_check" ||
             contact.background_check_status === "invited" ||
             contact.background_check_status === "pending";
           checkUrl = contact.background_check_url ?? null;

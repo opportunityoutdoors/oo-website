@@ -1,10 +1,12 @@
 # Status
 
-**Last worked on:** 2026-10-20. Code changed and pushed to main 2026-10-20.
+**Last worked on:** 2026-10-21. Code changed and pushed to main 2026-10-20.
 **Status:** Active
 
 ## Done recently
 
+- 2026-10-21, pushed: the form, confirmation email, and after-payment page all say a separate
+  VolunteerBadge email is coming for the background check.
 - 2026-10-20, pushed: a mentor's optional gift is recorded and receipted as a donation, and the
   form says every mentor gets a shirt either way.
 - 2026-10-20, pushed: mentor invites stop quoting the $100 fee. Konnor Spencer and Abdullah
@@ -16,10 +18,6 @@
   Continue no longer skips Review and pay. Both proven on the fixture camp.
 - 2026-10-16, deployed: t-shirt count with a progress bar, and a Board panel to put board
   members on a camp as Mentor or Staff, pre-registered with no email. Migration 038 applied.
-- 2026-10-14, deployed: meeting times in Eastern, minor stops on waitlist and registration,
-  email confirmation before approval, case-insensitive contacts with an admin merge page,
-  Meet links created by Calendar. Migrations 035 to 037 applied. Email confirmation starts
-  with signups from 2026-10-14, so the current Deer Camp enrollees are not asked.
 
 ## In progress
 

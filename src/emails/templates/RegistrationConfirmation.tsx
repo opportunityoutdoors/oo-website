@@ -9,6 +9,11 @@ export interface RegistrationConfirmationProps {
   isMentor?: boolean;
   eventDate?: string | null;
   location?: string | null;
+  /**
+   * They owe a background check. The invite comes from VolunteerBadge, not from us, so
+   * without this line it reads as an email from a stranger and gets ignored.
+   */
+  needsBackgroundCheck?: boolean;
 }
 
 export function RegistrationConfirmation({
@@ -18,6 +23,7 @@ export function RegistrationConfirmation({
   isMentor,
   eventDate,
   location,
+  needsBackgroundCheck,
 }: RegistrationConfirmationProps) {
   return (
     <EmailLayout preview={`Your ${eventTitle} registration is confirmed`}>
@@ -40,6 +46,19 @@ export function RegistrationConfirmation({
               <strong>Where:</strong> {location}
             </CalloutLine>
           ) : null}
+        </Callout>
+      ) : null}
+
+      {needsBackgroundCheck ? (
+        <Callout>
+          <CalloutLine>
+            <strong>Watch for a separate email about your background check.</strong>
+          </CalloutLine>
+          <CalloutLine>
+            Once your payment goes through, VolunteerBadge, our background check provider,
+            will email you a link. It takes about three minutes, and it must be done before
+            camp. Check your spam folder if it has not arrived within the hour.
+          </CalloutLine>
         </Callout>
       ) : null}
 
