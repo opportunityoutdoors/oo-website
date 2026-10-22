@@ -19,8 +19,6 @@
 - 2026-10-20: the board adopted the background screening policy, draft v0.4.
 - 2026-10-20, pushed: the code of conduct is section 13 of the camp waiver, and step 3
   Continue no longer skips Review and pay. Both proven on the fixture camp.
-- 2026-10-16, deployed: t-shirt count with a progress bar, and a Board panel to put board
-  members on a camp as Mentor or Staff, pre-registered with no email. Migration 038 applied.
 
 ## In progress
 
