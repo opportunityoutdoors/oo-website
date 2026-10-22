@@ -234,8 +234,9 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
   }
 
   /** After an approval: how many invites went, and who has to be contacted by hand. */
-  function alertApproval(data: { emailed?: number; failed?: string[] } | null) {
-    if (data?.emailed === undefined) return;
+  function alertApproval(data: { emailed?: number; failed?: string[]; updated?: number } | null) {
+    // Nothing changed (everyone was already approved), so there is nothing to report.
+    if (data?.emailed === undefined || data.updated === 0) return;
     const failed = data.failed ?? [];
     alert(
       `Invite sent to ${data.emailed}.` +

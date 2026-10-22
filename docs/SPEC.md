@@ -87,6 +87,13 @@ Sources this was assembled from, which stay as the detailed reference:
       and "Removed for conduct" send nothing, by design. A linked minor with no email is
       skipped, because the guardian's card carries it. Proven on the fixture: Hana got the
       email and the admin said "Denial email sent to 1."; Ivy, removed for conduct, got none.
+- [x] A repeat move does nothing. Done 2026-10-22, after a double-click sent Grayson Millikan,
+      Markus Howell and Ali Hamed the denial email twice. The move route and the bulk status
+      change both skip anyone already in that status (and, for an exit, with that reason), so
+      no second log, email or token. The denial email goes only on the way into Turned away.
+      `ExitDialog.tsx` disables Move and shows "Moving…" until it finishes. Proven on the
+      fixture: a double-click sent one email and wrote one timeline row; a repeat approve and
+      a repeat drag to Invited left the token unchanged and sent nothing.
 
 ## Phase 4 — Registration, payment, screening
 

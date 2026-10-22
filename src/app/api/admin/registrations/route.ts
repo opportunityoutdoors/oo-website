@@ -43,6 +43,14 @@ export async function PATCH(request: NextRequest) {
     .in("id", ids);
   const previous = new Map((before ?? []).map((r) => [r.id, r.status as string]));
 
+  // Anyone already in this status is left alone. A repeated request, such as a double-click
+  // on 2026-10-22 that sent three denial emails twice, must not log, email or re-token again.
+  // Re-approving would issue a new token and kill the link in the first invite.
+  const changing = ids.filter((id) => previous.get(id) !== status);
+  if (!changing.length) {
+    return NextResponse.json({ updated: 0, emailed: 0, failed: [], unchanged: ids.length });
+  }
+
   /**
    * Records the transition for every id given.
    *
@@ -69,7 +77,7 @@ export async function PATCH(request: NextRequest) {
   // Tokens, linked minors and the invite email, all awaited. `failed` names anyone whose
   // invite did not send, so the admin can see who has to be contacted by hand.
   if (status === "approved") {
-    const { approvedIds, emailed, failed } = await approveRegistrations(supabase, ids);
+    const { approvedIds, emailed, failed } = await approveRegistrations(supabase, changing);
     await logAll(approvedIds);
     return NextResponse.json({ updated: approvedIds.length, emailed, failed });
   }
@@ -90,7 +98,7 @@ export async function PATCH(request: NextRequest) {
   const { data, error } = await supabase
     .from("registrations")
     .update(resetFields)
-    .in("id", ids)
+    .in("id", changing)
     .select("*, contacts(email, first_name, last_name), events(title, slug)");
 
   if (error) {
@@ -98,14 +106,14 @@ export async function PATCH(request: NextRequest) {
   }
 
   // Cascade status to linked minors
-  for (const id of ids) {
+  for (const id of changing) {
     await supabase
       .from("registrations")
       .update(resetFields)
       .eq("guardian_registration_id", id);
   }
 
-  await logAll(ids);
+  await logAll(changing);
 
   // Denial emails, awaited, with anyone not reached named back to the admin.
   if (status === "denied" && data?.length) {

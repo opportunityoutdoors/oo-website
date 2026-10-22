@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { EXIT_REASONS } from "@/lib/camp-pipeline";
 
 // Asking why somebody is no longer coming.
@@ -20,11 +20,28 @@ export default function ExitDialog({
   name: string;
   to: "turned_away" | "dropped_out";
   onCancel: () => void;
-  onConfirm: (reason: string) => void;
+  onConfirm: (reason: string) => void | Promise<unknown>;
 }) {
   const options = EXIT_REASONS.filter((r) => r.position === to);
   const [reason, setReason] = useState("");
   const chosen = options.find((o) => o.value === reason);
+
+  // One submission at a time. On 2026-10-22 a double-click ran a bulk Turn Away twice and
+  // sent three denial emails twice. The ref stops a second click that lands before the
+  // re-render disables the button; the state is what the person sees.
+  const [submitting, setSubmitting] = useState(false);
+  const inFlight = useRef(false);
+  async function confirm() {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setSubmitting(true);
+    try {
+      await onConfirm(reason);
+    } finally {
+      inFlight.current = false;
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-near-black/40 p-4" onClick={onCancel}>
@@ -66,11 +83,11 @@ export default function ExitDialog({
 
         <div className="mt-5 flex gap-2">
           <button
-            onClick={() => onConfirm(reason)}
-            disabled={!reason}
+            onClick={confirm}
+            disabled={!reason || submitting}
             className="rounded bg-dark-green px-4 py-2 text-sm font-semibold text-white hover:bg-dark-green/90 disabled:opacity-40"
           >
-            Move
+            {submitting ? "Moving…" : "Move"}
           </button>
           <button
             onClick={onCancel}

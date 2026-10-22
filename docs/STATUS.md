@@ -5,6 +5,7 @@
 
 ## Done recently
 
+- 2026-10-22, pushed: a double-click no longer moves, emails, or re-tokens anyone twice.
 - 2026-10-22, pushed: Turn Away as "Denied at review" sends the denial email.
 - 2026-10-21, pushed: day 3 and final background check reminders from us, a staff alert
   when a link expires, and search help that matches VolunteerBadge's real email.

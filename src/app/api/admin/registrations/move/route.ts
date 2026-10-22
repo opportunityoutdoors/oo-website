@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
 
   const { data: current } = await supabase
     .from("registrations")
-    .select("id, status, contact_id, contacts(background_check_status)")
+    .select("id, status, exit_reason, contact_id, contacts(background_check_status)")
     .eq("id", registrationId)
     .maybeSingle();
 
@@ -114,6 +114,13 @@ export async function POST(req: NextRequest) {
       },
       { status: 400 }
     );
+  }
+
+  // Already there, for the same reason: nothing to do. A repeated request (a double-click on
+  // 2026-10-22 sent three denial emails twice) must not log, email, or re-token again, and
+  // re-approving would issue a new token that kills the link in the first invite.
+  if (current.status === status && (!leaving || current.exit_reason === exitReason)) {
+    return NextResponse.json({ ok: true, status, unchanged: true, emailed: 0, failed: [] });
   }
 
   // Same gate as the bulk approve in ../route.ts.
@@ -183,7 +190,9 @@ export async function POST(req: NextRequest) {
   // awaited, with any failure named. Only that reason: see lib/email/denial.ts for why the
   // other two never send it. A linked minor with no email of their own is skipped, because
   // the guardian's card carries the email and turning both away must not report a failure.
-  if (to === "turned_away" && exitReason === "denied_at_review") {
+  // Only on the way in. Someone already turned away whose reason is being corrected has
+  // already heard from us, or deliberately has not.
+  if (to === "turned_away" && exitReason === "denied_at_review" && current.status !== status) {
     const { data: reg } = await supabase
       .from("registrations")
       .select("guardian_registration_id, contacts(email, first_name, last_name), events(title)")
