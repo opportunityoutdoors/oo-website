@@ -122,3 +122,21 @@ export function formatMeetingTime(iso: string): string {
   });
   return `${when} ET`;
 }
+
+/**
+ * An event's days as an all-day calendar range: { start: "2026-11-20", end: "2026-11-23" }.
+ *
+ * For a Google Calendar event, which wants date-only values with an exclusive end. Both
+ * inputs are the date-only fields stored as midnight UTC, so the day is read in UTC. Sent as
+ * exact times instead, Deer Camp (Fri Nov 20 to Sun Nov 22) reached campers as 7 PM Thursday
+ * to 7 PM Saturday. With no last day, the event is the first day alone.
+ */
+export function allDayRange(
+  firstDay: string,
+  lastDay: string | null
+): { start: string; end: string } {
+  const day = (iso: string) => new Date(iso).toISOString().slice(0, 10);
+  const last = new Date(lastDay ?? firstDay);
+  const dayAfter = new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), last.getUTCDate() + 1));
+  return { start: day(firstDay), end: day(dayAfter.toISOString()) };
+}

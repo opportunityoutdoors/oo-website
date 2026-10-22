@@ -97,6 +97,11 @@ Sources this was assembled from, which stay as the detailed reference:
 
 ## Phase 4 — Registration, payment, screening
 
+- [ ] The camp calendar invite shows the wrong days. Found 2026-10-22 from a camper: Deer
+      Camp, Fri Nov 20 to Sun Nov 22, arrived as Thu to Sat. `register/route.ts:285-302`
+      sends the date-only fields as exact times, midnight UTC, which Google shows as 7 PM
+      Eastern the evening before. Make it an all-day event. 4 Deer Camp registrants already
+      have the wrong invite: Konnor Spencer, Sebastian Blanco, Abdullah Saleh, Steve Cook.
 - [ ] Background check results never reach the site. Found 2026-10-22: Konnor Spencer is
       clear in VolunteerBadge and still `invited` here. The poll asks `GET /checks/{id}` with
       the application id we store, and VolunteerBadge answers 404 "Check not found" (proven

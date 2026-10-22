@@ -1,13 +1,35 @@
 import { randomUUID } from "crypto";
+import { allDayRange } from "@/lib/format-event-date";
 const SCOPES = ["https://www.googleapis.com/auth/calendar"];
 
 interface CalendarEvent {
   id?: string;
   summary: string;
   description?: string;
-  start: string; // ISO datetime
-  end: string; // ISO datetime
+  start: string; // ISO datetime; with allDay, the first day
+  end: string; // ISO datetime; with allDay, the last day (inclusive)
   attendees?: string[]; // email addresses
+  /**
+   * A whole-day event, such as a camp. start and end are the date-only fields stored as
+   * midnight UTC, and must not be sent as times: Google would show them in Eastern, the
+   * evening before.
+   */
+  allDay?: boolean;
+}
+
+/** Google's start/end pair: date-only for an all-day event, an Eastern datetime otherwise. */
+function eventTimes(start: string, end: string | undefined, allDay?: boolean) {
+  if (allDay) {
+    const range = allDayRange(start, end ?? null);
+    return { start: { date: range.start }, end: { date: range.end } };
+  }
+  return {
+    start: { dateTime: start, timeZone: "America/New_York" },
+    end: {
+      dateTime: end || new Date(new Date(start).getTime() + 60 * 60 * 1000).toISOString(),
+      timeZone: "America/New_York",
+    },
+  };
 }
 
 interface CalendarEventResponse {
@@ -100,8 +122,7 @@ export async function createCalendarEvent(event: CalendarEvent & { meetLink?: st
   const body: Record<string, unknown> = {
     summary: event.summary,
     description,
-    start: { dateTime: event.start, timeZone: "America/New_York" },
-    end: { dateTime: event.end || new Date(new Date(event.start).getTime() + 60 * 60 * 1000).toISOString(), timeZone: "America/New_York" },
+    ...eventTimes(event.start, event.end, event.allDay),
     attendees: event.attendees?.map((email) => ({ email })) || [],
   };
   if (wantsMeet) {
@@ -155,8 +176,12 @@ export async function updateCalendarEvent(
   const body: Record<string, unknown> = {};
   if (updates.summary) body.summary = updates.summary;
   if (updates.description) body.description = updates.description;
-  if (updates.start) body.start = { dateTime: updates.start, timeZone: "America/New_York" };
-  if (updates.end) body.end = { dateTime: updates.end, timeZone: "America/New_York" };
+  if (updates.start && updates.allDay) {
+    Object.assign(body, eventTimes(updates.start, updates.end, true));
+  } else {
+    if (updates.start) body.start = { dateTime: updates.start, timeZone: "America/New_York" };
+    if (updates.end) body.end = { dateTime: updates.end, timeZone: "America/New_York" };
+  }
 
   const res = await fetch(
     `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${calendarEventId}`,

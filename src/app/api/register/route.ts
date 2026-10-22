@@ -289,13 +289,14 @@ export async function POST(request: NextRequest) {
     if (eventInfo?.date_start && contactEmail && process.env.GOOGLE_CALENDAR_ID) {
       try {
         const { createCalendarEvent } = await import("@/lib/google-calendar");
-        const endDate = eventInfo.date_end || new Date(new Date(eventInfo.date_start).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString();
-
+        // All-day, from the first camp day to the last. Sent as times, these midnight-UTC dates
+        // reached campers as 7 PM the evening before: Deer Camp read Thursday to Saturday.
         await createCalendarEvent({
           summary: eventInfo.title,
           description: `You're registered for ${eventInfo.title}!${eventInfo.location ? ` Location details will be shared in your welcome packet.` : ""}`,
           start: eventInfo.date_start,
-          end: endDate,
+          end: eventInfo.date_end ?? eventInfo.date_start,
+          allDay: true,
           attendees: [contactEmail],
         });
       } catch (err) {
