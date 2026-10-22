@@ -18,8 +18,6 @@
 - 2026-10-20, pushed: approval invites are awaited and batched, failures are shown, and a
   drag into Invited now sends the invite. Markus Howell's duplicate contact merged.
 - 2026-10-20: the board adopted the background screening policy, draft v0.4.
-- 2026-10-20, pushed: the code of conduct is section 13 of the camp waiver, and step 3
-  Continue no longer skips Review and pay. Both proven on the fixture camp.
 
 ## In progress
 
