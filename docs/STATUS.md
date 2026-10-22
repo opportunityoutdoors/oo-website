@@ -1,6 +1,6 @@
 # Status
 
-**Last worked on:** 2026-10-21. Code changed and pushed to main 2026-10-21.
+**Last worked on:** 2026-10-22. Code changed and pushed to main 2026-10-22.
 **Status:** Active
 
 ## Done recently
@@ -30,6 +30,8 @@ away. Mentee slots at 3:1 were 12 against 22 mentees waiting, on 2026-10-20.
 
 ## Next up
 
+- Fix VolunteerBadge results reaching the site (support emailed 2026-10-22), then unpause
+  reminders. Until then, mark each result by hand from their dashboard.
 - Send the denial email when a card is turned away on the board. It sends nothing now.
 - For the next camp: Meet links on the admin sync path, and a re-send after a meeting change.
 

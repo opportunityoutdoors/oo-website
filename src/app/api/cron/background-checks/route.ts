@@ -28,6 +28,16 @@ const MIN_AGE_MINUTES = 15;
 const BATCH = 25;
 
 /**
+ * PAUSED 2026-10-22, by decision of John Trice, until VolunteerBadge results reach the site.
+ *
+ * Their webhook is refused (wrong signature header) and the poll asks for the wrong id, so a
+ * finished check still reads 'invited' here. Reminding on that state tells people who have
+ * finished to finish. Set back to false once a real result lands on its own. Staff alerts
+ * stay on.
+ */
+const REMINDERS_PAUSED = true;
+
+/**
  * Reconciles checks that have not resolved. Exported so the admin view can call it directly
  * rather than waiting for the schedule.
  *
@@ -108,10 +118,9 @@ export async function GET(req: NextRequest) {
 
     // Reminders before alerts: a link still alive gets the registrant nudged; one that has
     // died goes to staff, who can send a new one.
-    const { sendBackgroundCheckReminders } = await import(
-      "@/lib/background-check/remind"
-    );
-    const reminders = await sendBackgroundCheckReminders();
+    const reminders = REMINDERS_PAUSED
+      ? "paused"
+      : await (await import("@/lib/background-check/remind")).sendBackgroundCheckReminders();
 
     const { sendBackgroundCheckAlerts } = await import(
       "@/lib/background-check/alert"

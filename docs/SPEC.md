@@ -96,6 +96,8 @@ Sources this was assembled from, which stay as the detailed reference:
       so VolunteerBadge names it differently. The refusals now log the header names. Next
       step: read them from the next delivery, then fix the header, the id matching, and the
       poll. Konnor marked clear by hand from the dashboard on 2026-10-22 in the meantime.
+      Reminder emails are paused (`REMINDERS_PAUSED` in the cron route) until a result
+      lands on its own. Unpause as part of this fix. Staff alerts stay on.
 - [x] Tokenized four-step registration form
 - [x] Waiver with full audit trail (text, typed signature, timestamp, IP) and PDF confirmation
 - [x] Minor and guardian handling, including nullable email for minors
