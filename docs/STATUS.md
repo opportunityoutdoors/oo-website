@@ -20,7 +20,7 @@
 ## In progress
 
 Resume point, 2026-10-22 evening. VolunteerBadge results now reach the site (4d5dbe5) and we
-send our own check invite (pending push). Reminders stay paused until Sebastian Blanco,
+send our own check invite (c24113a). Reminders stay paused until Sebastian Blanco,
 Abdullah Saleh and Steve Cook, ordered before the fix and so unmatched, are marked clear by
 hand from John's list; then set REMINDERS_PAUSED to false in the cron route. John to add
 check.adjudicated to the VolunteerBadge webhook and rename the application template.
