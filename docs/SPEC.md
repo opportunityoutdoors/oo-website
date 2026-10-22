@@ -108,6 +108,16 @@ Sources this was assembled from, which stay as the detailed reference:
       poll. Konnor marked clear by hand from the dashboard on 2026-10-22 in the meantime.
       Reminder emails are paused (`REMINDERS_PAUSED` in the cron route) until a result
       lands on its own. Unpause as part of this fix. Staff alerts stay on.
+      VolunteerBadge support replied 2026-10-22, with support.volunteerbadge.com/api-and-webhooks:
+      the header is `X-VolunteerBadge-Signature`, a bare hex HMAC-SHA256 of the raw body, which
+      is what we already read, so why the 400s happened is still open. Deliveries are never
+      retried, and they wait 5 seconds. No event carries our applicationId except
+      `application.submitted` (applicationId + volunteerId). `volunteer.created` carries
+      volunteerId + email. `check.complete` and `check.adjudicated` carry checkId + volunteerId,
+      and the outcome is in `result` (clear, consider, or the string "null" while pending), not
+      `status`. `GET /checks/{id}` needs the checkId; `GET /volunteers/{id}` lists checks.
+      `POST /applications` with no email or phone and `deliveryMethod: "link"` sends nothing and
+      returns `applyUrl`, so we could send the invite ourselves.
 - [x] Tokenized four-step registration form
 - [x] Waiver with full audit trail (text, typed signature, timestamp, IP) and PDF confirmation
 - [x] Minor and guardian handling, including nullable email for minors
