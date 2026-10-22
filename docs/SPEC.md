@@ -97,22 +97,9 @@ Sources this was assembled from, which stay as the detailed reference:
 
 ## Phase 4 — Registration, payment, screening
 
-- [ ] The camp calendar invite shows the wrong days. Found 2026-10-22 from a camper: Deer
-      Camp, Fri Nov 20 to Sun Nov 22, arrived as Thu to Sat. `register/route.ts:285-302`
-      sends the date-only fields as exact times, midnight UTC, which Google shows as 7 PM
-      Eastern the evening before. Make it an all-day event. 4 Deer Camp registrants already
-      have the wrong invite: Konnor Spencer, Sebastian Blanco, Abdullah Saleh, Steve Cook.
-- [ ] Background check results never reach the site. Found 2026-10-22: Konnor Spencer is
-      clear in VolunteerBadge and still `invited` here. The poll asks `GET /checks/{id}` with
-      the application id we store, and VolunteerBadge answers 404 "Check not found" (proven
-      in their sandbox). The check gets its own id on submission, which we never store. The
-      webhook is set to the right URL and delivered twice at 15:38 UTC, and both were refused
-      with a 400 that wrote no log: almost certainly no `x-volunteerbadge-signature` header,
-      so VolunteerBadge names it differently. The refusals now log the header names. Next
-      step: read them from the next delivery, then fix the header, the id matching, and the
-      poll. Konnor marked clear by hand from the dashboard on 2026-10-22 in the meantime.
-      Reminder emails are paused (`REMINDERS_PAUSED` in the cron route) until a result
-      lands on its own. Unpause as part of this fix. Staff alerts stay on.
+- [ ] Move the 4 Deer Camp registrants onto the shared camp event. Konnor Spencer, Sebastian
+      Blanco, Abdullah Saleh and Steve Cook each have a separate Thu to Sat event from before
+      the fix. Needs John's go-ahead: adding them sends Google's invite to the new event.
 - [x] Tokenized four-step registration form
 - [x] Waiver with full audit trail (text, typed signature, timestamp, IP) and PDF confirmation
 - [x] Minor and guardian handling, including nullable email for minors
@@ -156,6 +143,14 @@ Sources this was assembled from, which stay as the detailed reference:
       the fixture by running the reminder and alert steps at day 3, 6 and 7.5: one first
       reminder, one final, one staff alert, no repeats. Not run through the full cron
       locally, because the local test key would poll Konnor's live check.
+- [x] One shared, all-day camp calendar event. Done 2026-10-22, after a camper got Deer Camp
+      as Thu to Sat. Registration now adds the registrant as a guest to the camp's one event
+      (`lib/camp-calendar.ts`, id on `events.camp_calendar_event_id`, migration 040): all-day
+      across the camp dates, guest list hidden, no location. A Sanity publish moves it with
+      the camp's dates. Guest adds retry on an edit clash and on Google's rate limit. Proven
+      against Google with the fixture: five simultaneous adds and a repeat gave one event
+      with five guests; Ivy's real registration joined the same event. The Sanity sync is
+      not proven live.
 
 ## Phase 5 — Matching and welcome
 

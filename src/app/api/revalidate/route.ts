@@ -106,7 +106,7 @@ async function updateEventInSupabase(sanityId: string) {
     // Check if this event already exists in Supabase
     const { data: existing } = await supabase
       .from("events")
-      .select("id")
+      .select("id, camp_calendar_event_id")
       .eq("sanity_id", sanityId)
       .single();
 
@@ -214,6 +214,23 @@ async function updateEventInSupabase(sanityId: string) {
         mentee_perks: event.menteePerks || [],
       })
       .eq("sanity_id", sanityId);
+
+    // The camp's shared calendar event follows the camp's dates and title, so registrants'
+    // calendars move with an edit here. Never fatal: the event row is already updated.
+    if (existing.camp_calendar_event_id) {
+      try {
+        const { syncCampCalendarEvent } = await import("@/lib/camp-calendar");
+        await syncCampCalendarEvent({
+          id: existing.id,
+          title: event.title || "Untitled Event",
+          date_start: event.date || null,
+          date_end: event.endDate || null,
+          camp_calendar_event_id: existing.camp_calendar_event_id,
+        });
+      } catch (calErr) {
+        console.error("Camp calendar event sync failed:", calErr);
+      }
+    }
   } catch (err) {
     console.error("Failed to update event in Supabase:", err);
   }

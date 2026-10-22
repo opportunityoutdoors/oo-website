@@ -282,23 +282,13 @@ export async function POST(request: NextRequest) {
       console.error("Registration confirmation email error:", err);
     }
 
-    // Add camp calendar invite for the registrant
-    const eventInfo = fullReg.events as { title: string; date_start: string | null; date_end: string | null; location: string | null } | null;
+    // Add the registrant to the camp's one shared calendar event: all-day, guest list hidden,
+    // created on the first registration. See lib/camp-calendar.ts.
     const contactEmail = (fullReg.contacts as { email: string } | null)?.email;
-
-    if (eventInfo?.date_start && contactEmail && process.env.GOOGLE_CALENDAR_ID) {
+    if (contactEmail && process.env.GOOGLE_CALENDAR_ID) {
       try {
-        const { createCalendarEvent } = await import("@/lib/google-calendar");
-        // All-day, from the first camp day to the last. Sent as times, these midnight-UTC dates
-        // reached campers as 7 PM the evening before: Deer Camp read Thursday to Saturday.
-        await createCalendarEvent({
-          summary: eventInfo.title,
-          description: `You're registered for ${eventInfo.title}!${eventInfo.location ? ` Location details will be shared in your welcome packet.` : ""}`,
-          start: eventInfo.date_start,
-          end: eventInfo.date_end ?? eventInfo.date_start,
-          allDay: true,
-          attendees: [contactEmail],
-        });
+        const { addToCampCalendar } = await import("@/lib/camp-calendar");
+        await addToCampCalendar(supabase, fullReg.event_id, contactEmail);
       } catch (err) {
         console.error("Camp calendar invite error:", err);
       }

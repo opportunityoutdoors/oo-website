@@ -15,6 +15,12 @@ interface CalendarEvent {
    * evening before.
    */
   allDay?: boolean;
+  /**
+   * Guests cannot see who else is invited, or invite anyone. For an event shared by many
+   * people who do not know each other, such as a camp, where the guest list is everyone's
+   * email address.
+   */
+  privateGuests?: boolean;
 }
 
 /** Google's start/end pair: date-only for an all-day event, an Eastern datetime otherwise. */
@@ -125,6 +131,10 @@ export async function createCalendarEvent(event: CalendarEvent & { meetLink?: st
     ...eventTimes(event.start, event.end, event.allDay),
     attendees: event.attendees?.map((email) => ({ email })) || [],
   };
+  if (event.privateGuests) {
+    body.guestsCanSeeOtherGuests = false;
+    body.guestsCanInviteOthers = false;
+  }
   if (wantsMeet) {
     body.conferenceData = {
       createRequest: {
@@ -211,37 +221,46 @@ export async function updateCalendarEvent(
 export async function addAttendee(calendarEventId: string, email: string): Promise<void> {
   const token = await getAccessToken();
   const calendarId = getCalendarId();
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${calendarEventId}`;
 
-  // First get current attendees
-  const getRes = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${calendarEventId}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
+  // Read, add, write back, guarded by the event's etag. A camp event is shared by every
+  // registrant, so two people registering at once would otherwise each write a list without
+  // the other in it, and one of them would silently lose their invite. Google answers 412
+  // when the event changed under us; then read again and retry. It also limits how fast one
+  // event can change, answering 403 rateLimitExceeded (or 429): three people registering in
+  // the same second hit that in testing, and the third was dropped. Those wait and retry too.
+  const ATTEMPTS = 6;
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+    const getRes = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const event = await getRes.json();
+    if (!getRes.ok) {
+      throw new Error(`Calendar API read error: ${JSON.stringify(event)}`);
     }
-  );
 
-  const event = await getRes.json();
-  const attendees = event.attendees || [];
+    const attendees: { email: string }[] = event.attendees || [];
+    if (attendees.some((a) => a.email.toLowerCase() === email.toLowerCase())) return;
+    attendees.push({ email });
 
-  // Check if already an attendee
-  if (attendees.some((a: { email: string }) => a.email === email)) return;
-
-  attendees.push({ email });
-
-  const res = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${calendarEventId}?sendUpdates=all`,
-    {
+    const res = await fetch(`${url}?sendUpdates=all`, {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
+        "If-Match": event.etag,
       },
       body: JSON.stringify({ attendees }),
-    }
-  );
+    });
+    if (res.ok) return;
 
-  if (!res.ok) {
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    const rateLimited =
+      res.status === 429 ||
+      (res.status === 403 && JSON.stringify(data).includes("ateLimitExceeded"));
+    if ((res.status === 412 || rateLimited) && attempt < ATTEMPTS) {
+      // Backoff with jitter, about 0.5s, 1s, 2s, 4s, 8s: under 16 seconds in all.
+      await new Promise((r) => setTimeout(r, 500 * 2 ** (attempt - 1) * (0.75 + Math.random() / 2)));
+      continue;
+    }
     throw new Error(`Calendar API add attendee error: ${JSON.stringify(data)}`);
   }
 }
