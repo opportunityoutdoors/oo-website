@@ -108,11 +108,6 @@ Sources this was assembled from, which stay as the detailed reference:
       poll. Konnor marked clear by hand from the dashboard on 2026-10-22 in the meantime.
       Reminder emails are paused (`REMINDERS_PAUSED` in the cron route) until a result
       lands on its own. Unpause as part of this fix. Staff alerts stay on.
-- [ ] Take a camper off the camp calendar event when they leave. Added 2026-10-22. A
-      registrant later turned away or dropped out on the board stays a guest on the shared
-      camp event. Call `removeFromCampCalendar` from the exit path in
-      `registrations/move/route.ts`, as the Board panel already does for Not going. Placed
-      after the VolunteerBadge fix, which blocks every screening result.
 - [x] Tokenized four-step registration form
 - [x] Waiver with full audit trail (text, typed signature, timestamp, IP) and PDF confirmation
 - [x] Minor and guardian handling, including nullable email for minors
@@ -174,6 +169,10 @@ Sources this was assembled from, which stay as the detailed reference:
       retries on an edit clash and on Google's rate limit. Proven through the real Board panel
       on the fixture with John's own row: Mentor added him, Staff kept him, Not going removed
       him and deleted the registration.
+- [x] A camper comes off the camp calendar event when they leave. Done 2026-10-22. Turned
+      away or Dropped out on the board removes them from the shared event, and Google sends
+      a cancellation; dragged back to Registered adds them again. Never fatal to the move.
+      Proven on the fixture: Ada, turned away, was removed; dragged back, she was re-added.
 
 ## Phase 5 — Matching and welcome
 

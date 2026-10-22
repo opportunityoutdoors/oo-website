@@ -186,6 +186,31 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // The camp's shared calendar event follows the board. Turned away or dropped out takes the
+  // person off it, and Google sends them a cancellation; dragged back to Registered puts them
+  // on again. Someone who never registered is not a guest, so taking them off does nothing.
+  // Never fatal: the move is the record, and a calendar that failed is logged.
+  if (process.env.GOOGLE_CALENDAR_ID && current.status !== status && (leaving || status === "registered")) {
+    try {
+      const { data: c } = await supabase
+        .from("contacts")
+        .select("email")
+        .eq("id", current.contact_id)
+        .single();
+      const { data: reg } = await supabase
+        .from("registrations")
+        .select("event_id")
+        .eq("id", registrationId)
+        .single();
+      if (c?.email && reg?.event_id) {
+        const { addToCampCalendar, removeFromCampCalendar } = await import("@/lib/camp-calendar");
+        await (leaving ? removeFromCampCalendar : addToCampCalendar)(supabase, reg.event_id, c.email);
+      }
+    } catch (err) {
+      console.error(`Camp calendar ${leaving ? "removal" : "add"} failed for ${registrationId}:`, err);
+    }
+  }
+
   // Turned away as "Denied at review" gets the polite "we could not include everyone" email,
   // awaited, with any failure named. Only that reason: see lib/email/denial.ts for why the
   // other two never send it. A linked minor with no email of their own is skipped, because
