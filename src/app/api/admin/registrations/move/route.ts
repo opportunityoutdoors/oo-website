@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { EXIT_REASONS, type Position } from "@/lib/camp-pipeline";
 import { unconfirmedNames, unconfirmedRefusal } from "@/lib/email-confirmation";
 import { approveRegistrations } from "@/lib/email/approval";
+import { sendDenialEmails } from "@/lib/email/denial";
 import { logRegistrationEvent } from "@/lib/registration-log";
 
 // Moving a card between columns on the camp board.
@@ -176,6 +177,24 @@ export async function POST(req: NextRequest) {
       `Registration ${registrationId} moved ${current.status} -> ${status} but the move was ` +
         `NOT logged: ${logError.message}`
     );
+  }
+
+  // Turned away as "Denied at review" gets the polite "we could not include everyone" email,
+  // awaited, with any failure named. Only that reason: see lib/email/denial.ts for why the
+  // other two never send it. A linked minor with no email of their own is skipped, because
+  // the guardian's card carries the email and turning both away must not report a failure.
+  if (to === "turned_away" && exitReason === "denied_at_review") {
+    const { data: reg } = await supabase
+      .from("registrations")
+      .select("guardian_registration_id, contacts(email, first_name, last_name), events(title)")
+      .eq("id", registrationId)
+      .single();
+    const contact = Array.isArray(reg?.contacts) ? reg?.contacts[0] : reg?.contacts;
+    if (reg && (contact?.email || !reg.guardian_registration_id)) {
+      const { emailed, failed } = await sendDenialEmails([reg]);
+      return NextResponse.json({ ok: true, status, logged: !logError, emailed, failed });
+    }
+    return NextResponse.json({ ok: true, status, logged: !logError, emailed: 0, failed: [] });
   }
 
   // A card dragged into Invited is an approval, the same as the bulk Approve: a token, linked

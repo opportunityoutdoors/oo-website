@@ -121,22 +121,36 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
     setActionLoading(true);
     try {
       const failures: string[] = [];
+      let emailed = 0;
+      const notEmailed: string[] = [];
       for (const id of selected) {
         const res = await fetch("/api/admin/registrations/move", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ registrationId: id, to, exitReason }),
         });
-        if (!res.ok) failures.push((await res.json()).error ?? "unknown error");
+        const data = await res.json().catch(() => null);
+        if (!res.ok) failures.push(data?.error ?? "unknown error");
+        else {
+          emailed += data?.emailed ?? 0;
+          notEmailed.push(...(data?.failed ?? []));
+        }
       }
       // Named rather than swallowed: a partial bulk that reports success is how somebody
-      // ends up thinking a person was removed when they were not.
+      // ends up thinking a person was removed when they were not. The same goes for the
+      // denial email, which is the only way a turned-away person hears from us.
+      const lines: string[] = [];
       if (failures.length) {
-        alert(
-          `${selected.size - failures.length} moved. ${failures.length} refused:\n` +
-            [...new Set(failures)].join("\n")
+        lines.push(
+          `${selected.size - failures.length} moved. ${failures.length} refused:`,
+          ...new Set(failures)
         );
       }
+      if (exitReason === "denied_at_review") {
+        lines.push(`Denial email sent to ${emailed}.`);
+        if (notEmailed.length) lines.push("Not sent, contact them by hand:", ...notEmailed);
+      }
+      if (lines.length) alert(lines.join("\n"));
       setSelected(new Set());
       await fetchEvent();
     } finally {

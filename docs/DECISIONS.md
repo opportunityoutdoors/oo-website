@@ -52,3 +52,4 @@ verifying.
 - 2026-10-21. Background check reminders come from us, not VolunteerBadge: day 3 and inside the 7-day link's last 30 hours, with the direct link. An expired link is never reminded about. Staff are alerted once instead, and a new link is not issued automatically, because each invite may cost a credit.
 - 2026-10-22. VolunteerBadge invite links last 14 days, changed in their dashboard by John Trice. Links sent before the change keep their 7-day expiry, and the reminders follow each link's own expiry.
 - 2026-10-22. Background check reminder emails are paused until VolunteerBadge results reach the site, by decision of John Trice, so nobody who has finished is told to finish. Staff alerts stay on. Results are marked by hand from the VolunteerBadge dashboard meanwhile.
+- 2026-10-22. Only "Denied at review" sends the denial email. A background check decline gets its legal notices through VolunteerBadge, and a removal for conduct is handled in person.

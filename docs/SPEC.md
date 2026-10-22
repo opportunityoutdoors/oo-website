@@ -61,10 +61,6 @@ Sources this was assembled from, which stay as the detailed reference:
 
 ## Phase 3 — Meetings and approval
 
-- [ ] Turning someone away sends no email. Found 2026-10-20. The board exit in
-      `registrations/move/route.ts` sends nothing. Only the old bulk `denied` status in
-      `registrations/route.ts:150` sends the denial email, without waiting. Placed after the
-      invite fix because Grayson Millikan and Markus Howell are the only two turned away now.
 - [x] Meeting attendance recorded by moving a person to `meeting_rsvp`
 - [x] Rolling approval generates a token and sends the registration invite email
 - [x] Denial email
@@ -84,6 +80,13 @@ Sources this was assembled from, which stay as the detailed reference:
       with a $100 fee: a mentor's invite carries the new line, step 4 shows Free plus a $5
       background check, and Stripe asks for $5. Earlier checks missed it because every
       fixture run used a mentee on a camp with no `cost`.
+- [x] Turn Away as "Denied at review" sends the denial email. Done 2026-10-22, before Grayson
+      Millikan and Markus Howell were turned away. Both Turn Away and the older bulk status
+      change use `sendDenialEmails` in `lib/email/denial.ts`: awaited, one Resend batch, and
+      the admin is told who was emailed and who was not. "Declined after a background check"
+      and "Removed for conduct" send nothing, by design. A linked minor with no email is
+      skipped, because the guardian's card carries it. Proven on the fixture: Hana got the
+      email and the admin said "Denial email sent to 1."; Ivy, removed for conduct, got none.
 
 ## Phase 4 — Registration, payment, screening
 

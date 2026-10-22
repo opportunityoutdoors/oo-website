@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
-import { renderDenial } from "@/emails";
+import { sendDenialEmails } from "@/lib/email/denial";
 import { approveRegistrations } from "@/lib/email/approval";
 import { unconfirmedNames, unconfirmedRefusal } from "@/lib/email-confirmation";
 import { apiRequireMember } from "@/lib/admin/auth";
@@ -92,7 +91,7 @@ export async function PATCH(request: NextRequest) {
     .from("registrations")
     .update(resetFields)
     .in("id", ids)
-    .select("*, contacts(email, first_name), events(title, slug)");
+    .select("*, contacts(email, first_name, last_name), events(title, slug)");
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -108,11 +107,10 @@ export async function PATCH(request: NextRequest) {
 
   await logAll(ids);
 
-  // Send denial emails automatically
+  // Denial emails, awaited, with anyone not reached named back to the admin.
   if (status === "denied" && data?.length) {
-    sendDenialEmails(data).catch((err) =>
-      console.error("Denial email error:", err)
-    );
+    const { emailed, failed } = await sendDenialEmails(data);
+    return NextResponse.json({ updated: data.length, emailed, failed });
   }
 
   return NextResponse.json({ updated: data?.length || 0 });
@@ -148,39 +146,4 @@ export async function DELETE(request: NextRequest) {
   }
 
   return NextResponse.json({ deleted: ids.length });
-}
-
-// ─── Email: Denial ───
-
-async function sendDenialEmails(
-  registrations: Array<{
-    contacts: { email: string; first_name: string | null } | null;
-    events: { title: string } | null;
-  }>
-) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return;
-
-  const { Resend } = await import("resend");
-  const resend = new Resend(apiKey);
-
-  for (const reg of registrations) {
-    const email = reg.contacts?.email;
-    if (!email) continue;
-
-    const firstName = reg.contacts?.first_name || "there";
-    const eventTitle = reg.events?.title || "our upcoming event";
-
-    await resend.emails.send({
-      from: NOTIFICATIONS_FROM,
-      replyTo: REPLY_TO,
-      to: email,
-      subject: `Update on Your ${eventTitle} Registration`,
-      html: await renderDenial({
-        firstName,
-        eventTitle,
-        instagramUrl: process.env.NEXT_PUBLIC_INSTAGRAM_URL,
-      }),
-    });
-  }
 }
