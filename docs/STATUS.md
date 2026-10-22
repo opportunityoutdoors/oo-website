@@ -15,21 +15,22 @@
   Migration 039 applied.
 - 2026-10-21, pushed: the form, confirmation email, and after-payment page all say a separate
   VolunteerBadge email is coming for the background check.
-- 2026-10-20, pushed: a mentor's optional gift is recorded and receipted as a donation, and the
-  form says every mentor gets a shirt either way.
-- 2026-10-20, pushed: mentor invites stop quoting the $100 fee. Konnor Spencer and Abdullah
-  Alqadi already got the wrong copy and need a note.
 
 ## In progress
 
-2026 Deer Camp approvals, by John. Approve a few first and watch one pay and get a background
-check, because neither has run live yet. Grayson Millikan and Markus Howell are being turned
-away. Mentee slots at 3:1 were 12 against 22 mentees waiting, on 2026-10-20.
+Resume point, 2026-10-22. Deer Camp (Nov 20 to 22) approvals are done: 17 mentees approved,
+Grayson Millikan, Markus Howell and Ali Hamed turned away. 4 mentees and Konnor registered.
+VolunteerBadge results do not reach the site. Ruled out: the webhook URL (correct, www) and
+our endpoint (live, secret set). Found: it refuses their deliveries for a missing signature
+header, now logged by name, and the poll asks for checks by application id, which 404s.
+Reminders are paused. Next step: read the header names from the next refused delivery in
+Vercel logs (search "webhook refused"), or from VolunteerBadge support, then fix header, id
+matching and poll, and unpause. Until then, mark each result clear by hand. John deletes the
+4 old Thu to Sat calendar events; the shared all-day event has 7 guests.
 
 ## Next up
 
-- Fix VolunteerBadge results reaching the site (support emailed 2026-10-22), then unpause
-  reminders. Until then, mark each result by hand from their dashboard.
+- Take campers off the camp calendar event when they are turned away or drop out.
 - For the next camp: Meet links on the admin sync path, and a re-send after a meeting change.
 
 ## Blocked

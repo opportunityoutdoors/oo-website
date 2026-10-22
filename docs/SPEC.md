@@ -97,6 +97,22 @@ Sources this was assembled from, which stay as the detailed reference:
 
 ## Phase 4 — Registration, payment, screening
 
+- [ ] Background check results never reach the site. Found 2026-10-22: Konnor Spencer is
+      clear in VolunteerBadge and still `invited` here. The poll asks `GET /checks/{id}` with
+      the application id we store, and VolunteerBadge answers 404 "Check not found" (proven
+      in their sandbox). The check gets its own id on submission, which we never store. The
+      webhook is set to the right URL and delivered twice at 15:38 UTC, and both were refused
+      with a 400 that wrote no log: almost certainly no `x-volunteerbadge-signature` header,
+      so VolunteerBadge names it differently. The refusals now log the header names. Next
+      step: read them from the next delivery, then fix the header, the id matching, and the
+      poll. Konnor marked clear by hand from the dashboard on 2026-10-22 in the meantime.
+      Reminder emails are paused (`REMINDERS_PAUSED` in the cron route) until a result
+      lands on its own. Unpause as part of this fix. Staff alerts stay on.
+- [ ] Take a camper off the camp calendar event when they leave. Added 2026-10-22. A
+      registrant later turned away or dropped out on the board stays a guest on the shared
+      camp event. Call `removeFromCampCalendar` from the exit path in
+      `registrations/move/route.ts`, as the Board panel already does for Not going. Placed
+      after the VolunteerBadge fix, which blocks every screening result.
 - [x] Tokenized four-step registration form
 - [x] Waiver with full audit trail (text, typed signature, timestamp, IP) and PDF confirmation
 - [x] Minor and guardian handling, including nullable email for minors

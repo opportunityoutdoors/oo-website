@@ -54,3 +54,5 @@ verifying.
 - 2026-10-22. Background check reminder emails are paused until VolunteerBadge results reach the site, by decision of John Trice, so nobody who has finished is told to finish. Staff alerts stay on. Results are marked by hand from the VolunteerBadge dashboard meanwhile.
 - 2026-10-22. Only "Denied at review" sends the denial email. A background check decline gets its legal notices through VolunteerBadge, and a removal for conduct is handled in person.
 - 2026-10-22. Each camp has one shared Google Calendar event, all-day across the camp dates, with every registrant added as a guest and the guest list hidden. Requested by John Trice after a camper's invite showed the wrong days.
+- 2026-10-22. Board members on a camp, as Mentor or Staff, are guests on its shared calendar event, added and removed with their Board panel status.
+- 2026-10-22. Background check results are marked clear by hand from the VolunteerBadge dashboard, with a timeline note, until their webhook and the poll are fixed.
