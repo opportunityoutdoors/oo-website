@@ -66,10 +66,14 @@ export class VolunteerBadgeProvider implements BackgroundCheckProvider {
       mode?: string;
     }>("POST", "/applications", {
       templateId: this.templateId,
-      email: input.email,
+      // Link only, and no email: VolunteerBadge then sends nothing and returns applyUrl, and
+      // we send the invite ourselves (lib/background-check/send-invite.ts). Their own email
+      // came from a name registrants did not know, titled "Volunteer Application", and its
+      // wording cannot be changed (support, 2026-10-22). Including an email makes them send
+      // it, so the email is deliberately left out.
       firstName: input.firstName ?? undefined,
       lastName: input.lastName ?? undefined,
-      deliveryMethod: "email",
+      deliveryMethod: "link",
     });
 
     // Their examples name the identifier differently in different places, so accept any of

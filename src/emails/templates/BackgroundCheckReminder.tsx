@@ -6,7 +6,7 @@ import { INVITE_SEARCH_HELP } from "@/lib/background-check/invite-email";
 
 // The day 3 and day 6 nudge to finish a background check.
 //
-// From us, not from VolunteerBadge, because their invite arrives from a name the registrant
+// From us, like the invite itself (send-invite.ts). Their own invite once arrived from a name the registrant
 // has never seen and with a subject about volunteering. The direct link comes first, so
 // nobody has to search at all. The search help is the fallback for a missing link.
 

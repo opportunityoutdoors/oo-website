@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { evaluateEligibility } from "./eligibility";
 import { getBackgroundCheckProvider } from "./volunteerbadge";
+import { sendBackgroundCheckInvite } from "./send-invite";
 
 // Ordering a background check for a contact, and recording that we did.
 //
@@ -99,9 +100,15 @@ export async function orderBackgroundCheckIfNeeded(
       })
       .eq("id", contactId);
 
+    // Ordered link-only, so this email is the invite: VolunteerBadge sends none.
+    const emailed = result.applicantUrl
+      ? await sendBackgroundCheckInvite(contactId, result.applicantUrl, result.expiresAt)
+      : false;
+
     console.log(
       `Background check ordered for contact ${contactId}: ${result.providerCheckId}` +
-        (result.sandbox ? " [SANDBOX, no email sent]" : "") +
+        (result.sandbox ? " [SANDBOX]" : "") +
+        (emailed ? ", invite emailed" : ", INVITE NOT EMAILED") +
         (result.applicantUrl ? ` -> ${result.applicantUrl}` : "")
     );
     return {

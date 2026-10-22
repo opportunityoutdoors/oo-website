@@ -5,6 +5,7 @@
 
 ## Done recently
 
+- 2026-10-22, pushed: VolunteerBadge results reach the site, and we send the check invite.
 - 2026-10-22, pushed: turning a camper away or marking them dropped out takes them off the
   camp calendar event.
 - 2026-10-22, pushed: one shared, all-day calendar event per camp, Fri to Sun for Deer Camp.
@@ -18,15 +19,11 @@
 
 ## In progress
 
-Resume point, 2026-10-22. Deer Camp (Nov 20 to 22) approvals are done: 17 mentees approved,
-Grayson Millikan, Markus Howell and Ali Hamed turned away. 4 mentees and Konnor registered.
-VolunteerBadge results do not reach the site. Ruled out: the webhook URL (correct, www) and
-our endpoint (live, secret set). Found: it refuses their deliveries for a missing signature
-header, now logged by name, and the poll asks for checks by application id, which 404s.
-Reminders are paused. Next step: read the header names from the next refused delivery in
-Vercel logs (search "webhook refused"), or from VolunteerBadge support, then fix header, id
-matching and poll, and unpause. Until then, mark each result clear by hand. John deletes the
-4 old Thu to Sat calendar events; the shared all-day event has 7 guests.
+Resume point, 2026-10-22 evening. VolunteerBadge results now reach the site (4d5dbe5) and we
+send our own check invite (pending push). Reminders stay paused until Sebastian Blanco,
+Abdullah Saleh and Steve Cook, ordered before the fix and so unmatched, are marked clear by
+hand from John's list; then set REMINDERS_PAUSED to false in the cron route. John to add
+check.adjudicated to the VolunteerBadge webhook and rename the application template.
 
 ## Next up
 

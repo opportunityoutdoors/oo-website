@@ -11,8 +11,7 @@ export interface RegistrationConfirmationProps {
   eventDate?: string | null;
   location?: string | null;
   /**
-   * They owe a background check. The invite comes from VolunteerBadge, not from us, so
-   * without this line it reads as an email from a stranger and gets ignored.
+   * They owe a background check. The invite is a separate email, so say it is coming.
    */
   needsBackgroundCheck?: boolean;
 }
@@ -56,9 +55,9 @@ export function RegistrationConfirmation({
             <strong>Watch for a separate email about your background check.</strong>
           </CalloutLine>
           <CalloutLine>
-            Once your payment goes through, VolunteerBadge, our background check provider,
-            will email you a link. It takes about three minutes, and it must be done before
-            camp. The link works for {INVITE_LINK_DAYS} days.
+            Once your payment goes through, we will email you a link to complete your
+            background check. It takes about three minutes, and it must be done before camp.
+            The link works for {INVITE_LINK_DAYS} days.
           </CalloutLine>
           <CalloutLine>{INVITE_SEARCH_HELP}</CalloutLine>
         </Callout>

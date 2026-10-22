@@ -174,6 +174,13 @@ Sources this was assembled from, which stay as the detailed reference:
       still unknown. Proven locally with signed events in their shapes, and the poll against
       a real sandbox check. Reminders stay paused until Sebastian Blanco, Abdullah Saleh and
       Steve Cook, whose results predate this, are marked by hand.
+- [x] We send the background check invite ourselves. Done 2026-10-22. The check is ordered
+      link-only (`deliveryMethod: "link"`, no email), so VolunteerBadge sends nothing, and
+      `send-invite.ts` emails "Complete your background check for <camp>" from Opportunity
+      Outdoors with the link and its expiry. Every search instruction now describes our email.
+      Proven: a link-only sandbox order sent nothing and returned the link, and the fixture
+      order delivered our invite. VolunteerBadge's form page still shows the template name,
+      which John can rename in their dashboard.
 
 ## Phase 5 — Matching and welcome
 
