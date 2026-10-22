@@ -87,6 +87,13 @@ Sources this was assembled from, which stay as the detailed reference:
 
 ## Phase 4 — Registration, payment, screening
 
+- [ ] Background check results never reach the site. Found 2026-10-22: Konnor Spencer is
+      clear in VolunteerBadge and still `invited` here. The poll asks `GET /checks/{id}` with
+      the application id we store, and VolunteerBadge answers 404 "Check not found" (proven
+      in their sandbox). The check gets its own id on submission, which we never store. The
+      webhook is set to the right URL and shows "Delivering", but its payload is undocumented
+      and most likely names the check or volunteer, so it matches no contact and is dropped
+      with a 200. Needs one real payload from the Vercel logs to fix the matching.
 - [x] Tokenized four-step registration form
 - [x] Waiver with full audit trail (text, typed signature, timestamp, IP) and PDF confirmation
 - [x] Minor and guardian handling, including nullable email for minors

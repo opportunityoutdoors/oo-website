@@ -11,8 +11,11 @@ export const INVITE_SUBJECT_WORDS = "Volunteer Application";
 /** The word to search for. Matches the sender's address, noreply@volunteerbadge.com. */
 export const INVITE_SEARCH = "VolunteerBadge";
 
-/** VolunteerBadge links stop working 7 days after the invite. */
-export const INVITE_LINK_DAYS = 7;
+/**
+ * VolunteerBadge links stop working this long after the invite. Raised from 7 to 14 in their
+ * dashboard on 2026-10-22. Links sent before then still last 7, and carry their own expiry.
+ */
+export const INVITE_LINK_DAYS = 14;
 
 /** One sentence that tells someone how to find the invite in their inbox. */
 export const INVITE_SEARCH_HELP =
@@ -22,7 +25,7 @@ export const INVITE_SEARCH_HELP =
 
 /**
  * When the invite link stops working. VolunteerBadge returns an expiry with the invite; when
- * it did not, the 7 days their email states are counted from when we sent it.
+ * it did not, INVITE_LINK_DAYS are counted from when we sent it.
  */
 export function inviteLinkExpiry(
   urlExpiresAt: string | null,
@@ -37,7 +40,7 @@ export function inviteLinkExpiry(
 export const FIRST_REMINDER_DAYS = 3;
 /**
  * Final reminder: once the link has this many hours or fewer left. The cron runs once a day,
- * so the last run before a 7-day link dies always lands in its final 24 hours. 30 gives slack
+ * so the last run before a link dies always lands in its final 24 hours. 30 gives slack
  * for a late run without ever reaching back to day 5.
  */
 export const FINAL_REMINDER_HOURS_LEFT = 30;
