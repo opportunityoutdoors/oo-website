@@ -3,6 +3,7 @@ import {
   addAttendee,
   createCalendarEvent,
   deleteCalendarEvent,
+  removeAttendee,
   updateCalendarEvent,
 } from "@/lib/google-calendar";
 
@@ -80,6 +81,23 @@ export async function addToCampCalendar(
 
   const calendarEventId = await ensureCampCalendarEvent(supabase, event as CampEvent);
   if (calendarEventId) await addAttendee(calendarEventId, email);
+}
+
+/**
+ * Takes someone off their camp's calendar event, such as a board member set to "Not going".
+ * Google sends them a cancellation. Nothing to do when the camp has no event yet.
+ */
+export async function removeFromCampCalendar(
+  supabase: SupabaseClient,
+  eventId: string,
+  email: string
+): Promise<void> {
+  const { data: event } = await supabase
+    .from("events")
+    .select("camp_calendar_event_id")
+    .eq("id", eventId)
+    .single();
+  if (event?.camp_calendar_event_id) await removeAttendee(event.camp_calendar_event_id, email);
 }
 
 /**

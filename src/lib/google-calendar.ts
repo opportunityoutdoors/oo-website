@@ -219,27 +219,49 @@ export async function updateCalendarEvent(
  * Add an attendee to a calendar event.
  */
 export async function addAttendee(calendarEventId: string, email: string): Promise<void> {
+  await editAttendees(calendarEventId, (attendees) =>
+    attendees.some((a) => a.email.toLowerCase() === email.toLowerCase())
+      ? null
+      : [...attendees, { email }]
+  );
+}
+
+/**
+ * Remove an attendee from a calendar event.
+ */
+export async function removeAttendee(calendarEventId: string, email: string): Promise<void> {
+  await editAttendees(calendarEventId, (attendees) => {
+    const kept = attendees.filter((a) => a.email.toLowerCase() !== email.toLowerCase());
+    return kept.length === attendees.length ? null : kept;
+  });
+}
+
+/**
+ * Read the guest list, change it, write it back, guarded by the event's etag.
+ *
+ * A camp or meeting event is shared by many people, so two changes at once would otherwise
+ * each write a list without the other's change, and someone would silently gain or lose an
+ * invite. Google answers 412 when the event changed under us, and 403 rateLimitExceeded (or
+ * 429) when one event changes too fast: three registrations in the same second hit that in
+ * testing, and the third was dropped. Both wait and retry. `change` returns null when there is
+ * nothing to do.
+ */
+async function editAttendees(
+  calendarEventId: string,
+  change: (attendees: { email: string }[]) => { email: string }[] | null
+): Promise<void> {
   const token = await getAccessToken();
   const calendarId = getCalendarId();
   const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${calendarEventId}`;
 
-  // Read, add, write back, guarded by the event's etag. A camp event is shared by every
-  // registrant, so two people registering at once would otherwise each write a list without
-  // the other in it, and one of them would silently lose their invite. Google answers 412
-  // when the event changed under us; then read again and retry. It also limits how fast one
-  // event can change, answering 403 rateLimitExceeded (or 429): three people registering in
-  // the same second hit that in testing, and the third was dropped. Those wait and retry too.
   const ATTEMPTS = 6;
   for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
     const getRes = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     const event = await getRes.json();
-    if (!getRes.ok) {
-      throw new Error(`Calendar API read error: ${JSON.stringify(event)}`);
-    }
+    if (!getRes.ok) throw new Error(`Calendar API read error: ${JSON.stringify(event)}`);
 
-    const attendees: { email: string }[] = event.attendees || [];
-    if (attendees.some((a) => a.email.toLowerCase() === email.toLowerCase())) return;
-    attendees.push({ email });
+    const attendees = change(event.attendees || []);
+    if (!attendees) return;
 
     const res = await fetch(`${url}?sendUpdates=all`, {
       method: "PATCH",
@@ -261,45 +283,7 @@ export async function addAttendee(calendarEventId: string, email: string): Promi
       await new Promise((r) => setTimeout(r, 500 * 2 ** (attempt - 1) * (0.75 + Math.random() / 2)));
       continue;
     }
-    throw new Error(`Calendar API add attendee error: ${JSON.stringify(data)}`);
-  }
-}
-
-/**
- * Remove an attendee from a calendar event.
- */
-export async function removeAttendee(calendarEventId: string, email: string): Promise<void> {
-  const token = await getAccessToken();
-  const calendarId = getCalendarId();
-
-  // Get current attendees
-  const getRes = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${calendarEventId}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-
-  const event = await getRes.json();
-  const attendees = (event.attendees || []).filter(
-    (a: { email: string }) => a.email !== email
-  );
-
-  const res = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${calendarEventId}?sendUpdates=all`,
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ attendees }),
-    }
-  );
-
-  if (!res.ok) {
-    const data = await res.json();
-    throw new Error(`Calendar API remove attendee error: ${JSON.stringify(data)}`);
+    throw new Error(`Calendar API guest list error: ${JSON.stringify(data)}`);
   }
 }
 

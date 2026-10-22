@@ -97,9 +97,6 @@ Sources this was assembled from, which stay as the detailed reference:
 
 ## Phase 4 — Registration, payment, screening
 
-- [ ] Move the 4 Deer Camp registrants onto the shared camp event. Konnor Spencer, Sebastian
-      Blanco, Abdullah Saleh and Steve Cook each have a separate Thu to Sat event from before
-      the fix. Needs John's go-ahead: adding them sends Google's invite to the new event.
 - [x] Tokenized four-step registration form
 - [x] Waiver with full audit trail (text, typed signature, timestamp, IP) and PDF confirmation
 - [x] Minor and guardian handling, including nullable email for minors
@@ -151,6 +148,16 @@ Sources this was assembled from, which stay as the detailed reference:
       against Google with the fixture: five simultaneous adds and a repeat gave one event
       with five guests; Ivy's real registration joined the same event. The Sanity sync is
       not proven live.
+- [x] The 4 earlier Deer Camp registrants are on the shared camp event. Done 2026-10-22:
+      Konnor Spencer, Sebastian Blanco, Abdullah Saleh and Steve Cook added to the all-day
+      Deer Camp event, which Google invited them to. John deletes their 4 old Thu to Sat
+      events by hand, choosing not to notify.
+- [x] Board members join and leave the camp event with their Board panel status. Done
+      2026-10-22. Mentor or Staff adds them, Not going removes them, and switching between
+      Mentor and Staff leaves them on. Adding and removing guests share one helper that
+      retries on an edit clash and on Google's rate limit. Proven through the real Board panel
+      on the fixture with John's own row: Mentor added him, Staff kept him, Not going removed
+      him and deleted the registration.
 
 ## Phase 5 — Matching and welcome
 

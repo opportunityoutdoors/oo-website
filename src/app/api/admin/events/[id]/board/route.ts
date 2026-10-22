@@ -137,6 +137,25 @@ export async function POST(
       detail,
     });
 
+  // Board members going to a camp are on its shared calendar event like any registrant, and
+  // come off it when set to Not going. Never fatal: the registration change is the record,
+  // and a calendar that failed is logged rather than undoing it.
+  const calendar = async (op: "add" | "remove") => {
+    if (!process.env.GOOGLE_CALENDAR_ID) return;
+    try {
+      const { data: contact } = await supabase
+        .from("contacts")
+        .select("email")
+        .eq("id", link.contact_id)
+        .single();
+      if (!contact?.email) return;
+      const { addToCampCalendar, removeFromCampCalendar } = await import("@/lib/camp-calendar");
+      await (op === "add" ? addToCampCalendar : removeFromCampCalendar)(supabase, eventId, contact.email);
+    } catch (err) {
+      console.error(`Board member camp calendar ${op} failed for event ${eventId}:`, err);
+    }
+  };
+
   if (as === null) {
     if (!existing) return NextResponse.json({ ok: true });
     // Only undo what this panel did. Someone who paid or attended leaves through the board,
@@ -150,6 +169,7 @@ export async function POST(
     await supabase.from("registrations").update({ mentor_id: null }).eq("mentor_id", existing.id);
     const { error } = await supabase.from("registrations").delete().eq("id", existing.id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    await calendar("remove");
     return NextResponse.json({ ok: true });
   }
 
@@ -171,6 +191,7 @@ export async function POST(
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       await log(data.id, null, "registered", "Board member added as staff");
     }
+    await calendar("add");
     return NextResponse.json({ ok: true });
   }
 
@@ -191,5 +212,6 @@ export async function POST(
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     await log(data.id, null, "registered", "Board member added as mentor");
   }
+  await calendar("add");
   return NextResponse.json({ ok: true });
 }

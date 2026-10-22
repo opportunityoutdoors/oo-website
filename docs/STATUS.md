@@ -6,7 +6,8 @@
 ## Done recently
 
 - 2026-10-22, pushed: one shared, all-day calendar event per camp, Fri to Sun for Deer Camp.
-  Migration 040 applied. 4 earlier registrants still have the old Thu to Sat invite.
+  Migration 040 applied. The 4 earlier registrants are on it; John deletes their old events.
+- 2026-10-22, pushed: board members join and leave the camp event with their Board status.
 - 2026-10-22, pushed: a double-click no longer moves, emails, or re-tokens anyone twice.
 - 2026-10-22, pushed: Turn Away as "Denied at review" sends the denial email.
 - 2026-10-21, pushed: day 3 and final background check reminders from us, a staff alert
@@ -18,8 +19,6 @@
   form says every mentor gets a shirt either way.
 - 2026-10-20, pushed: mentor invites stop quoting the $100 fee. Konnor Spencer and Abdullah
   Alqadi already got the wrong copy and need a note.
-- 2026-10-20, pushed: approval invites are awaited and batched, failures are shown, and a
-  drag into Invited now sends the invite. Markus Howell's duplicate contact merged.
 
 ## In progress
 
