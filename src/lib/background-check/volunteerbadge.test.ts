@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mapStatus } from "./volunteerbadge";
+import { checkOutcome, mapStatus } from "./volunteerbadge";
 
 // Translating the vendor's vocabulary into ours.
 //
@@ -9,7 +9,7 @@ import { mapStatus } from "./volunteerbadge";
 
 describe("mapStatus", () => {
   it("maps the vendor's clear vocabulary to clear", () => {
-    for (const raw of ["clear", "Clear", "CLEAR", "completed", "passed", "all cleared"]) {
+    for (const raw of ["clear", "Clear", "CLEAR", "passed", "all cleared"]) {
       expect(mapStatus(raw), raw).toBe("clear");
     }
   });
@@ -51,5 +51,33 @@ describe("mapStatus", () => {
     // "not clear" and "unclear" must not match on substring.
     expect(mapStatus("not clear")).not.toBe("clear");
     expect(mapStatus("unclear")).not.toBe("clear");
+  });
+});
+
+// Shapes taken from VolunteerBadge support's reply of 2026-10-22 and their sandbox.
+describe("checkOutcome", () => {
+  it("clears only on a clear result", () => {
+    expect(checkOutcome({ status: "complete", result: "clear" })).toBe("clear");
+  });
+
+  it("never clears on a finished search alone", () => {
+    expect(checkOutcome({ status: "complete", result: "consider" })).toBe("flagged");
+    expect(checkOutcome({ status: "complete" })).toBe("pending");
+    expect(mapStatus("complete")).toBe("pending");
+  });
+
+  it("waits while a review is open, result sent as the string null", () => {
+    expect(checkOutcome({ status: "pending_adjudication", result: "null" })).toBe("pending");
+    // Exactly what their sandbox sent for a records-found check on 2026-10-22.
+    expect(checkOutcome({ status: "pending_adjudication", result: "consider" })).toBe("pending");
+  });
+
+  it("takes the adjudicated result", () => {
+    expect(checkOutcome({ status: "complete", result: "clear" })).toBe("clear");
+    expect(checkOutcome({ status: "adjudicated", result: "consider" })).toBe("flagged");
+  });
+
+  it("reports an error status as an error", () => {
+    expect(checkOutcome({ status: "error" })).toBe("error");
   });
 });

@@ -56,3 +56,4 @@ verifying.
 - 2026-10-22. Each camp has one shared Google Calendar event, all-day across the camp dates, with every registrant added as a guest and the guest list hidden. Requested by John Trice after a camper's invite showed the wrong days.
 - 2026-10-22. Board members on a camp, as Mentor or Staff, are guests on its shared calendar event, added and removed with their Board panel status.
 - 2026-10-22. Background check results are marked clear by hand from the VolunteerBadge dashboard, with a timeline note, until their webhook and the poll are fixed.
+- 2026-10-22. VolunteerBadge results are matched on their volunteer id and check id, never our application id, and the outcome is read from the result field, never the status alone.

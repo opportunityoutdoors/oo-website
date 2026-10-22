@@ -103,20 +103,61 @@ export class VolunteerBadgeProvider implements BackgroundCheckProvider {
   }
 
   async getStatus(providerCheckId: string): Promise<CheckState> {
-    const body = await this.request<{ status?: string; completedAt?: string; completed_at?: string }>(
-      "GET",
-      `/checks/${encodeURIComponent(providerCheckId)}`
-    );
+    const body = await this.request<{
+      status?: string;
+      result?: string;
+      completedAt?: string;
+      completed_at?: string;
+    }>("GET", `/checks/${encodeURIComponent(providerCheckId)}`);
 
-    const raw = body.status ?? "unknown";
     const completed = body.completedAt ?? body.completed_at ?? null;
-
     return {
-      status: mapStatus(raw),
+      // The result decides, not the status: "complete" only means the search finished.
+      status: checkOutcome({ status: body.status, result: body.result }),
       completedAt: completed ? new Date(completed) : null,
-      raw,
+      raw: `${body.status ?? "unknown"}/${body.result ?? ""}`,
     };
   }
+
+  /**
+   * A volunteer's most recent check, from GET /volunteers/{id}. How the poll finds a result
+   * when it has the volunteer id but no check id yet. Null when they have no check yet.
+   * The checks' field names are not documented, so several are tried.
+   */
+  async latestCheckForVolunteer(
+    volunteerId: string
+  ): Promise<{ checkId: string; state: CheckState } | null> {
+    type Check = {
+      id?: string;
+      checkId?: string;
+      status?: string;
+      result?: string;
+      completedAt?: string;
+      completed_at?: string;
+      createdAt?: string;
+      created_at?: string;
+    };
+    const body = await this.request<{ checks?: Check[]; volunteer?: { checks?: Check[] } }>(
+      "GET",
+      `/volunteers/${encodeURIComponent(volunteerId)}`
+    );
+    const checks = body.checks ?? body.volunteer?.checks ?? [];
+    const when = (c: Check) => Date.parse(c.createdAt ?? c.created_at ?? c.completedAt ?? c.completed_at ?? "") || 0;
+    const latest = [...checks].sort((a, b) => when(b) - when(a))[0];
+    const checkId = latest?.checkId ?? latest?.id;
+    if (!latest || !checkId) return null;
+
+    const completed = latest.completedAt ?? latest.completed_at ?? null;
+    return {
+      checkId,
+      state: {
+        status: checkOutcome({ status: latest.status, result: latest.result }),
+        completedAt: completed ? new Date(completed) : null,
+        raw: `${latest.status ?? "unknown"}/${latest.result ?? ""}`,
+      },
+    };
+  }
+
 
   async getBalance(): Promise<ProviderBalance> {
     const body = await this.request<{ organization?: string; credits?: number }>(
@@ -214,10 +255,17 @@ export function mapStatus(raw: string): BackgroundCheckStatus {
     case "clear":
     case "clear_no_records":
     case "all_cleared":
-    case "complete":
-    case "completed":
     case "passed":
       return "clear";
+
+    // "complete" says the search FINISHED, not that it was clean. VolunteerBadge sends
+    // status "complete" with result "consider" when records were found, so reading it as
+    // clear would put a flagged person into camp. On its own it is a wait; checkOutcome reads
+    // the result for the answer.
+    case "complete":
+    case "completed":
+    case "pending_adjudication":
+      return "pending";
 
     // 'consider' is the one that needs a human: records were found AND confirmed by their
     // CRA reviewers, so the report is released and a decision is owed.
@@ -256,6 +304,30 @@ export function mapStatus(raw: string): BackgroundCheckStatus {
     default:
       return "error";
   }
+}
+
+/**
+ * The outcome of a check from VolunteerBadge's status and result fields, as sent in
+ * check.complete, check.adjudicated and GET /checks.
+ *
+ * The result decides when there is one: "clear" or "consider". Before a review finishes the
+ * status is "pending_adjudication", and the result is "null" (live, per support) or "consider"
+ * (their sandbox, 2026-10-22); either way it is a wait. Their
+ * support confirmed this on 2026-10-22, after this code had read status first and mapped
+ * "complete" to clear, which would have cleared a records-found check.
+ */
+export function checkOutcome(fields: { status?: string | null; result?: string | null }): BackgroundCheckStatus {
+  // While their reviewers are still working, nothing is decided, whatever the result field
+  // says. Their sandbox sends "pending_adjudication" with result "consider", not "null".
+  const status = (fields.status ?? "").toLowerCase().replace(/[\s-]+/g, "_");
+  if (status === "pending_adjudication" || status === "under_review") return "pending";
+
+  const result = (fields.result ?? "").trim();
+  if (result && result.toLowerCase() !== "null") {
+    const fromResult = mapStatus(result);
+    if (fromResult === "clear" || fromResult === "flagged") return fromResult;
+  }
+  return fields.status ? mapStatus(fields.status) : "pending";
 }
 
 /** Built per call; no module-scope construction, so a missing key cannot break unrelated routes. */

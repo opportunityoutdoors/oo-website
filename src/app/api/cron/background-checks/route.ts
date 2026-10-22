@@ -51,11 +51,17 @@ export async function reconcileStuckChecks(limit = BATCH) {
   const supabase = createServiceClient();
   const cutoff = new Date(Date.now() - MIN_AGE_MINUTES * 60_000).toISOString();
 
+  // Only checks we can actually look up: by check id, or by volunteer id. The application id
+  // we order with is not a check id, and GET /checks/{applicationId} always answered "Check
+  // not found" (2026-10-22). Someone with neither yet has not submitted their form, so there
+  // is no result to find.
   const { data: stuck } = await supabase
     .from("contacts")
-    .select("id, email, background_check_id, background_check_status")
+    .select(
+      "id, email, background_check_status, background_check_check_id, background_check_volunteer_id"
+    )
     .in("background_check_status", ["invited", "pending"])
-    .not("background_check_id", "is", null)
+    .or("background_check_check_id.not.is.null,background_check_volunteer_id.not.is.null")
     .lt("background_check_invited_at", cutoff)
     .order("background_check_invited_at", { ascending: true })
     .limit(limit);
@@ -67,22 +73,32 @@ export async function reconcileStuckChecks(limit = BATCH) {
 
   for (const contact of stuck) {
     try {
-      const state = await provider.getStatus(contact.background_check_id!);
-      if (state.status === contact.background_check_status) continue;
+      let checkId = contact.background_check_check_id as string | null;
+      let state;
+      if (checkId) {
+        state = await provider.getStatus(checkId);
+      } else {
+        const latest = await provider.latestCheckForVolunteer(contact.background_check_volunteer_id!);
+        if (!latest) continue; // Submitted, but no check started yet.
+        checkId = latest.checkId;
+        state = latest.state;
+      }
+
+      const unchanged = state.status === contact.background_check_status;
+      if (unchanged && checkId === contact.background_check_check_id) continue;
 
       const completed = state.completedAt ?? new Date();
+      const decided = state.status === "clear" || state.status === "flagged";
       await supabase
         .from("contacts")
         .update({
+          background_check_check_id: checkId,
           background_check_status: state.status,
-          background_check_completed_at:
-            state.status === "clear" || state.status === "flagged"
-              ? completed.toISOString()
-              : null,
+          background_check_completed_at: decided ? completed.toISOString() : null,
           background_check_expires_at:
             state.status === "clear" ? expiryFrom(completed).toISOString() : null,
           // See the webhook path: a status change invalidates any prior alert.
-          background_check_alerted_at: null,
+          ...(unchanged ? {} : { background_check_alerted_at: null }),
         })
         .eq("id", contact.id)
         // A webhook arriving mid-poll wins rather than being overwritten by a staler read.
@@ -94,7 +110,7 @@ export async function reconcileStuckChecks(limit = BATCH) {
       );
     } catch (err) {
       console.error(
-        `Background check reconcile: ${contact.background_check_id} failed:`,
+        `Background check reconcile: contact ${contact.id} failed:`,
         err instanceof Error ? err.message : String(err)
       );
     }

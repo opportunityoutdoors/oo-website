@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { createServiceClient } from "@/lib/supabase/server";
 import { expiryFrom } from "@/lib/background-check/eligibility";
-import { mapStatus } from "@/lib/background-check/volunteerbadge";
+import { checkOutcome } from "@/lib/background-check/volunteerbadge";
 
 // VolunteerBadge webhook. Receives background check results and the adverse action
 // sequence.
@@ -14,15 +14,22 @@ import { mapStatus } from "@/lib/background-check/volunteerbadge";
 // every delivery failed on the redirect while the dashboard showed a healthy, enabled
 // endpoint. Same trap, same silence.
 //
-// Handlers are deliberately not implemented yet. This exists so the URL resolves while the
-// endpoint is being configured, and so signature verification is settled before anything
-// depends on it. Events are logged and acknowledged.
+// HOW A RESULT FINDS ITS PERSON. We order with POST /applications and store the application
+// id. No result event carries it (support, 2026-10-22). application.submitted links that
+// application to a volunteer id, volunteer.created links a volunteer id to an email, and
+// check.complete, check.adjudicated and check.error name the check id and volunteer id. So we
+// keep the volunteer id from whichever of the first two arrives, and the check id from the
+// first result, and match every later event on those.
+//
+// THEY NEVER RETRY, and wait 5 seconds for an answer. A refused or slow delivery is lost, so
+// slow work (a refund) runs after the response, and the nightly poll is the net underneath.
 
 export const dynamic = "force-dynamic";
 
 /** Documented events. Anything outside this list is logged, not guessed at. */
 const KNOWN_EVENTS = [
   "check.complete",
+  "check.adjudicated",
   "check.error",
   "application.submitted",
   "volunteer.created",
@@ -93,8 +100,8 @@ export async function POST(req: NextRequest) {
   try {
     await dispatch(name, event);
   } catch (err) {
-    // 500 asks them to retry, which is right for a transient database failure. Matching a
-    // contact is idempotent, so a retry is safe.
+    // They do not retry a failed delivery, so this event is lost here; the nightly poll is
+    // what recovers the result. Logged loudly so the gap can be found.
     console.error(`VolunteerBadge handler failed for ${name}:`, err);
     return NextResponse.json({ error: "Handler failed" }, { status: 500 });
   }
@@ -102,109 +109,132 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ received: true });
 }
 
+type Contact = { id: string; email: string | null; background_check_status: string };
+const CONTACT = "id, email, background_check_status";
+
 /**
- * Applies an event to a contact.
- *
- * Written defensively rather than against a known schema, because no real payload has been
- * seen yet. Every field is looked for in several plausible places and the outcome is logged
- * explicitly, so the first live delivery either works or says precisely which lookup failed.
- * The alternative, waiting for a payload before writing any of this, means the first real
- * result arrives with nothing to catch it.
+ * The contact an event belongs to, tried from the most specific id to the least: the check
+ * id, the volunteer id, our stored application id (or the uuid in its apply link), and for
+ * volunteer.created alone, the email of someone whose check is still open.
  */
+async function findContact(
+  supabase: ReturnType<typeof createServiceClient>,
+  name: string,
+  data: Record<string, unknown>
+): Promise<{ contact: Contact; by: string } | null> {
+  const checkId = firstString(data, ["checkId", "check_id"]);
+  const volunteerId = firstString(data, ["volunteerId", "volunteer_id"]);
+  const applicationId = firstString(data, ["applicationId", "application_id"]);
+  const email = firstString(data, ["email"]);
+
+  const one = async (column: string, value: string) =>
+    (await supabase.from("contacts").select(CONTACT).eq(column, value).maybeSingle()).data as Contact | null;
+
+  if (checkId) {
+    const c = await one("background_check_check_id", checkId);
+    if (c) return { contact: c, by: "check id" };
+  }
+  if (volunteerId) {
+    const c = await one("background_check_volunteer_id", volunteerId);
+    if (c) return { contact: c, by: "volunteer id" };
+  }
+  if (applicationId) {
+    const c = await one("background_check_id", applicationId);
+    if (c) return { contact: c, by: "application id" };
+    const { data: byUrl } = await supabase
+      .from("contacts")
+      .select(CONTACT)
+      .like("background_check_url", `%${applicationId}%`)
+      .maybeSingle();
+    if (byUrl) return { contact: byUrl as Contact, by: "apply link" };
+  }
+  if (name === "volunteer.created" && email) {
+    const { data: byEmail } = await supabase
+      .from("contacts")
+      .select(CONTACT)
+      .ilike("email", email)
+      .in("background_check_status", ["invited", "pending"])
+      .maybeSingle();
+    if (byEmail) return { contact: byEmail as Contact, by: "email" };
+  }
+  return null;
+}
+
+/** Applies an event to the contact it belongs to. Every outcome is logged by name. */
 async function dispatch(name: string, event: Record<string, unknown>) {
   const data = (event.data ?? event) as Record<string, unknown>;
-
-  // Their id has appeared as applicationId in POST responses. checkId, id and
-  // application_id are plausible neighbours; all are tried before giving up.
-  const providerId = firstString(data, [
-    "applicationId",
-    "application_id",
-    "checkId",
-    "check_id",
-    "id",
-  ]);
-
-  if (!providerId) {
-    console.error(
-      `VolunteerBadge ${name}: no id found in payload; cannot match a contact. ` +
-        `Keys present: ${Object.keys(data).join(", ")}`
-    );
-    return;
-  }
-
   const supabase = createServiceClient();
 
-  // TWO IDS, AND THEY DIFFER. The invite response returns an applicationId AND an applyUrl
-  // built on a DIFFERENT uuid:
-  //
-  //   applicationId : 3b6395c8-1af6-4a31-a847-a87c36232792
-  //   applyUrl      : .../apply/fa41f894-6283-4701-b294-7178c973b839
-  //
-  // In sandbox both were the same string, so this only appears against the live API.
-  // Sensible on their part, since the public link should not expose the application id, but
-  // it means a webhook could reference either and matching on only one silently drops the
-  // result. Try the application id first, then fall back to the link.
-  let contact:
-    | { id: string; email: string | null; background_check_status: string }
-    | null = null;
-
-  const byId = await supabase
-    .from("contacts")
-    .select("id, email, background_check_status")
-    .eq("background_check_id", providerId)
-    .maybeSingle();
-  contact = byId.data ?? null;
-
-  if (!contact) {
-    const byUrl = await supabase
-      .from("contacts")
-      .select("id, email, background_check_status")
-      .like("background_check_url", `%${providerId}%`)
-      .maybeSingle();
-    if (byUrl.data) {
-      contact = byUrl.data;
-      console.log(
-        `VolunteerBadge ${name}: matched contact ${contact.id} via the apply URL, not the ` +
-          `application id. Their webhook references the link uuid (${providerId}).`
-      );
-    }
-  }
-
-  if (!contact) {
-    // Expected for anything created directly in their dashboard rather than by us, which is
-    // worth saying plainly rather than treating as a fault.
-    console.warn(
-      `VolunteerBadge ${name}: no contact matches ${providerId} by application id or apply URL. ` +
-        `Either it was created outside this app, or they use a third identifier we do not store.`
+  const found = await findContact(supabase, name, data);
+  if (!found) {
+    // Expected for sandbox tests and anything created in their dashboard, but for a real
+    // registrant it means a result we cannot place. Loud, with the ids, so it can be matched
+    // by hand.
+    console.error(
+      `VolunteerBadge ${name}: NO CONTACT MATCHED. ids: ` +
+        JSON.stringify({
+          checkId: data.checkId ?? null,
+          volunteerId: data.volunteerId ?? null,
+          applicationId: data.applicationId ?? null,
+          sandbox: data.sandbox ?? false,
+        })
     );
     return;
   }
+  const { contact, by } = found;
+  const volunteerId = firstString(data, ["volunteerId", "volunteer_id"]);
+  const checkId = firstString(data, ["checkId", "check_id"]);
 
-  if (name === "check.complete" || name === "check.error") {
-    const rawStatus =
-      firstString(data, ["status", "result", "outcome"]) ??
-      (name === "check.error" ? "error" : "unknown");
+  // Linking events: remember the volunteer id so the results that follow can find them.
+  if (name === "application.submitted" || name === "volunteer.created") {
+    const patch: Record<string, unknown> = {};
+    if (volunteerId) patch.background_check_volunteer_id = volunteerId;
+    // Submitted their form: no longer waiting on them, so reminders stop.
+    if (name === "application.submitted" && contact.background_check_status === "invited") {
+      patch.background_check_status = "pending";
+      patch.background_check_alerted_at = null;
+    }
+    if (Object.keys(patch).length) {
+      await supabase.from("contacts").update(patch).eq("id", contact.id);
+    }
+    console.log(`VolunteerBadge ${name}: contact ${contact.id} (by ${by}) linked ${JSON.stringify(patch)}`);
+    return;
+  }
 
-    const status = mapStatus(rawStatus);
-    const completedAt = firstString(data, ["completedAt", "completed_at"]);
-    const completed = completedAt ? new Date(completedAt) : new Date();
+  if (name === "check.complete" || name === "check.adjudicated" || name === "check.error") {
+    const status =
+      name === "check.error"
+        ? "error"
+        : checkOutcome({
+            status: firstString(data, ["status"]),
+            result: firstString(data, ["result"]),
+          });
 
-    await supabase
-      .from("contacts")
-      .update({
-        background_check_status: status,
-        background_check_completed_at: completed.toISOString(),
-        // Only a clear result earns an expiry. A flag or an error must not look like cover.
-        background_check_expires_at:
-          status === "clear" ? expiryFrom(completed).toISOString() : null,
-        // Status moved, so any previous alert is about a state that no longer exists.
-        // Clearing it lets the next real problem alert again instead of being silenced.
-        background_check_alerted_at: null,
-      })
-      .eq("id", contact.id);
+    // A decision already made here, or a result already in, is never walked back by a later
+    // "still pending" message.
+    const settled = ["clear", "flagged", "declined"].includes(contact.background_check_status);
+    const patch: Record<string, unknown> = {};
+    if (checkId) patch.background_check_check_id = checkId;
+    if (volunteerId) patch.background_check_volunteer_id = volunteerId;
 
+    if (status === "pending") {
+      if (!settled) patch.background_check_status = "pending";
+    } else if (contact.background_check_status !== "declined") {
+      const completedAt = firstString(data, ["completedAt", "completed_at"]);
+      const completed = completedAt ? new Date(completedAt) : new Date();
+      patch.background_check_status = status;
+      patch.background_check_completed_at = completed.toISOString();
+      // Only a clear result earns an expiry. A flag or an error must not look like cover.
+      patch.background_check_expires_at = status === "clear" ? expiryFrom(completed).toISOString() : null;
+      // Status moved, so any earlier alert is about a state that no longer exists.
+      patch.background_check_alerted_at = null;
+    }
+
+    await supabase.from("contacts").update(patch).eq("id", contact.id);
     console.log(
-      `VolunteerBadge ${name}: contact ${contact.id} ${contact.background_check_status} -> ${status} (raw "${rawStatus}")`
+      `VolunteerBadge ${name}: contact ${contact.id} (by ${by}) ` +
+        `${contact.background_check_status} -> ${patch.background_check_status ?? contact.background_check_status} ` +
+        `(status "${data.status ?? ""}", result "${data.result ?? ""}")`
     );
     return;
   }
@@ -221,42 +251,32 @@ async function dispatch(name: string, event: Record<string, unknown>) {
       })
       .eq("id", contact.id);
 
-    // Refund now that the decision is final. VolunteerBadge only emits this event after
-    // the pre-adverse notice, the five business day dispute window, and the final notice,
-    // so a human decided several steps ago. This issues money already owed rather than
-    // deciding anything.
-    //
-    // Guarded against a replayed delivery by the payment_status condition inside, and never
-    // fatal: a refund that fails is logged loudly and issued by hand. Throwing instead would
-    // make VolunteerBadge retry an event whose database effects have already been applied,
-    // which risks compounding the problem rather than fixing it.
-    try {
-      const { refundAfterAdverseAction } = await import(
-        "@/lib/background-check/refund"
-      );
-      const outcomes = await refundAfterAdverseAction(contact.id);
-      const done = outcomes.filter((o) => o.refunded);
-
-      console.warn(
-        `VolunteerBadge adverse action COMPLETED for contact ${contact.id} (${contact.email}). ` +
-          `Marked declined. Refunds issued: ${done.length}. ` +
-          outcomes
-            .map((o) =>
-              o.refunded ? `refunded ${o.amountCents}c` : `skipped: ${o.reason}`
-            )
-            .join("; ")
-      );
-    } catch (err) {
-      console.error(
-        `Adverse action refund failed for contact ${contact.id}; ISSUE IT BY HAND:`,
-        err instanceof Error ? err.message : String(err)
-      );
-    }
-
+    // Refund now that the decision is final. VolunteerBadge only emits this event after the
+    // pre-adverse notice, the five business day dispute window, and the final notice, so a
+    // human decided several steps ago. This issues money already owed rather than deciding
+    // anything. After the response, because they wait only 5 seconds and a Stripe refund can
+    // take longer. Guarded against a replay inside, and a failure is logged to issue by hand.
+    after(async () => {
+      try {
+        const { refundAfterAdverseAction } = await import("@/lib/background-check/refund");
+        const outcomes = await refundAfterAdverseAction(contact.id);
+        const done = outcomes.filter((o) => o.refunded);
+        console.warn(
+          `VolunteerBadge adverse action COMPLETED for contact ${contact.id} (${contact.email}). ` +
+            `Marked declined. Refunds issued: ${done.length}. ` +
+            outcomes.map((o) => (o.refunded ? `refunded ${o.amountCents}c` : `skipped: ${o.reason}`)).join("; ")
+        );
+      } catch (err) {
+        console.error(
+          `Adverse action refund failed for contact ${contact.id}; ISSUE IT BY HAND:`,
+          err instanceof Error ? err.message : String(err)
+        );
+      }
+    });
     return;
   }
 
-  console.log(`VolunteerBadge ${name}: recorded for contact ${contact.id}, no action taken`);
+  console.log(`VolunteerBadge ${name}: recorded for contact ${contact.id} (by ${by}), no action taken`);
 }
 
 /** First key present as a non-empty string. Their payload shape is not documented. */

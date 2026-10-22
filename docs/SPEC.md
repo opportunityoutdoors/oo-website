@@ -97,27 +97,6 @@ Sources this was assembled from, which stay as the detailed reference:
 
 ## Phase 4 — Registration, payment, screening
 
-- [ ] Background check results never reach the site. Found 2026-10-22: Konnor Spencer is
-      clear in VolunteerBadge and still `invited` here. The poll asks `GET /checks/{id}` with
-      the application id we store, and VolunteerBadge answers 404 "Check not found" (proven
-      in their sandbox). The check gets its own id on submission, which we never store. The
-      webhook is set to the right URL and delivered twice at 15:38 UTC, and both were refused
-      with a 400 that wrote no log: almost certainly no `x-volunteerbadge-signature` header,
-      so VolunteerBadge names it differently. The refusals now log the header names. Next
-      step: read them from the next delivery, then fix the header, the id matching, and the
-      poll. Konnor marked clear by hand from the dashboard on 2026-10-22 in the meantime.
-      Reminder emails are paused (`REMINDERS_PAUSED` in the cron route) until a result
-      lands on its own. Unpause as part of this fix. Staff alerts stay on.
-      VolunteerBadge support replied 2026-10-22, with support.volunteerbadge.com/api-and-webhooks:
-      the header is `X-VolunteerBadge-Signature`, a bare hex HMAC-SHA256 of the raw body, which
-      is what we already read, so why the 400s happened is still open. Deliveries are never
-      retried, and they wait 5 seconds. No event carries our applicationId except
-      `application.submitted` (applicationId + volunteerId). `volunteer.created` carries
-      volunteerId + email. `check.complete` and `check.adjudicated` carry checkId + volunteerId,
-      and the outcome is in `result` (clear, consider, or the string "null" while pending), not
-      `status`. `GET /checks/{id}` needs the checkId; `GET /volunteers/{id}` lists checks.
-      `POST /applications` with no email or phone and `deliveryMethod: "link"` sends nothing and
-      returns `applyUrl`, so we could send the invite ourselves.
 - [x] Tokenized four-step registration form
 - [x] Waiver with full audit trail (text, typed signature, timestamp, IP) and PDF confirmation
 - [x] Minor and guardian handling, including nullable email for minors
@@ -183,6 +162,18 @@ Sources this was assembled from, which stay as the detailed reference:
       away or Dropped out on the board removes them from the shared event, and Google sends
       a cancellation; dragged back to Registered adds them again. Never fatal to the move.
       Proven on the fixture: Ada, turned away, was removed; dragged back, she was re-added.
+- [x] Background check results reach the site. Done 2026-10-22. The webhook keeps
+      VolunteerBadge's volunteer id from `application.submitted` (by our application id) or
+      `volunteer.created` (by email), and the check id from the first result, and matches
+      `check.complete`, `check.adjudicated` and `check.error` on those (migration 041). The
+      outcome comes from `result`, never `status` alone: "complete" used to map to clear,
+      which would have cleared a records-found check. An open review stays pending. The poll
+      asks by check id, or lists the volunteer's checks, never by application id. Slow work
+      runs after the response. Their sandbox delivery to production passed the signature
+      check, so the header was not the cause; why Konnor's two live deliveries got a 400 is
+      still unknown. Proven locally with signed events in their shapes, and the poll against
+      a real sandbox check. Reminders stay paused until Sebastian Blanco, Abdullah Saleh and
+      Steve Cook, whose results predate this, are marked by hand.
 
 ## Phase 5 — Matching and welcome
 
