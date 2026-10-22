@@ -42,6 +42,13 @@ export async function POST(req: NextRequest) {
 
   const signature = req.headers.get("x-volunteerbadge-signature");
   if (!signature) {
+    // Logged with the header NAMES, never their values. On 2026-10-22 the first two live
+    // deliveries (Konnor Spencer's result) were refused here without a trace, so nobody
+    // could tell what VolunteerBadge calls its signature header.
+    console.error(
+      "VolunteerBadge webhook refused: no x-volunteerbadge-signature header. Headers present: " +
+        [...req.headers.keys()].join(", ")
+    );
     return NextResponse.json({ error: "Missing signature" }, { status: 400 });
   }
 
@@ -58,6 +65,10 @@ export async function POST(req: NextRequest) {
   try {
     event = JSON.parse(raw);
   } catch {
+    console.error(
+      `VolunteerBadge webhook refused: body is not JSON (content-type ` +
+        `${req.headers.get("content-type")}, ${raw.length} bytes)`
+    );
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
