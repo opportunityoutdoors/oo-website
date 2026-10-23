@@ -58,3 +58,4 @@ verifying.
 - 2026-10-22. Background check results are marked clear by hand from the VolunteerBadge dashboard, with a timeline note, until their webhook and the poll are fixed.
 - 2026-10-22. VolunteerBadge results are matched on their volunteer id and check id, never our application id, and the outcome is read from the result field, never the status alone.
 - 2026-10-22. We send the background check invite from Opportunity Outdoors. Checks are ordered link-only so VolunteerBadge sends no email of its own.
+- 2026-10-22. Background check reminders back on, the same night they were paused, once results matched and Sebastian Blanco, Abdullah Saleh and Steve Cook were marked clear by hand.

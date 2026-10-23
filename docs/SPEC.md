@@ -173,7 +173,8 @@ Sources this was assembled from, which stay as the detailed reference:
       check, so the header was not the cause; why Konnor's two live deliveries got a 400 is
       still unknown. Proven locally with signed events in their shapes, and the poll against
       a real sandbox check. Reminders stay paused until Sebastian Blanco, Abdullah Saleh and
-      Steve Cook, whose results predate this, are marked by hand.
+      Steve Cook, whose results predate this, are marked by hand. Done the same night:
+      all three marked clear from John's list, and reminders turned back on.
 - [x] We send the background check invite ourselves. Done 2026-10-22. The check is ordered
       link-only (`deliveryMethod: "link"`, no email), so VolunteerBadge sends nothing, and
       `send-invite.ts` emails "Complete your background check for <camp>" from Opportunity

@@ -19,11 +19,10 @@
 
 ## In progress
 
-Resume point, 2026-10-22 evening. VolunteerBadge results now reach the site (4d5dbe5) and we
-send our own check invite (c24113a). Reminders stay paused until Sebastian Blanco,
-Abdullah Saleh and Steve Cook, ordered before the fix and so unmatched, are marked clear by
-hand from John's list; then set REMINDERS_PAUSED to false in the cron route. John to add
-check.adjudicated to the VolunteerBadge webhook and rename the application template.
+Nothing in flight. Deer Camp (Nov 20 to 22): VolunteerBadge results now reach the site on their
+own, we send the check invite, and reminders are on again. Every Deer Camp check so far is clear.
+Watch the next live result land without a hand edit; if one does not, search Vercel logs for
+"NO CONTACT MATCHED" or "webhook refused".
 
 ## Next up
 

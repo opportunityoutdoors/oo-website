@@ -28,14 +28,12 @@ const MIN_AGE_MINUTES = 15;
 const BATCH = 25;
 
 /**
- * PAUSED 2026-10-22, by decision of John Trice, until VolunteerBadge results reach the site.
- *
- * Their webhook is refused (wrong signature header) and the poll asks for the wrong id, so a
- * finished check still reads 'invited' here. Reminding on that state tells people who have
- * finished to finish. Set back to false once a real result lands on its own. Staff alerts
- * stay on.
+ * Off switch for the registrant reminders. Paused 2026-10-22 while VolunteerBadge results could
+ * not reach the site, because a finished check still read 'invited' and the reminder would have
+ * told people who were done to finish. Back on the same night, once results matched and the
+ * three checks ordered before the fix were marked by hand. Staff alerts never paused.
  */
-const REMINDERS_PAUSED = true;
+const REMINDERS_PAUSED = false;
 
 /**
  * Reconciles checks that have not resolved. Exported so the admin view can call it directly
