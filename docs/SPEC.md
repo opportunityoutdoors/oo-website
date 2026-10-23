@@ -182,6 +182,14 @@ Sources this was assembled from, which stay as the detailed reference:
       Proven: a link-only sandbox order sent nothing and returned the link, and the fixture
       order delivered our invite. VolunteerBadge's form page still shows the template name,
       which John can rename in their dashboard.
+- [x] One confirmation email, after payment, with the background check link. Done 2026-10-22,
+      asked for by John. The Stripe webhook orders the check without its own invite, then
+      sends the confirmation (`lib/email/registration-confirmation.ts`): the waiver, and when a
+      check was ordered, its button, with "complete your background check" in the subject. A
+      registration with nothing to pay gets it at submit. An admin re-order still sends the
+      separate invite. Proven on the fixture: Ivy got nothing at submit and one combined email
+      after a signed test payment; Hana, a free mentor with a clear check, got the plain
+      confirmation at submit.
 
 ## Phase 5 — Matching and welcome
 

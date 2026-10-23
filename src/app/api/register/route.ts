@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { ADULT_AGE, UNDER_18_MESSAGE, ageOn } from "@/lib/minor-guard";
-import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
-import { renderRegistrationConfirmation } from "@/emails";
-import {
-  evaluateEligibility,
-  type BackgroundCheckStatus,
-} from "@/lib/background-check/eligibility";
 import {
   toResponseRow,
   validateSurveyAnswers,
@@ -268,7 +262,7 @@ export async function POST(request: NextRequest) {
     console.error("Pre-survey insert error:", surveyError);
   }
 
-  // Fetch full info for confirmation email
+  // The registrant's email and camp, for the shared camp calendar event.
   const { data: fullReg } = await supabase
     .from("registrations")
     .select("*, contacts(email, first_name, last_name, date_of_birth, background_check_status, background_check_expires_at), events(title, date_start, date_end, location)")
@@ -276,12 +270,6 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (fullReg) {
-    try {
-      await sendRegistrationConfirmation(fullReg, signature_name, waiver_text, linkedMinor ? true : false);
-    } catch (err) {
-      console.error("Registration confirmation email error:", err);
-    }
-
     // Add the registrant to the camp's one shared calendar event: all-day, guest list hidden,
     // created on the first registration. See lib/camp-calendar.ts.
     const contactEmail = (fullReg.contacts as { email: string } | null)?.email;
@@ -316,115 +304,16 @@ export async function POST(request: NextRequest) {
       origin,
     });
     if (result.kind === "checkout") checkoutUrl = result.url;
+    // Nothing to pay means the registration is complete now, so the confirmation goes now.
+    // Anyone who owes money gets it from the Stripe webhook once they have paid, with their
+    // background check link in it (lib/email/registration-confirmation.ts).
+    if (result.kind === "free") {
+      const { sendRegistrationConfirmation } = await import("@/lib/email/registration-confirmation");
+      await sendRegistrationConfirmation(registration.id);
+    }
   } catch (err) {
     console.error("Camp checkout session creation failed (registration stands):", err);
   }
 
   return NextResponse.json({ success: true, checkoutUrl });
-}
-
-// Send registration confirmation with waiver PDF attachment
-async function sendRegistrationConfirmation(
-  registration: {
-    contacts: {
-      email: string;
-      first_name: string | null;
-      last_name: string | null;
-      date_of_birth?: string | null;
-      background_check_status?: string | null;
-      background_check_expires_at?: string | null;
-    } | null;
-    events: { title: string; date_start: string | null; date_end: string | null; location: string | null } | null;
-    role: string | null;
-    waiver_signed_at: string | null;
-    waiver_ip: string | null;
-  },
-  signatureName: string,
-  waiverText: string,
-  hasMinor: boolean
-) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return;
-
-  const email = registration.contacts?.email;
-  if (!email) return;
-
-  const { Resend } = await import("resend");
-  const { generateWaiverPdf } = await import("@/lib/waiver-pdf");
-  const resend = new Resend(apiKey);
-
-  const firstName = registration.contacts?.first_name || "there";
-  const lastName = registration.contacts?.last_name || "";
-  const participantName = [firstName, lastName].filter(Boolean).join(" ");
-  const eventTitle = registration.events?.title || "the upcoming event";
-
-  const signedAt = registration.waiver_signed_at
-    ? new Date(registration.waiver_signed_at).toLocaleString("en-US", { dateStyle: "long", timeStyle: "short" })
-    : new Date().toLocaleString("en-US", { dateStyle: "long", timeStyle: "short" });
-
-  const eventDate = registration.events?.date_start
-    ? new Date(registration.events.date_start).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
-    : null;
-
-  // Generate waiver PDF
-  const pdfBuffer = generateWaiverPdf({
-    participantName,
-    participantEmail: email,
-    eventTitle,
-    eventDate,
-    eventLocation: registration.events?.location || null,
-    role: registration.role,
-    signatureName,
-    signedAt,
-    ipAddress: registration.waiver_ip || "Unknown",
-    waiverText,
-  });
-
-  const filename = `OO-Waiver-${participantName.replace(/\s+/g, "-")}-${eventTitle.replace(/\s+/g, "-")}.pdf`;
-
-  await resend.emails.send({
-    from: NOTIFICATIONS_FROM,
-    replyTo: REPLY_TO,
-    to: email,
-    subject: `Registration Confirmed: ${eventTitle}`,
-    attachments: [
-      {
-        filename,
-        content: pdfBuffer.toString("base64"),
-      },
-    ],
-    html: await renderRegistrationConfirmation({
-      firstName,
-      eventTitle,
-      hasMinor,
-      isMentor: registration.role === "Mentor",
-      eventDate,
-      location: registration.events?.location ?? null,
-      needsBackgroundCheck: owesBackgroundCheck(registration.contacts),
-    }),
-  });
-}
-
-/**
- * Whether this person has a background check ahead of them: one to order after payment, or
- * one already invited and not yet finished. The same rule that decides the $5 line.
- */
-function owesBackgroundCheck(
-  contact: {
-    date_of_birth?: string | null;
-    background_check_status?: string | null;
-    background_check_expires_at?: string | null;
-  } | null
-): boolean {
-  if (!contact) return false;
-  const eligibility = evaluateEligibility({
-    dateOfBirth: contact.date_of_birth ?? null,
-    status: (contact.background_check_status ?? "none") as BackgroundCheckStatus,
-    expiresAt: contact.background_check_expires_at ?? null,
-  });
-  return (
-    eligibility.kind === "needs_check" ||
-    (eligibility.kind === "in_progress" &&
-      (eligibility.status === "invited" || eligibility.status === "pending"))
-  );
 }

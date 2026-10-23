@@ -5,6 +5,7 @@
 
 ## Done recently
 
+- 2026-10-22, pushed: one confirmation email after payment, carrying the background check link.
 - 2026-10-22, pushed: VolunteerBadge results reach the site, and we send the check invite.
 - 2026-10-22, pushed: turning a camper away or marking them dropped out takes them off the
   camp calendar event.

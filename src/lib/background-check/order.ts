@@ -27,7 +27,13 @@ export type OrderOutcome =
  * see and retry.
  */
 export async function orderBackgroundCheckIfNeeded(
-  contactId: string
+  contactId: string,
+  /**
+   * Email our own invite with the link. Off after a camp payment, because the registration
+   * confirmation sent next carries the link itself; on for an admin retry, which has no other
+   * email to ride on.
+   */
+  { sendInvite = true }: { sendInvite?: boolean } = {}
 ): Promise<OrderOutcome> {
   const supabase = createServiceClient();
 
@@ -101,14 +107,14 @@ export async function orderBackgroundCheckIfNeeded(
       .eq("id", contactId);
 
     // Ordered link-only, so this email is the invite: VolunteerBadge sends none.
-    const emailed = result.applicantUrl
+    const emailed = result.applicantUrl && sendInvite
       ? await sendBackgroundCheckInvite(contactId, result.applicantUrl, result.expiresAt)
       : false;
 
     console.log(
       `Background check ordered for contact ${contactId}: ${result.providerCheckId}` +
         (result.sandbox ? " [SANDBOX]" : "") +
-        (emailed ? ", invite emailed" : ", INVITE NOT EMAILED") +
+        (!sendInvite ? ", link goes in the confirmation" : emailed ? ", invite emailed" : ", INVITE NOT EMAILED") +
         (result.applicantUrl ? ` -> ${result.applicantUrl}` : "")
     );
     return {

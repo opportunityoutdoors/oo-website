@@ -519,14 +519,23 @@ async function handleCampPayment(session: Stripe.Checkout.Session) {
       .eq("id", registrationId)
       .single();
 
-    if (!reg?.contact_id) return;
-
-    const outcome = await orderBackgroundCheckIfNeeded(reg.contact_id);
-    if (!outcome.ordered) {
-      console.log(
-        `No background check ordered for registration ${registrationId}: ${outcome.reason}`
-      );
+    if (reg?.contact_id) {
+      // No invite of its own: the confirmation below carries the link.
+      const outcome = await orderBackgroundCheckIfNeeded(reg.contact_id, { sendInvite: false });
+      if (!outcome.ordered) {
+        console.log(
+          `No background check ordered for registration ${registrationId}: ${outcome.reason}`
+        );
+      }
     }
+
+    // The registration is complete now that it is paid, so the confirmation goes now: the
+    // signed waiver, and the background check button when a check was just ordered. One email
+    // instead of a confirmation at submit and an invite after payment. A replayed delivery
+    // never reaches here, because the paid update above returns early.
+    const { sendRegistrationConfirmation } = await import("@/lib/email/registration-confirmation");
+    const sent = await sendRegistrationConfirmation(registrationId);
+    if (!sent) console.error(`Registration confirmation NOT sent after payment for ${registrationId}`);
   });
 }
 

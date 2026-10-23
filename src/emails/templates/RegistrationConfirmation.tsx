@@ -1,7 +1,7 @@
 import * as React from "react";
 import { EmailLayout } from "../Layout";
-import { Callout, CalloutLine, Greeting, P, Signoff } from "../components";
-import { INVITE_LINK_DAYS, INVITE_SEARCH_HELP } from "@/lib/background-check/invite-email";
+import { BrandButton, Callout, CalloutLine, Greeting, P, Signoff } from "../components";
+import { colors } from "../theme";
 
 export interface RegistrationConfirmationProps {
   firstName?: string;
@@ -10,9 +10,11 @@ export interface RegistrationConfirmationProps {
   isMentor?: boolean;
   eventDate?: string | null;
   location?: string | null;
-  /**
-   * They owe a background check. The invite is a separate email, so say it is coming.
-   */
+  /** Their background check link, when one has been ordered. Shown as this email's button. */
+  checkUrl?: string | null;
+  /** "Thursday, November 5". When the check link stops working. */
+  checkLinkExpires?: string | null;
+  /** A check is owed but not ordered yet (the order failed): say a link is on its way. */
   needsBackgroundCheck?: boolean;
 }
 
@@ -23,6 +25,8 @@ export function RegistrationConfirmation({
   isMentor,
   eventDate,
   location,
+  checkUrl,
+  checkLinkExpires,
   needsBackgroundCheck,
 }: RegistrationConfirmationProps) {
   return (
@@ -49,17 +53,26 @@ export function RegistrationConfirmation({
         </Callout>
       ) : null}
 
-      {needsBackgroundCheck ? (
+      {checkUrl ? (
+        <>
+          <P>
+            <strong>One step left: your background check.</strong> We run one on every adult
+            who comes to camp, and the cost is covered by what you paid. It takes about three
+            minutes, and it must be done before camp.
+          </P>
+          <BrandButton href={checkUrl}>Start Your Background Check</BrandButton>
+          <P style={{ fontSize: "14px", color: colors.muted }}>
+            The button opens a secure form run by VolunteerBadge, our background check provider.
+            Your details go to them, not to us: we only see whether the check is clear.
+            {checkLinkExpires ? ` This link works until ${checkLinkExpires}.` : ""}
+          </P>
+        </>
+      ) : needsBackgroundCheck ? (
         <Callout>
           <CalloutLine>
-            <strong>Watch for a separate email about your background check.</strong>
+            <strong>Your background check link is on its way.</strong> We will email it to you
+            shortly. It takes about three minutes, and it must be done before camp.
           </CalloutLine>
-          <CalloutLine>
-            Once your payment goes through, we will email you a link to complete your
-            background check. It takes about three minutes, and it must be done before camp.
-            The link works for {INVITE_LINK_DAYS} days.
-          </CalloutLine>
-          <CalloutLine>{INVITE_SEARCH_HELP}</CalloutLine>
         </Callout>
       ) : null}
 

@@ -59,3 +59,4 @@ verifying.
 - 2026-10-22. VolunteerBadge results are matched on their volunteer id and check id, never our application id, and the outcome is read from the result field, never the status alone.
 - 2026-10-22. We send the background check invite from Opportunity Outdoors. Checks are ordered link-only so VolunteerBadge sends no email of its own.
 - 2026-10-22. Background check reminders back on, the same night they were paused, once results matched and Sebastian Blanco, Abdullah Saleh and Steve Cook were marked clear by hand.
+- 2026-10-22. The camp registration confirmation goes after payment, carrying the background check link, instead of at submit plus a separate invite. Registrations with nothing to pay still get it at submit.

@@ -1,12 +1,13 @@
 // What the background check invite looks like, so every place that tells someone to find it
 // describes the same thing.
 //
-// Since 2026-10-22 we send it ourselves (send-invite.ts), ordering the check link-only so
-// VolunteerBadge sends nothing. Before that it came from "Opportunity Outdoors via
-// VolunteerBadge" as "Volunteer Application", which nobody recognised.
+// Since 2026-10-22 we send it ourselves, ordering the check link-only so VolunteerBadge sends
+// nothing. After a camp payment the link rides in the registration confirmation, whose subject
+// then names the background check; an admin re-order sends it alone (send-invite.ts). Before
+// that it came from "Opportunity Outdoors via VolunteerBadge" as "Volunteer Application",
+// which nobody recognised.
 
 export const INVITE_SENDER = "Opportunity Outdoors";
-export const INVITE_SUBJECT_WORDS = "Complete your background check";
 /** The words to search for. In the invite's subject line. */
 export const INVITE_SEARCH = "background check";
 
@@ -18,8 +19,8 @@ export const INVITE_LINK_DAYS = 14;
 
 /** One sentence that tells someone how to find the invite in their inbox. */
 export const INVITE_SEARCH_HELP =
-  `Search your inbox and spam folder for "${INVITE_SEARCH}". The email is from ` +
-  `${INVITE_SENDER}, with the subject "${INVITE_SUBJECT_WORDS}".`;
+  `Search your inbox and spam folder for "${INVITE_SEARCH}". The link is in your ` +
+  `registration confirmation from ${INVITE_SENDER}.`;
 
 /**
  * When the invite link stops working. VolunteerBadge returns an expiry with the invite; when

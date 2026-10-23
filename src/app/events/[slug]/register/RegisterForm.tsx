@@ -930,9 +930,8 @@ export default function RegisterForm({
                           </p>
                           {eligibility.kind === "needs_check" && (
                             <p className="mt-3 text-sm font-medium text-near-black/70">
-                              After you pay, we will email you a link to complete your
-                              background check, in a separate email titled &quot;Complete
-                              your background check&quot;.
+                              After you pay, your confirmation email will include a link to
+                              complete your background check.
                             </p>
                           )}
                         </>
