@@ -1,3 +1,4 @@
+import { eventDateBadge } from "@/lib/format-event-date";
 import Image from "next/image";
 import Link from "next/link";
 import LabelTag from "@/components/ui/LabelTag";
@@ -203,9 +204,7 @@ export default async function Home() {
           <div className="grid gap-6 md:grid-cols-2">
             {featuredEvents.length > 0 ? (
               featuredEvents.map((event) => {
-                const dateObj = new Date(event.date);
-                const month = dateObj.toLocaleString("en-US", { month: "short" }).toUpperCase();
-                const day = dateObj.getDate();
+                const { month, day } = eventDateBadge(event.date);
                 return (
                   <Link
                     key={event._id}

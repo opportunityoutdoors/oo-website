@@ -1,3 +1,4 @@
+import { formatEastern } from "@/lib/format-event-date";
 import Link from "next/link";
 import { createServiceClient } from "@/lib/supabase/server";
 import ImpactRollup from "./ImpactRollup";
@@ -99,7 +100,7 @@ export default async function AdminDashboardPage() {
                     </span>
                   </td>
                   <td className="px-5 py-3 text-near-black/40">
-                    {new Date(contact.created_at).toLocaleDateString()}
+                    {formatEastern(contact.created_at)}
                   </td>
                 </tr>
               ))}

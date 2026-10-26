@@ -1,10 +1,12 @@
 # Status
 
-**Last worked on:** 2026-10-26. Production redeployed 2026-10-26 for the Node.js security patch.
+**Last worked on:** 2026-10-26. Code changed and pushed to main 2026-10-26.
 **Status:** Active
 
 ## Done recently
 
+- 2026-10-26, pushed: the register page shows Deer Camp as Nov 20 to 22, not Nov 19. All
+  timestamps show in Eastern time.
 - 2026-10-26: production redeployed for Stripe's Node.js alert. The live key was not rolled.
 - 2026-10-22, pushed: one confirmation email after payment, carrying the background check link.
 - 2026-10-22, pushed: VolunteerBadge results reach the site, and we send the check invite.

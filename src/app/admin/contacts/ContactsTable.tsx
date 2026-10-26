@@ -1,5 +1,6 @@
 "use client";
 
+import { formatEastern } from "@/lib/format-event-date";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 
@@ -450,7 +451,7 @@ function ContactRow({
           )}
         </td>
         <td className="px-5 py-3 text-near-black/60">{contact.experience_level || "—"}</td>
-        <td className="px-5 py-3 text-near-black/40">{new Date(contact.created_at).toLocaleDateString()}</td>
+        <td className="px-5 py-3 text-near-black/40">{formatEastern(contact.created_at)}</td>
         <td className="px-5 py-3 text-center text-near-black/30">
           {isExpanded ? "▲" : "▼"}
         </td>
@@ -550,7 +551,7 @@ function ContactRow({
                         ["Experience", detail.experience_level],
                         ["Gear", detail.gear_status],
                         ["Source", detail.source],
-                        ["Since", new Date(detail.created_at).toLocaleDateString()],
+                        ["Since", formatEastern(detail.created_at)],
                       ].map(([label, val]) => (
                         <div key={label as string} className="flex justify-between">
                           <dt className="font-semibold text-near-black/40">{label}</dt>
@@ -605,7 +606,7 @@ function ContactRow({
                         <div key={app.id} className="mb-2 last:mb-0">
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-near-black/50">
-                              {new Date(app.created_at).toLocaleDateString()}
+                              {formatEastern(app.created_at)}
                             </span>
                             <span className="rounded bg-dark-green/10 px-1.5 py-0.5 text-[10px] font-medium text-dark-green">
                               {app.experience_level}
@@ -636,7 +637,7 @@ function ContactRow({
                         <div key={app.id} className="mb-2 last:mb-0">
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-near-black/50">
-                              {new Date(app.created_at).toLocaleDateString()}
+                              {formatEastern(app.created_at)}
                             </span>
                             <span className="text-[10px] text-near-black/40">{app.years_experience} experience</span>
                           </div>
@@ -661,7 +662,7 @@ function ContactRow({
                               {reg.events?.title || "Unknown Event"}
                             </p>
                             <p className="text-[10px] text-near-black/40">
-                              {reg.role} · {new Date(reg.created_at).toLocaleDateString()}
+                              {reg.role} · {formatEastern(reg.created_at)}
                             </p>
                           </div>
                           <span

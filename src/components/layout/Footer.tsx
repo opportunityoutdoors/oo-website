@@ -1,3 +1,4 @@
+import { easternYear } from "@/lib/format-event-date";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -15,7 +16,7 @@ const getInvolvedLinks = [
 
 
 export default function Footer() {
-  const year = new Date().getFullYear();
+  const year = easternYear();
 
   return (
     <footer className="bg-near-black px-6 pb-8 pt-16 text-white/60 md:px-10">

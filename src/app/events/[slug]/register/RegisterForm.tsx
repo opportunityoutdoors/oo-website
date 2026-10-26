@@ -1,5 +1,6 @@
 "use client";
 
+import { formatEventDateRange } from "@/lib/format-event-date";
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -438,7 +439,7 @@ export default function RegisterForm({
       <p className="mb-4 text-lg text-near-black/60">
         {event.title}
         {event.date_start && (
-          <> · {new Date(event.date_start).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</>
+          <> · {formatEventDateRange(event.date_start, event.date_end)}</>
         )}
         {event.location && <> · {event.location}</>}
       </p>

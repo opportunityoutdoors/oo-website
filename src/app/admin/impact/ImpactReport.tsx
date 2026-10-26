@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatEventDateRange } from "@/lib/format-event-date";
+import { formatEventDateRange, easternYear } from "@/lib/format-event-date";
 import copy from "@/content/impact-copy.json";
 
 // Explanatory text lives in src/content/impact-copy.json, editable without touching
@@ -79,7 +79,7 @@ type Report = {
 };
 
 export default function ImpactReport() {
-  const currentYear = new Date().getFullYear();
+  const currentYear = easternYear();
   const [scope, setScope] = useState<string>(String(currentYear));
   const [data, setData] = useState<Report | null>(null);
   const [error, setError] = useState<string | null>(null);

@@ -6,7 +6,7 @@ import FormField from "@/components/forms/FormField";
 import SurveyQuestions, { EMPTY_ANSWERS } from "@/components/forms/SurveyQuestions";
 import { US_STATES } from "@/lib/constants/us-states";
 import type { SurveyAnswers } from "@/lib/surveys/questions";
-import { formatMeetingTime } from "@/lib/format-event-date";
+import { formatMeetingTime, formatEventDay } from "@/lib/format-event-date";
 
 interface EventRegistrationProps {
   event: {
@@ -77,7 +77,7 @@ export default function EventRegistration({ event }: EventRegistrationProps) {
         <div className="rounded-lg border border-gold/30 bg-gold/5 p-6 text-center">
           <p className="text-lg font-bold text-near-black">
             Waitlist opens{" "}
-            {new Date(event.waitlistOpens).toLocaleDateString("en-US", {
+            {formatEventDay(event.waitlistOpens, {
               month: "long",
               day: "numeric",
               year: "numeric",
@@ -131,7 +131,7 @@ export default function EventRegistration({ event }: EventRegistrationProps) {
       <div className="rounded-lg border border-gold/30 bg-gold/5 p-6 text-center">
         <p className="text-lg font-bold text-near-black">
           Registration opens{" "}
-          {new Date(event.registrationOpens).toLocaleDateString("en-US", {
+          {formatEventDay(event.registrationOpens, {
             month: "long",
             day: "numeric",
             year: "numeric",

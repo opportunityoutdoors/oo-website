@@ -1,3 +1,4 @@
+import { formatEventDay, formatEastern } from "@/lib/format-event-date";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { generateWaiverPdf } from "@/lib/waiver-pdf";
@@ -36,13 +37,13 @@ export async function GET(
     participantEmail: contact.email,
     eventTitle: event.title,
     eventDate: event.date_start
-      ? new Date(event.date_start).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
+      ? formatEventDay(event.date_start, { month: "long", day: "numeric", year: "numeric" })
       : null,
     eventLocation: event.location,
     role: registration.role,
     signatureName: registration.waiver_signature_name || participantName,
     signedAt: registration.waiver_signed_at
-      ? new Date(registration.waiver_signed_at).toLocaleString("en-US", { dateStyle: "long", timeStyle: "short" })
+      ? formatEastern(registration.waiver_signed_at, { dateStyle: "long", timeStyle: "short" })
       : "Unknown",
     ipAddress: registration.waiver_ip || "Unknown",
     waiverText: registration.waiver_text || "Waiver text not available",

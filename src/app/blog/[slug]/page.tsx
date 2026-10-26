@@ -1,3 +1,4 @@
+import { formatEastern } from "@/lib/format-event-date";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -53,7 +54,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
+  return formatEastern(dateStr, {
     month: "long",
     day: "numeric",
     year: "numeric",

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatEastern } from "@/lib/format-event-date";
 import { useState, useEffect, useCallback } from "react";
 
 // Recording a Review Panel decision.
@@ -366,7 +367,7 @@ export default function ReviewModal({
                             : ""}
                         </div>
                         <div className="text-near-black/50">
-                          {new Date(h.decided_at).toLocaleDateString("en-US", {
+                          {formatEastern(h.decided_at, {
                             month: "short",
                             day: "numeric",
                             year: "numeric",

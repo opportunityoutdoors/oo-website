@@ -106,7 +106,7 @@ export default {
     select: { title: "title", date: "publishedAt", category: "category", media: "image" },
     prepare({ title, date, category }: { title: string; date: string; category: string }) {
       const formatted = date
-        ? new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+        ? new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/New_York" })
         : "No date";
       return {
         title,

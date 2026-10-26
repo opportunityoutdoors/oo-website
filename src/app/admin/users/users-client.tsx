@@ -1,5 +1,6 @@
 "use client";
 
+import { formatEastern } from "@/lib/format-event-date";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
@@ -236,7 +237,7 @@ export function UsersClient({
                       </select>
                     </td>
                     <td className="px-5 py-3 text-near-black/40">
-                      {new Date(m.created_at).toLocaleDateString()}
+                      {formatEastern(m.created_at)}
                     </td>
                     <td className="px-5 py-3 text-right">
                       {isSelf ? (
@@ -293,11 +294,11 @@ export function UsersClient({
                     <td className="px-5 py-3 font-medium text-near-black">{inv.email}</td>
                     <td className="px-5 py-3 capitalize text-near-black/60">{inv.role}</td>
                     <td className="px-5 py-3 text-near-black/40">
-                      {new Date(inv.created_at).toLocaleDateString()}
+                      {formatEastern(inv.created_at)}
                     </td>
                     <td className="px-5 py-3">
                       <span className={expired ? "text-red-700" : "text-near-black/40"}>
-                        {expired ? "Expired" : new Date(inv.expires_at).toLocaleDateString()}
+                        {expired ? "Expired" : formatEastern(inv.expires_at)}
                       </span>
                     </td>
                     <td className="px-5 py-3 text-right">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { formatEventDateRange } from "@/lib/format-event-date";
+import { formatEventDateRange, formatEastern } from "@/lib/format-event-date";
 
 // Review queue for partner events. Nothing reaches the public events page until it is
 // approved here.
@@ -229,7 +229,7 @@ export default function PartnerEventsQueue() {
               {s.lastRun && (
                 <span className="text-near-black/40">
                   {" "}
-                  · {new Date(s.lastRun).toLocaleDateString()}
+                  · {formatEastern(s.lastRun)}
                 </span>
               )}
             </p>

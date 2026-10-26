@@ -1,3 +1,4 @@
+import { formatEastern } from "@/lib/format-event-date";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -145,7 +146,7 @@ export default async function ContactDetailPage({
               ["Experience", contact.experience_level],
               ["Gear Status", contact.gear_status],
               ["Source", contact.source],
-              ["Member Since", new Date(contact.created_at).toLocaleDateString()],
+              ["Member Since", formatEastern(contact.created_at)],
             ].map(([label, value]) => (
               <div key={label as string}>
                 <dt className="text-xs font-semibold uppercase tracking-[0.5px] text-near-black/40">
@@ -219,7 +220,7 @@ export default async function ContactDetailPage({
                 <div key={app.id} className="border-b border-near-black/5 px-5 py-4 last:border-0">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-near-black">
-                      Applied {new Date(app.created_at).toLocaleDateString()}
+                      Applied {formatEastern(app.created_at)}
                     </span>
                     <span className="rounded bg-dark-green/10 px-2 py-0.5 text-xs font-medium text-dark-green">
                       {app.experience_level}
@@ -252,7 +253,7 @@ export default async function ContactDetailPage({
                 <div key={app.id} className="border-b border-near-black/5 px-5 py-4 last:border-0">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-near-black">
-                      Applied {new Date(app.created_at).toLocaleDateString()}
+                      Applied {formatEastern(app.created_at)}
                     </span>
                     <span className="text-xs text-near-black/50">
                       {app.years_experience} experience
@@ -296,7 +297,7 @@ export default async function ContactDetailPage({
                             : ""}
                         </span>
                         <span className="shrink-0 text-xs text-near-black/40">
-                          {new Date(r.decided_at).toLocaleDateString()}
+                          {formatEastern(r.decided_at)}
                         </span>
                       </div>
                       <p className="mt-0.5 text-xs text-near-black/50">
@@ -350,7 +351,7 @@ export default async function ContactDetailPage({
                           {ev?.title || "Unknown Event"}
                         </p>
                         <p className="text-xs text-near-black/50">
-                          {reg.role} · joined {new Date(reg.created_at).toLocaleDateString()}
+                          {reg.role} · joined {formatEastern(reg.created_at)}
                         </p>
                       </div>
                       <span
@@ -394,7 +395,7 @@ export default async function ContactDetailPage({
                               {m.exit_reason ? ` (${String(m.exit_reason).replace(/_/g, " ")})` : ""}
                               {m.detail ? ` · ${m.detail}` : ""}
                               {" · "}
-                              {new Date(m.occurred_at).toLocaleDateString("en-US", {
+                              {formatEastern(m.occurred_at, {
                                 month: "short",
                                 day: "numeric",
                                 year: "numeric",

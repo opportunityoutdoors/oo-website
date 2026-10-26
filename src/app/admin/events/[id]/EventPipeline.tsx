@@ -10,7 +10,7 @@ import CampBoard from "./CampBoard";
 import ExitDialog from "./ExitDialog";
 import BoardPanel from "./BoardPanel";
 import { emailUnconfirmed, position, nameOf, shirtTally, POSITIONS, type Position } from "@/lib/camp-pipeline";
-import { formatEventDateRange } from "@/lib/format-event-date";
+import { formatEventDateRange, formatEastern } from "@/lib/format-event-date";
 import { describeCheck } from "@/lib/background-check/display";
 
 interface Registration {
@@ -441,7 +441,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
                   return (
                     <div key={i} className="min-w-[190px] flex-1 rounded border border-near-black/5 p-3">
                       <p className="text-xs font-medium text-near-black">
-                        {slot.label || new Date(slot.date).toLocaleDateString("en-US", {
+                        {slot.label || formatEastern(slot.date, {
                           weekday: "short",
                           month: "short",
                           day: "numeric",

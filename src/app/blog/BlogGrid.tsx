@@ -1,5 +1,6 @@
 "use client";
 
+import { formatEastern } from "@/lib/format-event-date";
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -90,7 +91,7 @@ const placeholderPosts: {
 ];
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
+  return formatEastern(dateStr, {
     month: "long",
     day: "numeric",
     year: "numeric",

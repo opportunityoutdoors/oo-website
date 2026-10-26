@@ -9,12 +9,42 @@
 
 const UTC = "UTC" as const;
 
+/**
+ * The time zone for every real moment we show: a sign-up, a signature, a payment, a meeting.
+ * The camps and the people are in North Carolina. The servers run in UTC, so an unpinned
+ * format there put a 9 PM donation on the next day's receipt.
+ */
+export const EASTERN = "America/New_York" as const;
+
 /** "April 17, 2026", "Apr 17, 2026", etc. */
 function fmt(
   iso: string,
   opts: Intl.DateTimeFormatOptions
 ): string {
   return new Date(iso).toLocaleDateString("en-US", { ...opts, timeZone: UTC });
+}
+
+/** A single date-only day (an event date, "waitlist opens"), read in UTC like the rest. */
+export function formatEventDay(iso: string, opts: Intl.DateTimeFormatOptions): string {
+  return fmt(iso, opts);
+}
+
+/**
+ * A real moment (created_at, signed_at, now) as an Eastern date. Default "10/26/2026".
+ * Pass time options too for a date and time. Never use this for a date-only field.
+ */
+export function formatEastern(
+  value: string | number | Date,
+  opts: Intl.DateTimeFormatOptions = {}
+): string {
+  const shape: Intl.DateTimeFormatOptions =
+    Object.keys(opts).length > 0 ? opts : { year: "numeric", month: "numeric", day: "numeric" };
+  return new Date(value).toLocaleString("en-US", { ...shape, timeZone: EASTERN });
+}
+
+/** The current year in Eastern time, for footers and report defaults. */
+export function easternYear(now: Date = new Date()): number {
+  return Number(now.toLocaleString("en-US", { year: "numeric", timeZone: EASTERN }));
 }
 
 /** UTC-safe getDate / getMonth / getFullYear */

@@ -46,9 +46,11 @@ const howHeardOptions = [
 function calculateAge(dob: string): number {
   const birth = new Date(dob);
   const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  // The birth date is date-only, stored as midnight UTC: read it in UTC, or in North Carolina
+  // it is the day before. Today is the visitor's own day.
+  let age = today.getFullYear() - birth.getUTCFullYear();
+  const m = today.getMonth() - birth.getUTCMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getUTCDate())) age--;
   return age;
 }
 

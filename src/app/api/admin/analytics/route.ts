@@ -1,3 +1,4 @@
+import { easternYear } from "@/lib/format-event-date";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { apiRequireMember } from "@/lib/admin/auth";
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
   const supabase = createServiceClient();
   const yearParam = request.nextUrl.searchParams.get("year");
   const allTime = yearParam === "all";
-  const year = allTime ? null : Number(yearParam) || new Date().getFullYear();
+  const year = allTime ? null : Number(yearParam) || easternYear();
 
   let eventQuery = supabase
     .from("events")

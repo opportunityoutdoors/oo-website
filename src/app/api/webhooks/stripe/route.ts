@@ -1,3 +1,4 @@
+import { formatEastern } from "@/lib/format-event-date";
 import { after } from "next/server";
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
@@ -761,7 +762,7 @@ async function sendReceipt(input: ReceiptInput) {
   const html = await renderDonationReceipt({
     firstName: contact?.first_name ?? undefined,
     amount: formatCents(input.amountCents),
-    date: new Date().toLocaleDateString("en-US", {
+    date: formatEastern(new Date(), {
       month: "long",
       day: "numeric",
       year: "numeric",
