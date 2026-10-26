@@ -60,3 +60,4 @@ verifying.
 - 2026-10-22. We send the background check invite from Opportunity Outdoors. Checks are ordered link-only so VolunteerBadge sends no email of its own.
 - 2026-10-22. Background check reminders back on, the same night they were paused, once results matched and Sebastian Blanco, Abdullah Saleh and Steve Cook were marked clear by hand.
 - 2026-10-22. The camp registration confirmation goes after payment, carrying the background check link, instead of at submit plus a separate invite. Registrations with nothing to pay still get it at submit.
+- 2026-10-26. Stripe's Node.js alert (CVE-2026-111497, patched in 24.22.1): John chose not to roll the live Stripe key. Production was redeployed to pick up Vercel's patched runtime. Vercel's firewall blocks the inbound attack, and our code decompresses no Brotli data.

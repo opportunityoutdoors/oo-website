@@ -1,10 +1,11 @@
 # Status
 
-**Last worked on:** 2026-10-22. Code changed and pushed to main 2026-10-22.
+**Last worked on:** 2026-10-26. Production redeployed 2026-10-26 for the Node.js security patch.
 **Status:** Active
 
 ## Done recently
 
+- 2026-10-26: production redeployed for Stripe's Node.js alert. The live key was not rolled.
 - 2026-10-22, pushed: one confirmation email after payment, carrying the background check link.
 - 2026-10-22, pushed: VolunteerBadge results reach the site, and we send the check invite.
 - 2026-10-22, pushed: turning a camper away or marking them dropped out takes them off the
