@@ -4,6 +4,7 @@ import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { renderWelcomePacket } from "@/emails";
 import { apiRequireMember } from "@/lib/admin/auth";
 import { evaluateEligibility, mayParticipate } from "@/lib/background-check/eligibility";
+import { STAFF_ROLE } from "@/lib/camp-pipeline";
 import { logRegistrationEvent } from "@/lib/registration-log";
 
 /**
@@ -116,10 +117,9 @@ export async function POST(
       "*, contacts(id, email, first_name, last_name, phone, date_of_birth, background_check_status, background_check_expires_at)"
     )
     .eq("event_id", eventId)
-    .in("status", ["registered", "attended"])
-    // Staff get no packet: they run the camp and mentor nobody. A board member going as a
-    // mentor does get one, for their mentee assignments (decided 2026-10-26).
-    .or("role.is.null,role.neq.Staff");
+    // Board members get one too: as a mentor with their mentees in it, as Staff with no match
+    // section (decided 2026-10-26).
+    .in("status", ["registered", "attended"]);
 
   if (specificIds?.length) {
     query = query.in("id", specificIds);
@@ -302,10 +302,11 @@ export async function POST(
       };
     });
 
-    // Perks (role-specific)
-    const perks: Array<{ title: string; link?: string }> = isMentor
-      ? (event.mentor_perks || [])
-      : (event.mentee_perks || []);
+    // Perks (role-specific). Staff are volunteers like mentors, so they get the mentor perks.
+    const perks: Array<{ title: string; link?: string }> =
+      isMentor || reg.role === STAFF_ROLE
+        ? (event.mentor_perks || [])
+        : (event.mentee_perks || []);
 
     // Short date format: "4/17/26" — uses UTC because Sanity stores date-only
     // values that Supabase persists as midnight UTC. Parsing without the UTC

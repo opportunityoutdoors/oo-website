@@ -439,11 +439,10 @@ describe("staff", () => {
     expect(requirements(r)).toEqual([]);
   });
 
-  it("gets no welcome packet", () => {
+  // Decided 2026-10-26: a packet with no match section.
+  it("gets a welcome packet", () => {
     const r = reg({ role: "Staff", is_board_member: true, payment_status: null, waiver_signed: false, mentor_id: null });
-    const p = computePipeline([r]);
-    expect(p.sendable).toEqual([]);
-    expect(p.through.map((x) => x.id)).toEqual([r.id]);
+    expect(computePipeline([r]).sendable.map((x) => x.id)).toEqual([r.id]);
   });
 
   it("counts toward shirts without paying", () => {

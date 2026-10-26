@@ -229,6 +229,10 @@ Sources this was assembled from, which stay as the detailed reference:
       waits for the match. Board members going as mentors now get the packet with their mentee
       assignments; Staff still get none. Proven on the fixture: an unmatched cleared mentee
       showed in Ready with "no mentor", and the packet button counted only the matched people.
+- [x] Board members going as Staff get a welcome packet too. Done 2026-10-26, asked for by
+      John: the same packet with no mentor or mentee section, and the mentor perks. Proven by
+      rendering it: no match section, location and perks present, while a mentor's packet
+      still lists the mentees.
 
 ## Phase 7 — Email platform on Resend
 

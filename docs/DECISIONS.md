@@ -65,3 +65,4 @@ verifying.
 - 2026-10-26. Ready on the camp board means signed, paid, and cleared. The mentor match is not part of it, because matching starts only once everyone is Ready. The welcome packet still waits for the match.
 - 2026-10-26. Board members going to camp as mentors get the welcome packet with their mentee assignments, revising 2026-10-16. Staff still get none.
 - 2026-10-26. Background check emails link to `/background-check?token=` on our domain, which forwards to VolunteerBadge, so the link matches the sending domain.
+- 2026-10-26. Board members going as Staff get the welcome packet too, with no match section and the mentor perks. Every board member at camp now gets one.

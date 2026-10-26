@@ -5,8 +5,8 @@
 
 ## Done recently
 
-- 2026-10-26, pushed: Ready means signed, paid, and cleared. Board mentors get a welcome
-  packet. Background check emails link through our own domain.
+- 2026-10-26, pushed: Ready means signed, paid, and cleared. Board members get a welcome
+  packet, Staff with no match section. Background check emails link through our own domain.
 - 2026-10-26, pushed: the register page shows Deer Camp as Nov 20 to 22, not Nov 19. All
   timestamps show in Eastern time.
 - 2026-10-26: production redeployed for Stripe's Node.js alert. The live key was not rolled.

@@ -115,11 +115,10 @@ export function computePipeline(registrations: PipelineReg[]): Pipeline {
   const screened = paid.filter(isCleared);
   const cleared = registered.filter((r) => isBoard(r) || screened.includes(r));
   const matched = cleared.filter(isMatched);
-  // Staff run the camp and mentor nobody, so they get no packet. A board member going as a
-  // mentor does, with their mentees in it (decided 2026-10-26).
-  const packeted = matched.filter((r) => r.role !== STAFF_ROLE);
-  const sent = packeted.filter((r) => r.welcome_packet_sent);
-  const sendable = packeted.filter((r) => !r.welcome_packet_sent && !r.guardian_registration_id);
+  // Everyone at camp gets a packet, board members included: as a mentor with their mentees in
+  // it, as Staff with no match section (decided 2026-10-26).
+  const sent = matched.filter((r) => r.welcome_packet_sent);
+  const sendable = matched.filter((r) => !r.welcome_packet_sent && !r.guardian_registration_id);
 
   const stages: Stage[] = [
     {
@@ -190,7 +189,7 @@ export function computePipeline(registrations: PipelineReg[]): Pipeline {
       key: "packet",
       label: "Welcome packet",
       done: sent.length,
-      of: packeted.length,
+      of: matched.length,
       stuck: sendable,
       note: "cleared every stage, packet not sent",
     },
