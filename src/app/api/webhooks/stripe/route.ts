@@ -439,7 +439,8 @@ async function handleCampPayment(session: Stripe.Checkout.Session) {
       payment_amount: (session.amount_total ?? 0) / 100,
     })
     .eq("id", registrationId)
-    .neq("payment_status", "paid")
+    // The column is nullable, and SQL never matches NULL with "<> 'paid'", so NULL is named.
+    .or("payment_status.is.null,payment_status.neq.paid")
     .select("id");
 
   // Only when the guarded update actually changed something, so a replayed delivery does not

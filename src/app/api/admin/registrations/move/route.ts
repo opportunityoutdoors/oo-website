@@ -57,9 +57,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Ready is not somewhere you can put someone. It means every requirement is met, " +
-          "so a person moves there on their own once their waiver, payment, background check " +
-          "and mentor are all in place.",
+          "Ready is not somewhere you can put someone. A person moves there on their own " +
+          "once their waiver, payment, and background check are all in place.",
       },
       { status: 400 }
     );

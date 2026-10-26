@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
+import { checkLinkFor } from "./check-link";
 
 // Sends the background check invite from us, with the person's VolunteerBadge link.
 //
@@ -29,17 +30,20 @@ export async function sendBackgroundCheckInvite(
     return false;
   }
 
-  // The camp they just paid for, for the subject line. The soonest upcoming paid one.
+  // The camp they just paid for, for the subject line and the link token. The soonest
+  // upcoming paid one.
+  type Ev = { title: string; date_start: string | null };
   const { data: regs } = await supabase
     .from("registrations")
-    .select("events(title, date_start)")
+    .select("token, events(title, date_start)")
     .eq("contact_id", contactId)
     .eq("payment_status", "paid");
   const upcoming = (regs ?? [])
-    .map((r) => (Array.isArray(r.events) ? r.events[0] : r.events) as { title: string; date_start: string | null } | null)
-    .filter((e): e is { title: string; date_start: string | null } => !!e && (!e.date_start || new Date(e.date_start) >= new Date()))
-    .sort((a, b) => Date.parse(a.date_start ?? "") - Date.parse(b.date_start ?? ""));
-  const eventTitle = upcoming[0]?.title ?? "camp";
+    .map((r) => ({ token: r.token as string | null, ev: (Array.isArray(r.events) ? r.events[0] : r.events) as Ev | null }))
+    .filter((x): x is { token: string | null; ev: Ev } => !!x.ev && (!x.ev.date_start || new Date(x.ev.date_start) >= new Date()))
+    .sort((a, b) => Date.parse(a.ev.date_start ?? "") - Date.parse(b.ev.date_start ?? ""));
+  const eventTitle = upcoming[0]?.ev.title ?? "camp";
+  const link = checkLinkFor(upcoming[0]?.token, checkUrl);
 
   try {
     const { Resend } = await import("resend");
@@ -52,7 +56,7 @@ export async function sendBackgroundCheckInvite(
       html: await renderBackgroundCheckInvite({
         firstName: contact.first_name ?? undefined,
         eventTitle,
-        checkUrl,
+        checkUrl: link,
         linkExpires: expiresAt
           ? expiresAt.toLocaleDateString("en-US", {
               weekday: "long",

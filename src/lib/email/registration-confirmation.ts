@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { evaluateEligibility, type BackgroundCheckStatus } from "@/lib/background-check/eligibility";
+import { checkLinkFor } from "@/lib/background-check/check-link";
 
 // The camp registration confirmation, with the signed waiver attached.
 //
@@ -23,7 +24,7 @@ export async function sendRegistrationConfirmation(registrationId: string): Prom
   const { data: reg } = await supabase
     .from("registrations")
     .select(
-      "id, role, waiver_text, waiver_signature_name, waiver_signed_at, waiver_ip, " +
+      "id, token, role, waiver_text, waiver_signature_name, waiver_signed_at, waiver_ip, " +
         "contacts(email, first_name, last_name, date_of_birth, background_check_status, " +
         "background_check_expires_at, background_check_url, background_check_url_expires_at), " +
         "events(title, date_start, date_end, location)"
@@ -47,6 +48,7 @@ export async function sendRegistrationConfirmation(registrationId: string): Prom
   };
   type Event = { title: string; date_start: string | null; date_end: string | null; location: string | null };
   const r = reg as unknown as {
+    token: string | null;
     role: string | null;
     waiver_text: string | null;
     waiver_signature_name: string | null;
@@ -83,7 +85,10 @@ export async function sendRegistrationConfirmation(registrationId: string): Prom
   // The background check part. A check ordered and still open: its button. A check owed but
   // not ordered (the order failed): say a link is coming. Neither: nothing.
   const status = (contact.background_check_status ?? "none") as BackgroundCheckStatus;
-  const checkUrl = status === "invited" && contact.background_check_url ? contact.background_check_url : null;
+  const checkUrl =
+    status === "invited" && contact.background_check_url
+      ? checkLinkFor(r.token, contact.background_check_url)
+      : null;
   const eligibility = evaluateEligibility({
     dateOfBirth: contact.date_of_birth,
     status,

@@ -107,12 +107,19 @@ export function computePipeline(registrations: PipelineReg[]): Pipeline {
     ["approved", "registered", "attended"].includes(r.status)
   );
   const registered = active.filter((r) => ["registered", "attended"].includes(r.status));
-  const signed = registered.filter((r) => r.waiver_signed);
-  const paid = registered.filter((r) => r.payment_status === "paid");
-  const cleared = paid.filter(isCleared);
+  // Board members owe no waiver, fee, or check (decided 2026-10-14 and 2026-10-16), so they
+  // pass those three stages instead of sitting stuck at them.
+  const owing = registered.filter((r) => !isBoard(r));
+  const signed = owing.filter((r) => r.waiver_signed);
+  const paid = owing.filter((r) => r.payment_status === "paid");
+  const screened = paid.filter(isCleared);
+  const cleared = registered.filter((r) => isBoard(r) || screened.includes(r));
   const matched = cleared.filter(isMatched);
-  const sent = matched.filter((r) => r.welcome_packet_sent);
-  const sendable = matched.filter((r) => !r.welcome_packet_sent && !r.guardian_registration_id);
+  // Staff run the camp and mentor nobody, so they get no packet. A board member going as a
+  // mentor does, with their mentees in it (decided 2026-10-26).
+  const packeted = matched.filter((r) => r.role !== STAFF_ROLE);
+  const sent = packeted.filter((r) => r.welcome_packet_sent);
+  const sendable = packeted.filter((r) => !r.welcome_packet_sent && !r.guardian_registration_id);
 
   const stages: Stage[] = [
     {
@@ -151,22 +158,22 @@ export function computePipeline(registrations: PipelineReg[]): Pipeline {
       key: "waiver",
       label: "Waiver signed",
       done: signed.length,
-      of: registered.length,
-      stuck: registered.filter((r) => !r.waiver_signed),
+      of: owing.length,
+      stuck: owing.filter((r) => !r.waiver_signed),
       note: "waiver not signed",
     },
     {
       key: "paid",
       label: "Paid",
       done: paid.length,
-      of: registered.length,
-      stuck: registered.filter((r) => r.payment_status !== "paid"),
+      of: owing.length,
+      stuck: owing.filter((r) => r.payment_status !== "paid"),
       note: "not paid",
     },
     {
       key: "screening",
       label: "Background check",
-      done: cleared.length,
+      done: screened.length,
       of: paid.length,
       stuck: paid.filter((r) => !isCleared(r)),
       note: "not cleared to attend",
@@ -183,7 +190,7 @@ export function computePipeline(registrations: PipelineReg[]): Pipeline {
       key: "packet",
       label: "Welcome packet",
       done: sent.length,
-      of: matched.length,
+      of: packeted.length,
       stuck: sendable,
       note: "cleared every stage, packet not sent",
     },
@@ -218,7 +225,7 @@ export const POSITIONS: { key: Position; label: string; blurb: string }[] = [
   { key: "waitlist", label: "Waitlist", blurb: "awaiting your decision" },
   { key: "invited", label: "Invited", blurb: "awaiting their registration" },
   { key: "registered", label: "Registered", blurb: "requirements outstanding" },
-  { key: "ready", label: "Ready", blurb: "cleared and matched" },
+  { key: "ready", label: "Ready", blurb: "paid and cleared" },
   { key: "attended", label: "Attended", blurb: "they came" },
   { key: "turned_away", label: "Turned away", blurb: "our decision" },
   { key: "dropped_out", label: "Dropped out", blurb: "their choice or silence" },
@@ -290,14 +297,12 @@ export function position(r: PipelineReg): Position {
   // check, whether they go as mentor or staff. Decided 2026-10-14 and 2026-10-16.
   if (r.status === "registered" && isBoard(r)) return "ready";
 
-  // Registered. Ready means every requirement is met, which is the same rule the welcome
-  // packet gate uses, so a card in Ready is exactly a card that can receive one.
+  // Registered. Ready means the person has done everything they owe: waiver, payment, and a
+  // clear check. The mentor match is not part of it, because matching starts only once
+  // everyone is Ready (decided 2026-10-26). A mentee in Ready keeps a "no mentor" badge until
+  // matched, and the welcome packet still waits for the match.
   if (r.status === "registered") {
-    const done =
-      r.waiver_signed &&
-      r.payment_status === "paid" &&
-      isCleared(r) &&
-      isMatched(r);
+    const done = r.waiver_signed && r.payment_status === "paid" && isCleared(r);
     return done ? "ready" : "registered";
   }
 

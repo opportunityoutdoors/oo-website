@@ -190,6 +190,13 @@ Sources this was assembled from, which stay as the detailed reference:
       separate invite. Proven on the fixture: Ivy got nothing at submit and one combined email
       after a signed test payment; Hana, a free mentor with a clear check, got the plain
       confirmation at submit.
+- [x] Background check link on our own domain. Done 2026-10-26, asked for by John after Resend
+      warned that the VolunteerBadge link did not match the sending domain. The confirmation,
+      the separate invite, and the reminders link to `/background-check?token=` with the
+      registration token. Open checks forward to VolunteerBadge. A finished, expired, or
+      unknown link gets a plain message. Proven on the fixture: the emailed link forwarded to
+      Ivy's sandbox page, and the clear, expired, and bad-token cases showed their messages.
+      The Stripe webhook's already-paid guard now also matches a NULL payment status.
 
 ## Phase 5 — Matching and welcome
 
@@ -216,6 +223,12 @@ Sources this was assembled from, which stay as the detailed reference:
       Board panel on the camp page lists the 6 board members from Sanity, with a shirt size
       for each. Both roles are pre-registered with no email, owe nothing, land in Ready, get
       no welcome packet, and count for shirts. Proven on the fixture camp: no email sent.
+- [x] Ready means signed, paid, and cleared, and board mentors get a welcome packet. Done
+      2026-10-26, asked for by John: matching starts only once everyone is Ready, so the match
+      cannot be part of Ready. A mentee in Ready keeps a "no mentor" badge, and the packet still
+      waits for the match. Board members going as mentors now get the packet with their mentee
+      assignments; Staff still get none. Proven on the fixture: an unmatched cleared mentee
+      showed in Ready with "no mentor", and the packet button counted only the matched people.
 
 ## Phase 7 — Email platform on Resend
 

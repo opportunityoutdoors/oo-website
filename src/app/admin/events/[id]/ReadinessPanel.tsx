@@ -102,8 +102,8 @@ export default function ReadinessPanel({
           disabled={sending || sendable.length === 0}
           title={
             sendable.length === 0
-              ? "Nobody has cleared every requirement yet"
-              : "Sends to everyone in Ready who has not had one"
+              ? "Nobody in Ready is matched yet"
+              : "Sends to everyone in Ready who is matched and has not had one"
           }
           className="shrink-0 rounded bg-dark-green px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-dark-green/90 disabled:opacity-40"
         >

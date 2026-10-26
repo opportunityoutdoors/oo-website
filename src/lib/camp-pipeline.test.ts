@@ -221,7 +221,6 @@ describe("position", () => {
     expect(position(reg())).toBe("ready");
     expect(position(reg({ payment_status: null }))).toBe("registered");
     expect(position(reg({ waiver_signed: false }))).toBe("registered");
-    expect(position(reg({ mentor_id: null }))).toBe("registered");
     expect(
       position(
         reg({
@@ -231,9 +230,16 @@ describe("position", () => {
     ).toBe("registered");
   });
 
-  // Ready must mean exactly "can receive a welcome packet", or the board promises something
-  // the send will then refuse.
-  it("agrees with the welcome packet gate about who is ready", () => {
+  // Matching starts once everyone is Ready, so the match cannot be part of Ready. Decided
+  // 2026-10-26: cleared mentees sat in Registered with nothing left for them to do.
+  it("puts a paid, signed, cleared mentee in Ready before a mentor is matched", () => {
+    const r = reg({ mentor_id: null });
+    expect(position(r)).toBe("ready");
+    expect(requirements(r)).toContainEqual({ label: "no mentor", met: false });
+  });
+
+  // The packet carries the mentor match, so it waits for one. Everyone it can reach is in Ready.
+  it("sends packets only to people in Ready who are matched", () => {
     const people = [
       reg(),
       reg({ payment_status: null }),
@@ -242,7 +248,8 @@ describe("position", () => {
     ];
     const ready = people.filter((r) => position(r) === "ready").map((r) => r.id);
     const through = computePipeline(people).through.map((r) => r.id);
-    expect(ready.sort()).toEqual(through.sort());
+    expect(ready.sort()).toEqual([people[0].id, people[3].id].sort());
+    expect(through).toEqual([people[0].id]);
   });
 
   // Leaving overrides progress. Someone who withdrew is not also "registered but unpaid".
@@ -406,6 +413,23 @@ describe("board mentor", () => {
     expect(requirements(r)).toEqual([]);
     expect(shirtTally([r]).sizes.find((s) => s.size === "XL")?.count).toBe(1);
   });
+
+  // Decided 2026-10-26, revising 2026-10-16: the packet carries their mentee assignments.
+  it("gets a welcome packet, with no waiver, fee, or check", () => {
+    const r = reg({
+      role: "Mentor",
+      is_board_member: true,
+      payment_status: null,
+      waiver_signed: false,
+      mentor_id: null,
+      contacts: contacts({ background_check_status: null, background_check_expires_at: null }),
+    });
+    const p = computePipeline([r]);
+    expect(p.sendable.map((x) => x.id)).toEqual([r.id]);
+    for (const key of ["waiver", "paid", "screening"]) {
+      expect(p.stages.find((s) => s.key === key)?.stuck).toEqual([]);
+    }
+  });
 });
 
 describe("staff", () => {
@@ -413,6 +437,13 @@ describe("staff", () => {
     const r = reg({ role: "Staff", payment_status: null, waiver_signed: false, mentor_id: null });
     expect(position(r)).toBe("ready");
     expect(requirements(r)).toEqual([]);
+  });
+
+  it("gets no welcome packet", () => {
+    const r = reg({ role: "Staff", is_board_member: true, payment_status: null, waiver_signed: false, mentor_id: null });
+    const p = computePipeline([r]);
+    expect(p.sendable).toEqual([]);
+    expect(p.through.map((x) => x.id)).toEqual([r.id]);
   });
 
   it("counts toward shirts without paying", () => {

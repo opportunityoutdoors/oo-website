@@ -2,6 +2,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { logRegistrationEvent } from "@/lib/registration-log";
 import { inviteLinkExpiry, reminderDue } from "./invite-email";
+import { checkLinkFor } from "./check-link";
 
 // Reminds a paid registrant to finish their background check, before the link dies.
 //
@@ -24,7 +25,7 @@ export async function sendBackgroundCheckReminders(): Promise<{
   const { data: rows } = await supabase
     .from("registrations")
     .select(
-      "id, events(title, date_start), contacts(id, email, first_name, background_check_status, background_check_invited_at, background_check_url, background_check_url_expires_at, background_check_reminders_sent)"
+      "id, token, events(title, date_start), contacts(id, email, first_name, background_check_status, background_check_invited_at, background_check_url, background_check_url_expires_at, background_check_reminders_sent)"
     )
     .eq("payment_status", "paid");
 
@@ -51,7 +52,7 @@ export async function sendBackgroundCheckReminders(): Promise<{
       email: c.email,
       firstName: c.first_name,
       eventTitle: ev?.title ?? "camp",
-      checkUrl: c.background_check_url,
+      checkUrl: c.background_check_url ? checkLinkFor(r.token, c.background_check_url) : null,
       linkExpires: expiry
         ? expiry.toLocaleDateString("en-US", {
             weekday: "long",

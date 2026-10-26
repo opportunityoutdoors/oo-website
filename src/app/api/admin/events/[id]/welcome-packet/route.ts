@@ -117,9 +117,8 @@ export async function POST(
     )
     .eq("event_id", eventId)
     .in("status", ["registered", "attended"])
-    // Board members are not sent a packet: they owe no check, so the location gate below would
-    // refuse them, and they already know where camp is.
-    .or("is_board_member.is.null,is_board_member.eq.false")
+    // Staff get no packet: they run the camp and mentor nobody. A board member going as a
+    // mentor does get one, for their mentee assignments (decided 2026-10-26).
     .or("role.is.null,role.neq.Staff");
 
   if (specificIds?.length) {
@@ -156,6 +155,9 @@ export async function POST(
   // (the loop below skips anyone with a guardian).
   const withheld: { name: string; reason: string }[] = [];
   const registrations = candidates.filter((r) => {
+    // Board members owe no check by decision of 2026-10-14, so the screening rule does not
+    // apply to them.
+    if (r.is_board_member) return true;
     const c = Array.isArray(r.contacts) ? r.contacts[0] : r.contacts;
     const eligibility = evaluateEligibility({
       dateOfBirth: c?.date_of_birth ?? null,

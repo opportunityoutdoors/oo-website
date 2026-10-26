@@ -62,3 +62,6 @@ verifying.
 - 2026-10-22. The camp registration confirmation goes after payment, carrying the background check link, instead of at submit plus a separate invite. Registrations with nothing to pay still get it at submit.
 - 2026-10-26. Stripe's Node.js alert (CVE-2026-111497, patched in 24.22.1): John chose not to roll the live Stripe key. Production was redeployed to pick up Vercel's patched runtime. Vercel's firewall blocks the inbound attack, and our code decompresses no Brotli data.
 - 2026-10-26. Every real moment we show (sign-ups, signatures, payments, meetings, receipts) is formatted in Eastern time through `formatEastern` in `src/lib/format-event-date.ts`. Date-only fields (event days, waitlist and registration opens, birth dates) stay in UTC, or they show a day early.
+- 2026-10-26. Ready on the camp board means signed, paid, and cleared. The mentor match is not part of it, because matching starts only once everyone is Ready. The welcome packet still waits for the match.
+- 2026-10-26. Board members going to camp as mentors get the welcome packet with their mentee assignments, revising 2026-10-16. Staff still get none.
+- 2026-10-26. Background check emails link to `/background-check?token=` on our domain, which forwards to VolunteerBadge, so the link matches the sending domain.
