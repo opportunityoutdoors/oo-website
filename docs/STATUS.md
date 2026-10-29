@@ -19,7 +19,6 @@
 - 2026-10-22, pushed: one shared, all-day calendar event per camp, Fri to Sun for Deer Camp.
   Migration 040 applied. The 4 earlier registrants are on it; John deletes their old events.
 - 2026-10-22, pushed: a double-click no longer moves, emails, or re-tokens anyone twice.
-- 2026-10-22, pushed: Turn Away as "Denied at review" sends the denial email.
 
 ## In progress
 
