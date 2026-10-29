@@ -23,10 +23,12 @@
 
 ## In progress
 
-Nothing in flight. Deer Camp (Nov 20 to 22): VolunteerBadge results now reach the site on their
-own, we send the check invite, and reminders are on again. Every Deer Camp check so far is clear.
-Watch the next live result land without a hand edit; if one does not, search Vercel logs for
-"NO CONTACT MATCHED" or "webhook refused".
+Resume point 2026-10-29. Stopped after shipping 112c186: registration reminders with
+"I Can't Make It", the two-week close default, and Eastern-only day logic. Nothing open in
+code. Next concrete step: on Oct 30 after 10:30 AM Eastern, check Resend for 7 Deer Camp
+reminders and Vercel logs for "Registration reminders: 7 first". Final send is Nov 4. Not yet
+seen live: the cron, a real "I Can't Make It" press, a board-member packet. Ruled out: a
+Sanity close date for Deer Camp, since the default gives Nov 6.
 
 ## Next up
 
