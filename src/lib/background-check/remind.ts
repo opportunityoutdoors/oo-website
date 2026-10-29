@@ -1,3 +1,4 @@
+import { hasStarted } from "@/lib/format-event-date";
 import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { logRegistrationEvent } from "@/lib/registration-log";
@@ -36,7 +37,7 @@ export async function sendBackgroundCheckReminders(): Promise<{
     if (!c?.id || !c.email || seen.has(c.id)) continue;
     if (c.background_check_status !== "invited") continue;
     // A camp that has already happened needs no check.
-    if (ev?.date_start && new Date(ev.date_start) < new Date()) continue;
+    if (ev?.date_start && hasStarted(ev.date_start)) continue;
 
     const sent = c.background_check_reminders_sent ?? 0;
     const due = reminderDue({

@@ -33,6 +33,8 @@ interface SanityEvent {
   cost: string | null;
   /** Numeric amount charged per paying participant. `cost` is display copy, not a price. */
   registrationFee: number | null;
+  /** Date-only. Empty means registration runs to the start date. */
+  registrationCloses: string | null;
   spotsTotal: number | null;
   meetingSlots: MeetingSlot[] | null;
   campLocations: CampLocation[] | null;
@@ -106,6 +108,8 @@ export async function GET() {
         cost: se.cost || null,
         // Numeric price. Kept distinct from `cost`, which is display copy.
         registration_fee: se.registrationFee ?? null,
+        // Mirrored for the registration reminder (lib/registration-reminder.ts).
+        registration_closes: se.registrationCloses || null,
         spots_total: se.spotsTotal || null,
         meeting_slots: slots,
         camp_locations: se.campLocations || [],

@@ -10,7 +10,7 @@ import CampBoard from "./CampBoard";
 import ExitDialog from "./ExitDialog";
 import BoardPanel from "./BoardPanel";
 import { emailUnconfirmed, position, nameOf, shirtTally, POSITIONS, type Position } from "@/lib/camp-pipeline";
-import { formatEventDateRange, formatEastern } from "@/lib/format-event-date";
+import { formatEventDateRange, formatEastern, isOver } from "@/lib/format-event-date";
 import { describeCheck } from "@/lib/background-check/display";
 
 interface Registration {
@@ -484,7 +484,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
             <>
             <ReadinessPanel
               eventId={eventId}
-              eventDate={event.date_start}
+              eventDate={event.date_end || event.date_start}
               registrations={event.registrations}
               onChanged={fetchEvent}
             />
@@ -496,7 +496,7 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
               eventId={eventId}
               registrations={event.registrations}
               isPast={Boolean(
-                event.date_start && new Date(event.date_start) < new Date()
+                isOver(event.date_end || event.date_start || "")
               )}
               onMoved={fetchEvent}
               onReview={(contactId, name, status) =>

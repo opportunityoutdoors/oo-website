@@ -1,3 +1,4 @@
+import { formatEventDateRange } from "@/lib/format-event-date";
 import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { evaluateEligibility, type BackgroundCheckStatus } from "@/lib/background-check/eligibility";
@@ -72,15 +73,8 @@ export async function sendRegistrationConfirmation(registrationId: string): Prom
   const firstName = contact.first_name || "there";
   const participantName = [contact.first_name, contact.last_name].filter(Boolean).join(" ");
   const eventTitle = event?.title || "the upcoming event";
-  // Date-only, stored as midnight UTC: read in UTC or it prints the day before.
-  const eventDate = event?.date_start
-    ? new Date(event.date_start).toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-        timeZone: "UTC",
-      })
-    : null;
+  // The camp's days as stored, "November 20–22, 2026".
+  const eventDate = formatEventDateRange(event?.date_start, event?.date_end);
 
   // The background check part. A check ordered and still open: its button. A check owed but
   // not ordered (the order failed): say a link is coming. Neither: nothing.

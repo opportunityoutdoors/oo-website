@@ -1,32 +1,112 @@
 /**
- * Timezone-safe event date formatting.
+ * Dates and times, always in Eastern.
  *
- * Sanity stores event dates as date-only values (e.g. "2026-04-17").
- * Supabase persists them as midnight UTC in timestamptz columns.
- * Every formatter MUST pin to timeZone: "UTC" so browsers in Eastern
- * (or any non-UTC) timezone don't shift the date back a day.
+ * Decided 2026-10-29: nothing is displayed or calculated in UTC. The camps and the people are
+ * in North Carolina, and the servers run in UTC, so every "today" and every printed time is
+ * pinned to Eastern here rather than left to the machine.
+ *
+ * Two kinds of value come through:
+ *
+ *   - Date-only values: event days, waitlist and registration open and close dates, birth
+ *     dates. Sanity stores "2026-11-20" and Supabase persists it as "2026-11-20T00:00:00+00".
+ *     These are calendar days with no time and no zone. dayOf() reads the day as written.
+ *     Converting one to Eastern as if it were a moment is what printed November 19.
+ *   - Real moments: sign-ups, payments, signatures, meeting times. These are shown in Eastern.
+ *
+ * Comparisons against today use easternToday(), so a day ends at midnight Eastern.
  */
-
-const UTC = "UTC" as const;
 
 /**
  * The time zone for every real moment we show: a sign-up, a signature, a payment, a meeting.
- * The camps and the people are in North Carolina. The servers run in UTC, so an unpinned
- * format there put a 9 PM donation on the next day's receipt.
+ * The servers run in UTC, so an unpinned format there put a 9 PM donation on the next day's
+ * receipt.
  */
 export const EASTERN = "America/New_York" as const;
 
-/** "April 17, 2026", "Apr 17, 2026", etc. */
-function fmt(
-  iso: string,
-  opts: Intl.DateTimeFormatOptions
-): string {
-  return new Date(iso).toLocaleDateString("en-US", { ...opts, timeZone: UTC });
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// A date-only value as stored: "2026-11-20", or the same day at midnight with a zero offset.
+const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})(?:$|[T ]00:00(?::00(?:\.0+)?)?(?:Z|[+-]00(?::?00)?)?$)/;
+
+/** A calendar day's parts in Eastern for a real moment. */
+function easternParts(when: Date): { year: number; month: number; day: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: EASTERN,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  }).formatToParts(when);
+  const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
+  return { year: get("year"), month: get("month"), day: get("day") };
 }
 
-/** A single date-only day (an event date, "waitlist opens"), read in UTC like the rest. */
-export function formatEventDay(iso: string, opts: Intl.DateTimeFormatOptions): string {
-  return fmt(iso, opts);
+const pad = (n: number) => String(n).padStart(2, "0");
+const dayString = (p: { year: number; month: number; day: number }) =>
+  `${p.year}-${pad(p.month)}-${pad(p.day)}`;
+
+/**
+ * The calendar day of a value, "2026-11-20". A date-only value is the day as written. A real
+ * moment is the day it falls on in Eastern.
+ */
+export function dayOf(value: string): string {
+  const m = DATE_ONLY.exec(value.trim());
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  return dayString(easternParts(new Date(value)));
+}
+
+/** Today in Eastern, "2026-10-29". */
+export function easternToday(now: Date = new Date()): string {
+  return dayString(easternParts(now));
+}
+
+/** Calendar arithmetic on a "YYYY-MM-DD" day. */
+export function addDays(day: string, n: number): string {
+  const [y, m, d] = day.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d) + n * DAY_MS);
+  return `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`;
+}
+
+/** Whole days from today in Eastern until a value's day. Negative once the day has passed. */
+export function daysUntil(value: string, now: Date = new Date()): number {
+  const [y, m, d] = dayOf(value).split("-").map(Number);
+  const [ty, tm, td] = easternToday(now).split("-").map(Number);
+  return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(ty, tm - 1, td)) / DAY_MS);
+}
+
+/** True from the start of the value's day in Eastern. */
+export function hasStarted(value: string, now: Date = new Date()): boolean {
+  return easternToday(now) >= dayOf(value);
+}
+
+/** True once the value's day has ended in Eastern. */
+export function isOver(value: string, now: Date = new Date()): boolean {
+  return easternToday(now) > dayOf(value);
+}
+
+/** Whole years old today in Eastern, from a birth date. Null if it is not a date. */
+export function ageOnToday(dateOfBirth: string, now: Date = new Date()): number | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateOfBirth.trim());
+  if (!m) return null;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  const t = easternParts(now);
+  let age = t.year - y;
+  if (t.month < mo || (t.month === mo && t.day < d)) age -= 1;
+  return age;
+}
+
+/**
+ * Formats a value's calendar day in Eastern. The day is placed at noon so that printing it in
+ * Eastern can never move it to a neighbouring day.
+ */
+function fmt(value: string, opts: Intl.DateTimeFormatOptions): string {
+  const [y, m, d] = dayOf(value).split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 12)).toLocaleDateString("en-US", { ...opts, timeZone: EASTERN });
+}
+
+/** A single date-only day: an event date, "waitlist opens", "registration closes". */
+export function formatEventDay(value: string, opts: Intl.DateTimeFormatOptions): string {
+  return fmt(value, opts);
 }
 
 /**
@@ -44,17 +124,13 @@ export function formatEastern(
 
 /** The current year in Eastern time, for footers and report defaults. */
 export function easternYear(now: Date = new Date()): number {
-  return Number(now.toLocaleString("en-US", { year: "numeric", timeZone: EASTERN }));
+  return easternParts(now).year;
 }
 
-/** UTC-safe getDate / getMonth / getFullYear */
-function utc(iso: string) {
-  const d = new Date(iso);
-  return {
-    month: d.getUTCMonth(),
-    day: d.getUTCDate(),
-    year: d.getUTCFullYear(),
-  };
+/** A value's calendar day as numbers, month zero-based. */
+function utc(value: string) {
+  const [year, month, day] = dayOf(value).split("-").map(Number);
+  return { year, month: month - 1, day };
 }
 
 /**
@@ -123,7 +199,7 @@ export function formatEventDateRange(
 
 /**
  * Extract month abbreviation and day number for event-card badges.
- * Returns { month: "APR", day: 17 } — always UTC-safe.
+ * Returns { month: "APR", day: 17 }, the day as stored.
  */
 export function eventDateBadge(iso: string): { month: string; day: number } {
   return {
@@ -135,10 +211,8 @@ export function eventDateBadge(iso: string): { month: string; day: number } {
 /**
  * A pre-camp meeting time, e.g. "Tuesday, October 13, 2026 at 8:00 PM ET".
  *
- * Meeting slots are real datetimes, not date-only values, so the UTC rule above is wrong for
- * them. Pinned to Eastern because the camps and the people are in North Carolina, and because
- * the server sending the email runs in UTC: unpinned, an 8 PM Tuesday meeting went out as
- * "Wednesday at 12:00 AM".
+ * Meeting slots are real moments, printed in Eastern. Unpinned, the server sending the email
+ * printed its own zone, and an 8 PM Tuesday meeting went out as "Wednesday at 12:00 AM".
  */
 export function formatMeetingTime(iso: string): string {
   const when = new Date(iso).toLocaleString("en-US", {
@@ -148,7 +222,7 @@ export function formatMeetingTime(iso: string): string {
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
-    timeZone: "America/New_York",
+    timeZone: EASTERN,
   });
   return `${when} ET`;
 }
@@ -157,7 +231,7 @@ export function formatMeetingTime(iso: string): string {
  * An event's days as an all-day calendar range: { start: "2026-11-20", end: "2026-11-23" }.
  *
  * For a Google Calendar event, which wants date-only values with an exclusive end. Both
- * inputs are the date-only fields stored as midnight UTC, so the day is read in UTC. Sent as
+ * inputs are date-only fields, so the days are taken as written. Sent as
  * exact times instead, Deer Camp (Fri Nov 20 to Sun Nov 22) reached campers as 7 PM Thursday
  * to 7 PM Saturday. With no last day, the event is the first day alone.
  */
@@ -165,8 +239,5 @@ export function allDayRange(
   firstDay: string,
   lastDay: string | null
 ): { start: string; end: string } {
-  const day = (iso: string) => new Date(iso).toISOString().slice(0, 10);
-  const last = new Date(lastDay ?? firstDay);
-  const dayAfter = new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), last.getUTCDate() + 1));
-  return { start: day(firstDay), end: day(dayAfter.toISOString()) };
+  return { start: dayOf(firstDay), end: addDays(dayOf(lastDay ?? firstDay), 1) };
 }

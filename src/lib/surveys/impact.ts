@@ -1,3 +1,4 @@
+import { isOver } from "@/lib/format-event-date";
 import { SCALE_KEYS, type ScaleKey } from "./questions";
 import { SCALE_SHORT_LABELS, type ResponseRow } from "./analytics";
 
@@ -75,7 +76,7 @@ export function computeOutputs(
 ): Outputs {
   const held = events.filter((e) => {
     const ended = e.date_end || e.date_start;
-    return ended && new Date(ended).getTime() < now;
+    return ended && isOver(ended, new Date(now));
   });
 
   const eventById = new Map(events.map((e) => [e.id, e]));

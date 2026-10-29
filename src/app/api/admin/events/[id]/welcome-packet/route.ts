@@ -1,3 +1,4 @@
+import { formatEventDateRange } from "@/lib/format-event-date";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
@@ -308,21 +309,8 @@ export async function POST(
         ? (event.mentor_perks || [])
         : (event.mentee_perks || []);
 
-    // Short date format: "4/17/26" — uses UTC because Sanity stores date-only
-    // values that Supabase persists as midnight UTC. Parsing without the UTC
-    // hint would shift into the server's local timezone.
-    const shortDate = (iso: string) =>
-      new Date(iso).toLocaleDateString("en-US", {
-        month: "numeric",
-        day: "numeric",
-        year: "2-digit",
-        timeZone: "UTC",
-      });
-    const eventDateStr = event.date_start
-      ? event.date_end && event.date_end !== event.date_start
-        ? `${shortDate(event.date_start)}-${shortDate(event.date_end)}`
-        : shortDate(event.date_start)
-      : null;
+    // Short date format: "11/20/26-11/22/26", the days as stored.
+    const eventDateStr = formatEventDateRange(event.date_start, event.date_end, "compact");
 
     await resend.emails.send({
       from: NOTIFICATIONS_FROM,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { renderWaitlistReminder } from "@/emails";
-import { formatMeetingTime } from "@/lib/format-event-date";
+import { formatMeetingTime, daysUntil } from "@/lib/format-event-date";
 
 export async function GET(request: NextRequest) {
   // Verify cron secret to prevent unauthorized access
@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
   // Find events where waitlistCloses was within the last 48 hours
   // and reminder hasn't been sent yet
   const now = new Date();
-  const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
 
   const { data: events } = await supabase
     .from("events")
@@ -65,10 +64,9 @@ export async function GET(request: NextRequest) {
 
     if (!waitlistCloses) continue;
 
-    const closeDate = new Date(waitlistCloses);
-
-    // Check if waitlist closed within the last 48 hours
-    if (closeDate > now || closeDate < twoDaysAgo) continue;
+    // The waitlist closes at the end of its day in Eastern. Remind in the 2 days after that.
+    const sinceClose = -daysUntil(waitlistCloses, now);
+    if (sinceClose < 1 || sinceClose > 2) continue;
 
     // Get all waitlisted registrations for this event
     const { data: registrations } = await supabase

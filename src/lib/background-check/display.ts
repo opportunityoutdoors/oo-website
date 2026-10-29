@@ -1,3 +1,4 @@
+import { formatEastern } from "@/lib/format-event-date";
 import { evaluateEligibility, type BackgroundCheckStatus } from "./eligibility";
 import { inviteLinkExpiry } from "./invite-email";
 
@@ -102,7 +103,7 @@ export function describeCheck(input: {
     const until = new Date(eligibility.expiresAt);
     return {
       label: "Cleared",
-      detail: `Valid until ${until.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}.`,
+      detail: `Valid until ${formatEastern(until, { month: "short", day: "numeric", year: "numeric" })}.`,
       tone: "ok",
       needsAttention: false,
     };

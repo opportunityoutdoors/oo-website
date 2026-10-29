@@ -116,8 +116,8 @@ async function updateEventInSupabase(sanityId: string) {
     const event = await sanityClient.fetch(
       `*[_type == "event" && _id == $id][0] {
         _id, title, slug, eventType, status, date, endDate, location, cost,
-        registrationFee, spotsTotal, meetingSlots, campLocations, mentorPerks,
-        menteePerks
+        registrationFee, registrationCloses, spotsTotal, meetingSlots, campLocations,
+        mentorPerks, menteePerks
       }`,
       { id: sanityId }
     );
@@ -207,6 +207,8 @@ async function updateEventInSupabase(sanityId: string) {
         cost: event.cost || null,
         // Numeric price. Kept distinct from `cost`, which is display copy.
         registration_fee: event.registrationFee ?? null,
+        // Mirrored for the registration reminder (lib/registration-reminder.ts).
+        registration_closes: event.registrationCloses || null,
         spots_total: event.spotsTotal || null,
         meeting_slots: meetingSlots,
         camp_locations: event.campLocations || [],

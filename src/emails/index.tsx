@@ -64,6 +64,10 @@ import {
   BackgroundCheckReminder,
   type BackgroundCheckReminderProps,
 } from "./templates/BackgroundCheckReminder";
+import {
+  RegistrationReminder,
+  type RegistrationReminderProps,
+} from "./templates/RegistrationReminder";
 
 export function renderWaitlistReminder(
   props: WaitlistReminderProps
@@ -153,6 +157,12 @@ export function renderBackgroundCheckReminder(
   props: BackgroundCheckReminderProps
 ): Promise<string> {
   return render(<BackgroundCheckReminder {...props} />);
+}
+
+export function renderRegistrationReminder(
+  props: RegistrationReminderProps
+): Promise<string> {
+  return render(<RegistrationReminder {...props} />);
 }
 
 export function renderBackgroundCheckInvite(

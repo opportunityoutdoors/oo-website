@@ -197,6 +197,19 @@ Sources this was assembled from, which stay as the detailed reference:
       unknown link gets a plain message. Proven on the fixture: the emailed link forwarded to
       Ivy's sandbox page, and the clear, expired, and bad-token cases showed their messages.
       The Stripe webhook's already-paid guard now also matches a NULL payment status.
+- [x] Automatic reminder to register, with "I Can't Make It". Done 2026-10-29, asked for by
+      John: nothing reminded someone approved who had not registered, and 7 Deer Camp invitees
+      were in that state. A daily cron emails them 7 days and 2 days before registration
+      closes, with their own link. The close date is mirrored from Sanity (migration 042);
+      blank means two weeks before camp, which is November 6 for Deer Camp. "I Can't Make It"
+      opens a page with a confirm button, which moves them to Dropped out with "Told us they
+      cannot make it", logs their note, and emails info@. Proven on the fixture: one reminder
+      per run, then nothing; the page changed nothing until the button was pressed; a second
+      press logged nothing new.
+- [x] All day logic in Eastern. Done 2026-10-29, asked for by John: "today" is the Eastern
+      day everywhere (open and close dates, past camps, birthdays, check reminders), date-only
+      values are read as written, and every timestamp prints in Eastern. Proven by tests run
+      under UTC and Pacific clocks.
 
 ## Phase 5 — Matching and welcome
 

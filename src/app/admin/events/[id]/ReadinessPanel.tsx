@@ -1,5 +1,6 @@
 "use client";
 
+import { isOver } from "@/lib/format-event-date";
 import { useState } from "react";
 import { computePipeline, byPosition, type PipelineReg } from "@/lib/camp-pipeline";
 
@@ -20,13 +21,15 @@ export default function ReadinessPanel({
   onChanged,
 }: {
   eventId: string;
+  /** The camp's last day. */
   eventDate: string | null;
   registrations: PipelineReg[];
   onChanged: () => void | Promise<void>;
 }) {
   const [sending, setSending] = useState(false);
 
-  const isPast = Boolean(eventDate && new Date(eventDate) < new Date());
+  // Past once the camp's last day has ended in Eastern.
+  const isPast = Boolean(eventDate && isOver(eventDate));
   const { sendable, sent } = computePipeline(registrations);
   const cols = byPosition(registrations);
 

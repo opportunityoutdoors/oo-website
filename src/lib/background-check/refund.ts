@@ -1,3 +1,4 @@
+import { hasStarted } from "@/lib/format-event-date";
 import { getStripe } from "@/lib/stripe/client";
 import { createServiceClient } from "@/lib/supabase/server";
 import { FEE_FIXED_CENTS, FEE_PERCENT } from "@/lib/stripe/giving";
@@ -81,7 +82,7 @@ export async function refundAfterAdverseAction(
 
     // A camp that has already happened is not refundable on these grounds. They attended;
     // the adverse action affects future participation.
-    if (ev?.date_start && new Date(ev.date_start) < new Date()) {
+    if (ev?.date_start && hasStarted(ev.date_start)) {
       results.push({
         refunded: false,
         reason: `${where} has already taken place, so it is not refunded.`,

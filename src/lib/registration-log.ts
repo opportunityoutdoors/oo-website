@@ -25,7 +25,8 @@ export type EventKind =
   | "panel_decision"
   | "matched"
   | "packet_sent"
-  | "attended";
+  | "attended"
+  | "registration_reminder";
 
 export type LogInput = {
   registrationId: string;

@@ -1,3 +1,5 @@
+import { ageOnToday } from "@/lib/format-event-date";
+
 // Who needs a background check, and is the one they have still good.
 //
 // Separate from any provider. This file answers questions about a person; provider.ts deals
@@ -64,17 +66,9 @@ export type Eligibility =
 /** Whole years old today, or null when the date of birth is unknown or unparseable. */
 export function ageInYears(dateOfBirth: string | null, asOf: Date): number | null {
   if (!dateOfBirth) return null;
-  const dob = new Date(dateOfBirth + "T00:00:00Z");
-  if (Number.isNaN(dob.getTime())) return null;
-
-  // Compared in UTC throughout. Local-time arithmetic makes a birthday land a day early or
-  // late depending on the server's zone, which around a birthday flips adult and minor.
-  let age = asOf.getUTCFullYear() - dob.getUTCFullYear();
-  const monthDiff = asOf.getUTCMonth() - dob.getUTCMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && asOf.getUTCDate() < dob.getUTCDate())) {
-    age -= 1;
-  }
-  return age;
+  // The birth date is read as written and today is the Eastern day. Server-zone arithmetic
+  // made a birthday land a day early or late, which around a birthday flips adult and minor.
+  return ageOnToday(dateOfBirth, asOf);
 }
 
 /**

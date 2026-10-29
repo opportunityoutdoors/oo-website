@@ -1,3 +1,4 @@
+import { hasStarted } from "@/lib/format-event-date";
 import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { checkLinkFor } from "./check-link";
@@ -40,7 +41,7 @@ export async function sendBackgroundCheckInvite(
     .eq("payment_status", "paid");
   const upcoming = (regs ?? [])
     .map((r) => ({ token: r.token as string | null, ev: (Array.isArray(r.events) ? r.events[0] : r.events) as Ev | null }))
-    .filter((x): x is { token: string | null; ev: Ev } => !!x.ev && (!x.ev.date_start || new Date(x.ev.date_start) >= new Date()))
+    .filter((x): x is { token: string | null; ev: Ev } => !!x.ev && (!x.ev.date_start || !hasStarted(x.ev.date_start)))
     .sort((a, b) => Date.parse(a.ev.date_start ?? "") - Date.parse(b.ev.date_start ?? ""));
   const eventTitle = upcoming[0]?.ev.title ?? "camp";
   const link = checkLinkFor(upcoming[0]?.token, checkUrl);

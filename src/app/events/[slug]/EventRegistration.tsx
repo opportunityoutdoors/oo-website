@@ -6,7 +6,7 @@ import FormField from "@/components/forms/FormField";
 import SurveyQuestions, { EMPTY_ANSWERS } from "@/components/forms/SurveyQuestions";
 import { US_STATES } from "@/lib/constants/us-states";
 import type { SurveyAnswers } from "@/lib/surveys/questions";
-import { formatMeetingTime, formatEventDay } from "@/lib/format-event-date";
+import { formatMeetingTime, formatEventDay, hasStarted, isOver } from "@/lib/format-event-date";
 
 interface EventRegistrationProps {
   event: {
@@ -44,7 +44,7 @@ export default function EventRegistration({ event }: EventRegistrationProps) {
   const router = useRouter();
   const [submitStatus, setSubmitStatus] = useState<"idle" | "loading" | "error">("idle");
   const isCamp = event.eventType === "hunt-camp" || event.eventType === "fish-camp";
-  const now = new Date();
+  // Days are compared in Eastern: a close date of Nov 6 means open through Nov 6 there.
 
   // Determine what to show based on event type + dates + status
   if (event.status === "sold-out") {
@@ -72,7 +72,7 @@ export default function EventRegistration({ event }: EventRegistrationProps) {
 
   // Camp waitlist logic
   if (isCamp) {
-    if (event.waitlistOpens && new Date(event.waitlistOpens) > now) {
+    if (event.waitlistOpens && !hasStarted(event.waitlistOpens)) {
       return (
         <div className="rounded-lg border border-gold/30 bg-gold/5 p-6 text-center">
           <p className="text-lg font-bold text-near-black">
@@ -92,7 +92,7 @@ export default function EventRegistration({ event }: EventRegistrationProps) {
 
     if (
       event.waitlistCloses &&
-      new Date(event.waitlistCloses) < now &&
+      isOver(event.waitlistCloses) &&
       event.status !== "registration-open"
     ) {
       return (
@@ -126,7 +126,7 @@ export default function EventRegistration({ event }: EventRegistrationProps) {
   }
 
   // Community/Workshop registration logic
-  if (event.registrationOpens && new Date(event.registrationOpens) > now) {
+  if (event.registrationOpens && !hasStarted(event.registrationOpens)) {
     return (
       <div className="rounded-lg border border-gold/30 bg-gold/5 p-6 text-center">
         <p className="text-lg font-bold text-near-black">
@@ -141,7 +141,7 @@ export default function EventRegistration({ event }: EventRegistrationProps) {
     );
   }
 
-  if (event.registrationCloses && new Date(event.registrationCloses) < now) {
+  if (event.registrationCloses && isOver(event.registrationCloses)) {
     return (
       <div className="rounded-lg border border-near-black/10 bg-white p-6 text-center">
         <p className="text-lg font-bold text-near-black">

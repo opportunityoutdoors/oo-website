@@ -1,3 +1,5 @@
+import { ageOnToday } from "@/lib/format-event-date";
+
 // Stops a minor from signing up as the adult on a camp waitlist.
 //
 // On 2026-09-23 a 15-year-old entered himself as the adult, with his own email, and then
@@ -14,15 +16,12 @@ export function ageOn(dob: string, today: Date): number | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dob.trim());
   if (!m) return null;
   const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  // Rejects a day the month does not have, like February 30.
   const born = new Date(Date.UTC(y, mo - 1, d));
   if (born.getUTCMonth() !== mo - 1 || born.getUTCDate() !== d) return null;
 
-  let age = today.getUTCFullYear() - y;
-  const beforeBirthday =
-    today.getUTCMonth() < mo - 1 ||
-    (today.getUTCMonth() === mo - 1 && today.getUTCDate() < d);
-  if (beforeBirthday) age -= 1;
-  return age;
+  // Today is the Eastern day, so a birthday starts at midnight in North Carolina.
+  return ageOnToday(dob, today);
 }
 
 const sameName = (a: string, b: string) =>

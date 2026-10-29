@@ -1,10 +1,12 @@
 # Status
 
-**Last worked on:** 2026-10-26. Code changed and pushed to main 2026-10-26.
+**Last worked on:** 2026-10-29. Code changed and pushed to main 2026-10-29.
 **Status:** Active
 
 ## Done recently
 
+- 2026-10-29, pushed: automatic registration reminders with "I Can't Make It". First Deer
+  Camp send Oct 30, final Nov 4. All day logic in Eastern. Migration 042 applied.
 - 2026-10-26, pushed: Ready means signed, paid, and cleared. Board members get a welcome
   packet, Staff with no match section. Background check emails link through our own domain.
 - 2026-10-26, pushed: the register page shows Deer Camp as Nov 20 to 22, not Nov 19. All
@@ -16,7 +18,6 @@
   camp calendar event.
 - 2026-10-22, pushed: one shared, all-day calendar event per camp, Fri to Sun for Deer Camp.
   Migration 040 applied. The 4 earlier registrants are on it; John deletes their old events.
-- 2026-10-22, pushed: board members join and leave the camp event with their Board status.
 - 2026-10-22, pushed: a double-click no longer moves, emails, or re-tokens anyone twice.
 - 2026-10-22, pushed: Turn Away as "Denied at review" sends the denial email.
 

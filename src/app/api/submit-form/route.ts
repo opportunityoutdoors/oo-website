@@ -14,7 +14,7 @@ import {
   validateSurveyAnswers,
   type SurveyAnswers,
 } from "@/lib/surveys/questions";
-import { formatMeetingTime } from "@/lib/format-event-date";
+import { formatMeetingTime, formatEventDay } from "@/lib/format-event-date";
 import { ADULT_AGE, ageOn, refuseWaitlistPeople } from "@/lib/minor-guard";
 import { escapeLike, findContactByEmail } from "@/lib/contacts/find";
 import { confirmationUrl } from "@/lib/email-confirmation";
@@ -499,12 +499,11 @@ async function sendEventRegistrationConfirmation(
 
   const eventTitle = event?.title || eventName;
   const eventDate = event?.date_start
-    ? new Date(event.date_start).toLocaleDateString("en-US", {
+    ? formatEventDay(event.date_start, {
         weekday: "long",
         month: "long",
         day: "numeric",
         year: "numeric",
-        timeZone: "UTC",
       })
     : null;
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.opportunityoutdoors.org";

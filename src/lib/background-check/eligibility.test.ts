@@ -43,10 +43,15 @@ describe("ageInYears", () => {
 
   // Local-time arithmetic makes a birthday land a day early or late depending on the
   // server's zone, and around a birthday that flips adult and minor.
-  it("treats the birthday itself as the day the age changes, in UTC", () => {
-    const eighteenToday = new Date("2026-08-08T00:00:00Z");
+  // Decided 2026-10-29: days are Eastern. The birthday starts at midnight in North Carolina,
+  // not at midnight UTC, which is 8 PM the evening before there.
+  it("treats the birthday itself as the day the age changes, in Eastern", () => {
+    const eighteenToday = new Date("2026-08-08T16:00:00Z"); // noon Eastern on the birthday
     expect(ageInYears("2008-08-08", eighteenToday)).toBe(18);
     expect(ageInYears("2008-08-09", eighteenToday)).toBe(17);
+
+    const eveningBefore = new Date("2026-08-08T03:00:00Z"); // 11 PM Eastern on August 7
+    expect(ageInYears("2008-08-08", eveningBefore)).toBe(17);
   });
 });
 

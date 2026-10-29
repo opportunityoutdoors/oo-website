@@ -66,3 +66,6 @@ verifying.
 - 2026-10-26. Board members going to camp as mentors get the welcome packet with their mentee assignments, revising 2026-10-16. Staff still get none.
 - 2026-10-26. Background check emails link to `/background-check?token=` on our domain, which forwards to VolunteerBadge, so the link matches the sending domain.
 - 2026-10-26. Board members going as Staff get the welcome packet too, with no match section and the mentor perks. Every board member at camp now gets one.
+- 2026-10-29. Nothing is displayed or calculated in UTC. "Today" is the Eastern day, date-only values are read as the day written, and timestamps print in Eastern, all through `src/lib/format-event-date.ts`.
+- 2026-10-29. Camp registration closes two weeks before the start date unless Sanity sets a close date, so shirts and prep have time. Reminders go 7 days and 2 days before the close.
+- 2026-10-29. The registration reminder carries "I Can't Make It". It confirms on a page before acting, then moves the person to Dropped out ("Told us they cannot make it") and emails info@.

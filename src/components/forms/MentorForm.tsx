@@ -1,4 +1,5 @@
 "use client";
+import { ageOnToday } from "@/lib/format-event-date";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -44,14 +45,8 @@ const howHeardOptions = [
 ];
 
 function calculateAge(dob: string): number {
-  const birth = new Date(dob);
-  const today = new Date();
-  // The birth date is date-only, stored as midnight UTC: read it in UTC, or in North Carolina
-  // it is the day before. Today is the visitor's own day.
-  let age = today.getFullYear() - birth.getUTCFullYear();
-  const m = today.getMonth() - birth.getUTCMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getUTCDate())) age--;
-  return age;
+  // The birth date as written, today as the Eastern day.
+  return ageOnToday(dob) ?? 0;
 }
 
 export default function MentorForm() {

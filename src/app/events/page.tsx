@@ -1,3 +1,4 @@
+import { addDays, dayOf, easternToday, isOver } from "@/lib/format-event-date";
 import type { Metadata } from "next";
 import Image from "next/image";
 import PageHero from "@/components/ui/PageHero";
@@ -45,20 +46,19 @@ const PAST_WINDOW_MONTHS = 6;
  * were still coming. The calendar is the one thing that cannot be forgotten to update.
  */
 function splitByDate(events: Event[]) {
-  const now = Date.now();
-  const cutoff = new Date();
-  cutoff.setMonth(cutoff.getMonth() - PAST_WINDOW_MONTHS);
+  // Days in Eastern: an event stays upcoming through its last day there.
+  const cutoff = addDays(easternToday(), -PAST_WINDOW_MONTHS * 30);
 
   const upcoming: Event[] = [];
   const past: Event[] = [];
 
   for (const event of events) {
     // Multi-day events count as upcoming until their last day is over.
-    const endsAt = new Date(event.endDate || event.date).getTime();
-    if (Number.isNaN(endsAt)) continue;
+    const last = event.endDate || event.date;
+    if (!last || Number.isNaN(Date.parse(last))) continue;
 
-    if (endsAt >= now) upcoming.push(event);
-    else if (endsAt >= cutoff.getTime()) past.push(event);
+    if (!isOver(last)) upcoming.push(event);
+    else if (dayOf(last) >= cutoff) past.push(event);
   }
 
   upcoming.sort((a, b) => +new Date(a.date) - +new Date(b.date));

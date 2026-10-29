@@ -77,14 +77,25 @@ export function CalloutLine({ children }: { children: React.ReactNode }) {
 }
 
 /** Primary green call-to-action button. */
-export function BrandButton({ href, children }: { href: string; children: React.ReactNode }) {
+/** `outline` is the quieter second choice under a main button, like "I Can't Make It". */
+export function BrandButton({
+  href,
+  children,
+  variant = "solid",
+}: {
+  href: string;
+  children: React.ReactNode;
+  variant?: "solid" | "outline";
+}) {
+  const outline = variant === "outline";
   return (
     <Section style={{ textAlign: "center", margin: "8px 0 24px" }}>
       <Button
         href={href}
         style={{
-          backgroundColor: colors.darkGreen,
-          color: colors.white,
+          backgroundColor: outline ? colors.white : colors.darkGreen,
+          color: outline ? colors.darkGreen : colors.white,
+          border: `2px solid ${colors.darkGreen}`,
           fontFamily,
           fontSize: "15px",
           fontWeight: 600,

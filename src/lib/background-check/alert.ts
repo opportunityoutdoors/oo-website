@@ -1,3 +1,4 @@
+import { hasStarted } from "@/lib/format-event-date";
 import { createServiceClient } from "@/lib/supabase/server";
 import { NOTIFICATIONS_FROM, REPLY_TO } from "@/lib/email/from";
 import { describeCheck } from "./display";
@@ -50,7 +51,7 @@ export async function sendBackgroundCheckAlerts(): Promise<{
 
     // Only alert on events that have not already happened. A camp last spring with an
     // unfinished check is history, not a task.
-    if (ev?.date_start && new Date(ev.date_start) < new Date()) continue;
+    if (ev?.date_start && hasStarted(ev.date_start)) continue;
 
     const d = describeCheck({
       dateOfBirth: c.date_of_birth,

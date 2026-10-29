@@ -280,7 +280,7 @@ export default async function ContactDetailPage({
                   {contact.background_check_status}
                   {contact.background_check_expires_at &&
                     contact.background_check_status === "clear" &&
-                    ` until ${new Date(contact.background_check_expires_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}`}
+                    ` until ${formatEastern(contact.background_check_expires_at, { month: "short", day: "numeric", year: "numeric" })}`}
                 </span>
               </div>
 

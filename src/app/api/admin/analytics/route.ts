@@ -1,4 +1,4 @@
-import { easternYear } from "@/lib/format-event-date";
+import { easternYear, isOver, dayOf } from "@/lib/format-event-date";
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { apiRequireMember } from "@/lib/admin/auth";
@@ -78,7 +78,6 @@ export async function GET(request: NextRequest) {
   const impact = computeImpact(responses, allRegs, mentorRegIds);
 
   // Per-event breakdown, most recent first.
-  const now = Date.now();
   const byEvent = events.map((e) => {
     const eventRegs = regs.filter((r) => r.event_id === e.id);
     const attended = eventRegs.filter((r) => r.status === "attended");
@@ -94,7 +93,7 @@ export async function GET(request: NextRequest) {
       eventType: e.event_type,
       isCamp: isCamp(e.event_type),
       dateStart: e.date_start,
-      hasHappened: Boolean(ended && new Date(ended).getTime() < now),
+      hasHappened: Boolean(ended && isOver(ended)),
       registered: eventRegs.filter((r) =>
         ["registered", "attended"].includes(r.status)
       ).length,
@@ -119,7 +118,7 @@ export async function GET(request: NextRequest) {
   const years = [
     ...new Set(
       (yearsRaw || [])
-        .map((r) => (r.date_start ? new Date(r.date_start).getUTCFullYear() : null))
+        .map((r) => (r.date_start ? Number(dayOf(r.date_start).slice(0, 4)) : null))
         .filter((y): y is number => y !== null)
     ),
   ].sort((a, b) => b - a);

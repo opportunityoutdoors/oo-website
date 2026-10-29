@@ -133,7 +133,8 @@ export default {
       title: "Registration Closes",
       type: "date",
       group: "dates",
-      description: "Hard deadline for registration. Leave blank = open until event start date.",
+      description:
+        "Last day to register. For camps, leave blank = two weeks before the start date. Reminder emails count down to it.",
     },
 
     // ═══════════════════════════════════
