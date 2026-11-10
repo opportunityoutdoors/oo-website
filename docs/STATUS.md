@@ -5,6 +5,8 @@
 
 ## Done recently
 
+- 2026-11-10: Deer Camp welcome packets sent to all 13, delivered. Each of the 8 mentees got
+  a different OnX code with redeem steps. Board mentors got their mentee lists.
 - 2026-11-10, pushed: a Welcome Packet Note field in Sanity, and mentors must give a phone.
   John's own contact has no phone, so mentees will not see one for him at Deer Camp.
 - 2026-11-10, pushed: a unique OnX code for each mentee in the welcome packet. Paste the
@@ -19,13 +21,10 @@
 - 2026-10-26: production redeployed for Stripe's Node.js alert. The live key was not rolled.
 - 2026-10-22, pushed: one confirmation email after payment, carrying the background check link.
 - 2026-10-22, pushed: VolunteerBadge results reach the site, and we send the check invite.
-- 2026-10-22, pushed: turning a camper away or marking them dropped out takes them off the
-  camp calendar event.
 
 ## In progress
 
-- Deer Camp packets: John adds the note, OnX codes and perk line on the event in Studio
-  (Camp Settings tab), I check the sync, then John sends.
+- Nothing open in code.
 
 ## Next up
 
