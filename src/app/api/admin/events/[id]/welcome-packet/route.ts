@@ -7,7 +7,13 @@ import { apiRequireMember } from "@/lib/admin/auth";
 import { evaluateEligibility, mayParticipate } from "@/lib/background-check/eligibility";
 import { STAFF_ROLE } from "@/lib/camp-pipeline";
 import { logRegistrationEvent } from "@/lib/registration-log";
-import { claimPerkCodes, getsPerkCode, perkPools, perkShortfall } from "@/lib/perk-codes";
+import {
+  claimPerkCodes,
+  getsPerkCode,
+  perkPools,
+  perkShortfall,
+  refreshPerkCodes,
+} from "@/lib/perk-codes";
 
 /**
  * Why someone was held back, in words an admin can act on.
@@ -206,6 +212,8 @@ export async function POST(
 
   // Unique perk codes (lib/perk-codes.ts). Refuse the whole send when a pool is short, so no
   // mentee gets a packet without their code and the admin adds codes before anyone is sent.
+  // Codes are entered in Sanity. Read them fresh, so codes published a minute ago count.
+  await refreshPerkCodes(supabase, eventId, event.sanity_id);
   const pools = await perkPools(supabase, eventId);
   const codeTakers = registrations.filter(getsPerkCode).map((r) => r.id);
   const short = await perkShortfall(supabase, eventId, pools, codeTakers);

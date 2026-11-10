@@ -102,7 +102,8 @@ export const adminAllEventsQuery = `*[_type == "event"] | order(date desc) {
   campLocations,
   mentorPerks,
   menteePerks,
-  welcomePacketNote
+  welcomePacketNote,
+  perkCodes
 }`;
 
 // ─── Team Members ───

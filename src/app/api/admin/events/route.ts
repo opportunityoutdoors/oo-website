@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { syncPerkCodes, type SanityPerkCodes } from "@/lib/perk-codes";
 import { client, writeClient } from "@/lib/sanity";
 import { adminAllEventsQuery } from "@/lib/queries";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -41,6 +42,7 @@ interface SanityEvent {
   mentorPerks: Array<{ title: string; link?: string }> | null;
   menteePerks: Array<{ title: string; link?: string }> | null;
   welcomePacketNote: string | null;
+  perkCodes: SanityPerkCodes;
 }
 
 export async function GET() {
@@ -96,7 +98,7 @@ export async function GET() {
       }
     }
 
-    await supabase.from("events").upsert(
+    const { data: synced } = await supabase.from("events").upsert(
       {
         sanity_id: se._id,
         title: se.title,
@@ -119,7 +121,15 @@ export async function GET() {
         welcome_packet_note: se.welcomePacketNote?.trim() || null,
       },
       { onConflict: "sanity_id" }
-    );
+    ).select("id").single();
+
+    if (synced) {
+      try {
+        await syncPerkCodes(supabase, synced.id, se.perkCodes ?? null);
+      } catch (codeErr) {
+        console.error(`Perk code sync for ${se.title} failed:`, codeErr);
+      }
+    }
   }
 
   // Now fetch merged data from Supabase (which has everything synced)

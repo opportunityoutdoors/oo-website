@@ -117,7 +117,7 @@ async function updateEventInSupabase(sanityId: string) {
       `*[_type == "event" && _id == $id][0] {
         _id, title, slug, eventType, status, date, endDate, location, cost,
         registrationFee, registrationCloses, spotsTotal, meetingSlots, campLocations,
-        mentorPerks, menteePerks, welcomePacketNote
+        mentorPerks, menteePerks, welcomePacketNote, perkCodes
       }`,
       { id: sanityId }
     );
@@ -217,6 +217,14 @@ async function updateEventInSupabase(sanityId: string) {
         welcome_packet_note: event.welcomePacketNote?.trim() || null,
       })
       .eq("sanity_id", sanityId);
+
+    // Mentee perk codes are entered in Sanity and held in Supabase (lib/perk-codes.ts).
+    try {
+      const { syncPerkCodes } = await import("@/lib/perk-codes");
+      await syncPerkCodes(supabase, existing.id, event.perkCodes ?? null);
+    } catch (codeErr) {
+      console.error("Perk code sync failed:", codeErr);
+    }
 
     // The camp's shared calendar event follows the camp's dates and title, so registrants'
     // calendars move with an edit here. Never fatal: the event row is already updated.

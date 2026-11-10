@@ -386,6 +386,43 @@ export default {
       ],
     },
     {
+      name: "perkCodes",
+      title: "Mentee Perk Codes (Private)",
+      type: "array",
+      group: "camp",
+      description:
+        "Single-use codes, a different one for each mentee, such as OnX promo codes. Each adult mentee gets one from each list in their welcome packet, and keeps it if the packet is sent again. Removing a code here takes it back only if nobody has it yet.",
+      of: [
+        {
+          type: "object",
+          fields: [
+            {
+              name: "label",
+              title: "Name",
+              type: "string",
+              initialValue: "OnX",
+              description: "Shows in the packet as 'Your OnX code'.",
+              validation: (rule: { required: () => unknown }) => rule.required(),
+            },
+            {
+              name: "codes",
+              title: "Codes",
+              type: "text",
+              rows: 10,
+              description: "One code per line.",
+            },
+          ],
+          preview: {
+            select: { title: "label", codes: "codes" },
+            prepare({ title, codes }: { title?: string; codes?: string }) {
+              const n = (codes || "").split(/[\s,;]+/).filter(Boolean).length;
+              return { title: title || "Codes", subtitle: `${n} code${n === 1 ? "" : "s"}` };
+            },
+          },
+        },
+      ],
+    },
+    {
       name: "menteePerks",
       title: "Mentee Perks",
       type: "array",

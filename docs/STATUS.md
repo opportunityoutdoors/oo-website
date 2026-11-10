@@ -21,13 +21,12 @@
 - 2026-10-22, pushed: VolunteerBadge results reach the site, and we send the check invite.
 - 2026-10-22, pushed: turning a camper away or marking them dropped out takes them off the
   camp calendar event.
-- 2026-10-22, pushed: one shared, all-day calendar event per camp, Fri to Sun for Deer Camp.
-  Migration 040 applied. The 4 earlier registrants are on it; John deletes their old events.
 
 ## In progress
 
-- Deer Camp welcome packets: add John's phone, write the note in Sanity, load 8 OnX codes
-  and a Mentee Perk line, then send. Check that the note reached Supabase first.
+- Sanity dataset is public, so camp locations were readable by anyone. Site now reads with
+  a token (pushed). Waiting on John to switch the dataset to Private, then I make sure.
+- Deer Camp packets: note and OnX codes in Sanity, then I check the sync, then send.
 
 ## Next up
 

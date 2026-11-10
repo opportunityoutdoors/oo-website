@@ -73,3 +73,5 @@ verifying.
 - 2026-11-10. The welcome packet send refuses to run while a code pool has fewer free codes than mentees need, so no mentee gets a packet without their code.
 - 2026-11-10. Mentors must have a phone on file, because mentees see it in the welcome packet. Enforced on the admin Add Participant form and at registration for a mentor with none on file. Mentees and Staff stay optional.
 - 2026-11-10. The welcome packet carries one optional note from Sanity (Welcome Packet Note), the same for mentors, mentees and Staff, shown under the opening line.
+- 2026-11-10. The Sanity dataset becomes private. It holds camp locations and perk codes, and a public dataset let anyone read them. The site reads Sanity with a server-only token (`SANITY_API_READ_TOKEN`, falling back to `SANITY_API_TOKEN`). Supersedes the 2026-10-14 workaround of keeping private data out of Sanity.
+- 2026-11-10. Mentee perk codes are entered in Sanity with the rest of the camp, replacing the admin paste box. Supabase still records who holds which code.

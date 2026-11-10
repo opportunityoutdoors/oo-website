@@ -213,6 +213,11 @@ Sources this was assembled from, which stay as the detailed reference:
 
 ## Phase 5 — Matching and welcome
 
+- [ ] Make the Sanity dataset private. Found 2026-11-10: dataset "production" is public, so
+      anyone could read the Camp Locations field with no login. The site now reads with a
+      server token (pushed 2026-11-10). Left: John switches the dataset to Private in
+      sanity.io/manage, then the anonymous query must fail and the public pages still load.
+      Placed first: it must land before the Deer Camp packets go out.
 - [x] Auto-match on interest overlap, max 3 mentees per mentor, guardian pairs kept together
 - [x] Manual match and unmatch in the admin
 - [x] Role-specific welcome packet email with camp locations and perks, gated on screening
@@ -232,6 +237,11 @@ Sources this was assembled from, which stay as the detailed reference:
       Participant form and the register form, for a mentor with none on file, now do too.
       The admin form no longer blanks a phone on file when its box is left empty. Proven on
       the fixture: both refusals fired, and the register form showed the phone field.
+- [x] Mentee perk codes are entered in Sanity (Camp tab, Mentee Perk Codes), not on the admin
+      page. Done 2026-11-10, asked for the same day. Synced to Supabase on publish, on the
+      admin event list, on the admin code bar, and at packet send. A code removed in Sanity
+      goes only while nobody holds it. Proven on the fixture by script: add 3, claim 1,
+      remove 2 in Sanity, and the held code stayed. The admin bar is read-only.
 
 ## Phase 6 — Camp admin board
 
