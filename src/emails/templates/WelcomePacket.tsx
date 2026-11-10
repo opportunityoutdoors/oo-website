@@ -27,6 +27,8 @@ export interface WelcomePacketProps {
   mentor?: Person | null;
   campLocations: CampLocationView[];
   perks?: Array<{ title: string; link?: string }>;
+  /** Codes unique to this person, such as an OnX promo code (lib/perk-codes.ts). */
+  codes?: Array<{ label: string; code: string }>;
   eventUrl: string;
 }
 
@@ -57,6 +59,7 @@ export function WelcomePacket({
   mentor,
   campLocations,
   perks = [],
+  codes = [],
   eventUrl,
 }: WelcomePacketProps) {
   return (
@@ -188,7 +191,7 @@ export function WelcomePacket({
         </Section>
       ))}
 
-      {perks.length > 0 ? (
+      {perks.length > 0 || codes.length > 0 ? (
         <>
           <Hr style={divider} />
           <P style={{ fontWeight: 600 }}>Your Perks</P>
@@ -213,7 +216,19 @@ export function WelcomePacket({
                 )}
               </li>
             ))}
+            {codes.map((c) => (
+              <li key={c.label}>
+                Your {c.label} code: <strong>{c.code}</strong>
+              </li>
+            ))}
           </ul>
+          {codes.length > 0 ? (
+            <Text style={muted}>
+              {codes.length === 1
+                ? "This code is yours alone and works once. Please don't share it."
+                : "These codes are yours alone and work once. Please don't share them."}
+            </Text>
+          ) : null}
         </>
       ) : null}
 

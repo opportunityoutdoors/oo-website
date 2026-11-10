@@ -7,6 +7,7 @@ import { apiRequireMember } from "@/lib/admin/auth";
 import { evaluateEligibility, mayParticipate } from "@/lib/background-check/eligibility";
 import { STAFF_ROLE } from "@/lib/camp-pipeline";
 import { logRegistrationEvent } from "@/lib/registration-log";
+import { claimPerkCodes, getsPerkCode, perkPools, perkShortfall } from "@/lib/perk-codes";
 
 /**
  * Why someone was held back, in words an admin can act on.
@@ -203,6 +204,29 @@ export async function POST(
     );
   }
 
+  // Unique perk codes (lib/perk-codes.ts). Refuse the whole send when a pool is short, so no
+  // mentee gets a packet without their code and the admin adds codes before anyone is sent.
+  const pools = await perkPools(supabase, eventId);
+  const codeTakers = registrations.filter(getsPerkCode).map((r) => r.id);
+  const short = await perkShortfall(supabase, eventId, pools, codeTakers);
+  if (short.length) {
+    return NextResponse.json(
+      {
+        error: short
+          .map(
+            (s) =>
+              `${s.need} mentee${s.need === 1 ? " needs" : "s need"} a ${s.label} code, and ${s.free} ` +
+              `${s.free === 1 ? "is" : "are"} left. Add more ${s.label} codes, then send again.`
+          )
+          .join("\n"),
+        sent: 0,
+        withheld,
+      },
+      { status: 400 }
+    );
+  }
+  const noCode: string[] = [];
+
   // Fetch all registrations for this event to resolve mentor/mentee names
   // and guardian relationships.
   const { data: allRegs } = await supabase
@@ -309,6 +333,21 @@ export async function POST(
         ? (event.mentor_perks || [])
         : (event.mentee_perks || []);
 
+    // The mentee's own codes. Two sends at once could still empty a pool after the check
+    // above. Then this person waits for the next send rather than getting a packet without.
+    let codes: Array<{ label: string; code: string }> = [];
+    if (getsPerkCode(reg) && pools.length) {
+      const claimed = await claimPerkCodes(supabase, eventId, reg.id, pools);
+      if (claimed.missing.length) {
+        noCode.push(
+          `${[contact.first_name, contact.last_name].filter(Boolean).join(" ") || contact.email}: ` +
+            `no ${claimed.missing.join(", ")} code left`
+        );
+        continue;
+      }
+      codes = claimed.codes;
+    }
+
     // Short date format: "11/20/26-11/22/26", the days as stored.
     const eventDateStr = formatEventDateRange(event.date_start, event.date_end, "compact");
 
@@ -327,6 +366,7 @@ export async function POST(
         mentor,
         campLocations: campLocationViews,
         perks,
+        codes,
         eventUrl: `${baseUrl}/events/${event.slug}`,
       }),
     });
@@ -351,5 +391,5 @@ export async function POST(
 
   // withheld travels with the success response, not only the failure one. "Sent 8" for a
   // camp of 10 looks like success unless the other two are named.
-  return NextResponse.json({ sent: sentCount, withheld });
+  return NextResponse.json({ sent: sentCount, withheld, noCode });
 }

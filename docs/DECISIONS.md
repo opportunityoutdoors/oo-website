@@ -69,3 +69,5 @@ verifying.
 - 2026-10-29. Nothing is displayed or calculated in UTC. "Today" is the Eastern day, date-only values are read as the day written, and timestamps print in Eastern, all through `src/lib/format-event-date.ts`.
 - 2026-10-29. Camp registration closes two weeks before the start date unless Sanity sets a close date, so shirts and prep have time. Reminders go 7 days and 2 days before the close.
 - 2026-10-29. The registration reminder carries "I Can't Make It". It confirms on a page before acting, then moves the person to Dropped out ("Told us they cannot make it") and emails info@.
+- 2026-11-10. Unique perk codes live in Supabase (`perk_codes`), not Sanity, because the codes are worth money and Sanity content is public. Each adult mentee gets one per pool at packet send and keeps it on a re-send. Linked minors get none until a camp has one.
+- 2026-11-10. The welcome packet send refuses to run while a code pool has fewer free codes than mentees need, so no mentee gets a packet without their code.

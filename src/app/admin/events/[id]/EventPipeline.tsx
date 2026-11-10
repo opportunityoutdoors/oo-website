@@ -6,6 +6,7 @@ import MatchingTab from "./MatchingTab";
 import StatsTab from "./StatsTab";
 import ReviewModal from "./ReviewModal";
 import ReadinessPanel from "./ReadinessPanel";
+import PerkCodesPanel from "./PerkCodesPanel";
 import CampBoard from "./CampBoard";
 import ExitDialog from "./ExitDialog";
 import BoardPanel from "./BoardPanel";
@@ -488,6 +489,10 @@ export default function EventPipeline({ eventId }: { eventId: string }) {
               registrations={event.registrations}
               onChanged={fetchEvent}
             />
+
+            {!isOver(event.date_end || event.date_start || "") && (
+              <PerkCodesPanel eventId={eventId} />
+            )}
 
             {/* The board is the navigation now. Columns are where people ARE, so every one
                 is openable whether or not anything is wrong, which is the thing the stage

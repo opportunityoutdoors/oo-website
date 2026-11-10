@@ -1,10 +1,13 @@
 # Status
 
-**Last worked on:** 2026-10-29. Code changed and pushed to main 2026-10-29.
+**Last worked on:** 2026-11-10. Code changed and pushed to main 2026-11-10.
 **Status:** Active
 
 ## Done recently
 
+- 2026-11-10, pushed: a unique OnX code for each mentee in the welcome packet. Paste the
+  batch on the camp page before sending. Deer Camp needs 8. Registration reminders ran:
+  7 first on Oct 30, 5 final on Nov 4.
 - 2026-10-29, pushed: automatic registration reminders with "I Can't Make It". First Deer
   Camp send Oct 30, final Nov 4. All day logic in Eastern. Migration 042 applied.
 - 2026-10-26, pushed: Ready means signed, paid, and cleared. Board members get a welcome
@@ -22,12 +25,7 @@
 
 ## In progress
 
-Resume point 2026-10-29. Stopped after shipping 112c186: registration reminders with
-"I Can't Make It", the two-week close default, and Eastern-only day logic. Nothing open in
-code. Next concrete step: on Oct 30 after 10:30 AM Eastern, check Resend for 7 Deer Camp
-reminders and Vercel logs for "Registration reminders: 7 first". Final send is Nov 4. Not yet
-seen live: the cron, a real "I Can't Make It" press, a board-member packet. Ruled out: a
-Sanity close date for Deer Camp, since the default gives Nov 6.
+- Deer Camp welcome packets: load 8 OnX codes and a Mentee Perk line, then send.
 
 ## Next up
 

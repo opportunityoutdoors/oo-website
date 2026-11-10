@@ -217,6 +217,12 @@ Sources this was assembled from, which stay as the detailed reference:
 - [x] Manual match and unmatch in the admin
 - [x] Role-specific welcome packet email with camp locations and perks, gated on screening
 - [x] Mentors are asked about a shirt rather than charged for one
+- [x] Unique OnX promo code for each mentee in the welcome packet. Done 2026-11-10, asked for
+      the same day: OnX gave Deer Camp single-use codes, one per mentee. An admin pastes the
+      batch on the camp page, each adult mentee claims one at packet send and keeps it on a
+      re-send, and the send refuses while a pool is short. Migration 043. Proven on the
+      fixture: a short pool refused the send with 0 packets out, then Ada's packet carried
+      her code and Bo's carried none.
 
 ## Phase 6 — Camp admin board
 
