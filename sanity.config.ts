@@ -24,9 +24,9 @@ export default defineConfig({
               .id("campPrivate")
               .title("Camp Private Details")
               .child(
+                // Every event, not only camps: a community event can have a private location.
                 S.documentTypeList("event")
                   .title("Camp Private Details")
-                  .filter('_type == "event" && eventType in ["hunt-camp", "fish-camp"]')
                   .child((eventId: string) =>
                     S.document()
                       .schemaType("campPrivate")
