@@ -79,3 +79,4 @@ verifying.
 - 2026-11-10. The site's Sanity client reads the published perspective only. A token also sees drafts, and API version 2024-01-01 returns them by default.
 - 2026-11-10. The Sanity history leak (old event revisions with coordinates) is deferred by John for other work. The recommended fix is a fresh dataset that replaces this one.
 - 2026-11-10. Redeem steps for perk codes are entered in Sanity beside the codes, one step per line, with {code} for the mentee's code, and mirrored to `events.perk_code_info`.
+- 2026-11-10. The separate private Sanity document is reverted. Camp locations, the packet note and perk codes are back on the event, publicly readable on the free plan, because one place to edit a camp matters more to John for now. He will look at a paid plan with a private dataset.

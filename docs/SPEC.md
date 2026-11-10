@@ -213,13 +213,12 @@ Sources this was assembled from, which stay as the detailed reference:
 
 ## Phase 5 — Matching and welcome
 
-- [ ] Close the Sanity history leak. Found 2026-11-10: dataset "production" is public, and
-      private datasets need a paid plan. Done the same day: locations, the packet note and
-      perk codes moved to "private.<event id>" documents, which anonymous reads and their
-      history cannot see. Anonymous query, CDN and export now return no locations. Left: the
-      anonymous history API still returns OLD revisions of the 3 event documents, with
-      coordinates. Fix by a paid plan, or a fresh dataset that replaces this one.
-      Deferred by John 2026-11-10 for other work. Recommended fix: the fresh dataset.
+- [ ] Make camp private details private in Sanity. Found 2026-11-10: dataset "production" is
+      public, so anyone can read Camp Locations and Mentee Perk Codes, and their history,
+      through the API with no login. Private datasets need a paid plan. A separate private
+      document fixed it on 2026-11-10, then was reverted the same day: two places to edit one
+      camp was worse. John will look at upgrading Sanity. Then: switch the dataset to
+      Private and make sure anonymous reads fail. The site already reads with a token.
 - [x] Auto-match on interest overlap, max 3 mentees per mentor, guardian pairs kept together
 - [x] Manual match and unmatch in the admin
 - [x] Role-specific welcome packet email with camp locations and perks, gated on screening

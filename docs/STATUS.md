@@ -24,13 +24,13 @@
 
 ## In progress
 
-- Deer Camp packets: John adds the note, OnX codes and perk line in Studio, I check the
-  sync, then John sends.
+- Deer Camp packets: John adds the note, OnX codes and perk line on the event in Studio
+  (Camp Settings tab), I check the sync, then John sends.
 
 ## Next up
 
-- Sanity history API still serves old event revisions with coordinates. Deferred by John
-  2026-11-10. Fix: fresh dataset, or a paid plan.
+- Sanity is public on the free plan, so camp locations and OnX codes on the event can be
+  read by anyone through the API. John will look at upgrading, then switch it to Private.
 - For the next camp: Meet links on the admin sync path, and a re-send after a meeting change.
 
 ## Blocked
