@@ -219,7 +219,7 @@ Sources this was assembled from, which stay as the detailed reference:
       history cannot see. Anonymous query, CDN and export now return no locations. Left: the
       anonymous history API still returns OLD revisions of the 3 event documents, with
       coordinates. Fix by a paid plan, or a fresh dataset that replaces this one.
-      Placed first: it must land before the Deer Camp packets go out.
+      Deferred by John 2026-11-10 for other work. Recommended fix: the fresh dataset.
 - [x] Auto-match on interest overlap, max 3 mentees per mentor, guardian pairs kept together
 - [x] Manual match and unmatch in the admin
 - [x] Role-specific welcome packet email with camp locations and perks, gated on screening

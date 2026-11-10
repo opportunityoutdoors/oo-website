@@ -24,12 +24,12 @@
 
 ## In progress
 
-- Sanity leak: locations now sit in private documents, and anonymous reads and exports show
-  none. The history API still serves old event revisions with coordinates. John decides.
 - Deer Camp packets: note and OnX codes go in Camp Private Details, then I check, then send.
 
 ## Next up
 
+- Sanity history API still serves old event revisions with coordinates. Deferred by John
+  2026-11-10. Fix: fresh dataset, or a paid plan.
 - For the next camp: Meet links on the admin sync path, and a re-send after a meeting change.
 
 ## Blocked

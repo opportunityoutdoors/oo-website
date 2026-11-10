@@ -77,3 +77,4 @@ verifying.
 - 2026-11-10. Mentee perk codes are entered in Sanity with the rest of the camp, replacing the admin paste box. Supabase still records who holds which code.
 - 2026-11-10. Private datasets need a paid Sanity plan, so private camp details live in a `campPrivate` document with ID `private.<event id>`. Sanity hides dotted IDs, and their history, from anonymous reads. Studio opens it from the Camp Private Details list. Supersedes the plan to make the dataset private.
 - 2026-11-10. The site's Sanity client reads the published perspective only. A token also sees drafts, and API version 2024-01-01 returns them by default.
+- 2026-11-10. The Sanity history leak (old event revisions with coordinates) is deferred by John for other work. The recommended fix is a fresh dataset that replaces this one.
