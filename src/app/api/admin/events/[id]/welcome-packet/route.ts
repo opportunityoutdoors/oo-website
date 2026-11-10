@@ -12,6 +12,8 @@ import {
   getsPerkCode,
   perkPools,
   perkShortfall,
+  redeemSteps,
+  type PerkCodeInfo,
 } from "@/lib/perk-codes";
 import { refreshCampPrivate } from "@/lib/camp-private";
 
@@ -345,7 +347,7 @@ export async function POST(
 
     // The mentee's own codes. Two sends at once could still empty a pool after the check
     // above. Then this person waits for the next send rather than getting a packet without.
-    let codes: Array<{ label: string; code: string }> = [];
+    let codes: Array<{ label: string; code: string; steps: string[] }> = [];
     if (getsPerkCode(reg) && pools.length) {
       const claimed = await claimPerkCodes(supabase, eventId, reg.id, pools);
       if (claimed.missing.length) {
@@ -355,7 +357,10 @@ export async function POST(
         );
         continue;
       }
-      codes = claimed.codes;
+      codes = claimed.codes.map((c) => ({
+        ...c,
+        steps: redeemSteps(event.perk_code_info as PerkCodeInfo, c.label, c.code),
+      }));
     }
 
     // Short date format: "11/20/26-11/22/26", the days as stored.

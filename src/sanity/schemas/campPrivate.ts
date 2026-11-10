@@ -68,6 +68,16 @@ export default {
               rows: 10,
               description: "One code per line.",
             },
+            {
+              name: "redeemSteps",
+              title: "How to Redeem",
+              type: "text",
+              rows: 4,
+              initialValue:
+                "Visit https://webmap.onxmaps.com/hunt/redeem/create-account\nCreate your account\nEnter your redemption code: {code}",
+              description:
+                "Shown under the code as numbered steps, one step per line. {code} becomes the mentee's own code. A web address becomes a link.",
+            },
           ],
           preview: {
             select: { title: "label", codes: "codes" },

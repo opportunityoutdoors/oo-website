@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { syncPerkCodes, type SanityPerkCodes } from "@/lib/perk-codes";
+import { perkCodeInfo, syncPerkCodes, type SanityPerkCodes } from "@/lib/perk-codes";
 import { client, writeClient } from "@/lib/sanity";
 import { adminAllEventsQuery } from "@/lib/queries";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -119,6 +119,7 @@ export async function GET() {
         mentor_perks: se.mentorPerks || [],
         mentee_perks: se.menteePerks || [],
         welcome_packet_note: se.welcomePacketNote?.trim() || null,
+        perk_code_info: perkCodeInfo(se.perkCodes),
       },
       { onConflict: "sanity_id" }
     ).select("id").single();

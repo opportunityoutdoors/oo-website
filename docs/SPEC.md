@@ -244,6 +244,10 @@ Sources this was assembled from, which stay as the detailed reference:
       admin event list, on the admin code bar, and at packet send. A code removed in Sanity
       goes only while nobody holds it. Proven on the fixture by script: add 3, claim 1,
       remove 2 in Sanity, and the held code stayed. The admin bar is read-only.
+- [x] Redeem steps under each code in the welcome packet. Done 2026-11-10, asked for the same
+      day with OnX's wording. Entered in Sanity next to the codes (How to Redeem), prefilled
+      for OnX, with {code} replaced by the mentee's code. Migration 045. Proven on the fixture:
+      the sent packet showed the code, 3 numbered steps, and a working redeem link.
 
 ## Phase 6 — Camp admin board
 

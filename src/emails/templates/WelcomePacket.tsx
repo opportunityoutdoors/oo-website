@@ -28,7 +28,7 @@ export interface WelcomePacketProps {
   campLocations: CampLocationView[];
   perks?: Array<{ title: string; link?: string }>;
   /** Codes unique to this person, such as an OnX promo code (lib/perk-codes.ts). */
-  codes?: Array<{ label: string; code: string }>;
+  codes?: Array<{ label: string; code: string; steps?: string[] }>;
   /** The camp's note from Sanity (Welcome Packet Note). Blank lines split paragraphs. */
   note?: string | null;
   eventUrl: string;
@@ -51,6 +51,19 @@ const muted: React.CSSProperties = {
 export function formatPhone(phone: string): string {
   const d = phone.replace(/\D/g, "").replace(/^1(?=\d{10}$)/, "");
   return d.length === 10 ? `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}` : phone;
+}
+
+/** A step's web addresses become links, so "Visit https://..." can be tapped. */
+function withLinks(text: string): React.ReactNode[] {
+  return text.split(/(https?:\/\/[^\s]+)/g).map((part, i) =>
+    /^https?:\/\//.test(part) ? (
+      <Link key={i} href={part} style={link}>
+        {part}
+      </Link>
+    ) : (
+      part
+    ),
+  );
 }
 
 function personLine(p: Person) {
@@ -217,33 +230,60 @@ export function WelcomePacket({
         <>
           <Hr style={divider} />
           <P style={{ fontWeight: 600 }}>Your Perks</P>
-          <ul
-            style={{
-              color: colors.nearBlack,
-              fontFamily,
-              fontSize: "15px",
-              lineHeight: "1.8",
-              paddingLeft: "20px",
-              margin: "0 0 16px",
-            }}
-          >
-            {perks.map((p, i) => (
-              <li key={i}>
-                {p.link ? (
-                  <Link href={p.link} style={link}>
-                    {p.title}
-                  </Link>
-                ) : (
-                  p.title
-                )}
-              </li>
-            ))}
-            {codes.map((c) => (
-              <li key={c.label}>
-                Your {c.label} code: <strong>{c.code}</strong>
-              </li>
-            ))}
-          </ul>
+          {perks.length > 0 ? (
+            <ul
+              style={{
+                color: colors.nearBlack,
+                fontFamily,
+                fontSize: "15px",
+                lineHeight: "1.8",
+                paddingLeft: "20px",
+                margin: "0 0 16px",
+              }}
+            >
+              {perks.map((p, i) => (
+                <li key={i}>
+                  {p.link ? (
+                    <Link href={p.link} style={link}>
+                      {p.title}
+                    </Link>
+                  ) : (
+                    p.title
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {/* Each code in its own box, with the steps to redeem it from Sanity. */}
+          {codes.map((c) => (
+            <Callout key={c.label}>
+              <CalloutLine>
+                Your {c.label} code:{" "}
+                <strong style={{ fontSize: "16px" }}>{c.code}</strong>
+              </CalloutLine>
+              {c.steps?.length ? (
+                <>
+                  <CalloutLine>
+                    <strong>To redeem:</strong>
+                  </CalloutLine>
+                  <ol
+                    style={{
+                      color: colors.nearBlack,
+                      fontFamily,
+                      fontSize: "14px",
+                      lineHeight: "1.7",
+                      paddingLeft: "20px",
+                      margin: "0",
+                    }}
+                  >
+                    {c.steps.map((step, i) => (
+                      <li key={i}>{withLinks(step)}</li>
+                    ))}
+                  </ol>
+                </>
+              ) : null}
+            </Callout>
+          ))}
           {codes.length > 0 ? (
             <Text style={muted}>
               {codes.length === 1
@@ -257,7 +297,8 @@ export function WelcomePacket({
       <Hr style={divider} />
 
       <P>
-        Check the event page for the full schedule, gear list, and other details:
+        Check the event page for the full schedule, gear list, and other
+        details:
       </P>
       <BrandButton href={eventUrl}>View Event Details</BrandButton>
 

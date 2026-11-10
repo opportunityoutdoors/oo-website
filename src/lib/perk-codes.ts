@@ -104,7 +104,32 @@ export async function claimPerkCodes(
 }
 
 /** The Sanity field (Mentee Perk Codes) as the GROQ queries return it. */
-export type SanityPerkCodes = Array<{ label?: string | null; codes?: string | null }> | null | undefined;
+export type SanityPerkCodes =
+  | Array<{ label?: string | null; codes?: string | null; redeemSteps?: string | null }>
+  | null
+  | undefined;
+
+/** How to redeem each list of codes, as mirrored to events.perk_code_info (migration 045). */
+export type PerkCodeInfo = Array<{ label: string; steps: string[] }>;
+
+/** The redeem steps Sanity holds for each list, one step per non-blank line. */
+export function perkCodeInfo(fromSanity: SanityPerkCodes): PerkCodeInfo {
+  return (fromSanity ?? [])
+    .map((pool) => ({
+      label: (pool.label ?? "").trim(),
+      steps: (pool.redeemSteps ?? "")
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter(Boolean),
+    }))
+    .filter((p) => p.label);
+}
+
+/** One mentee's steps for a list, with {code} replaced by their code. */
+export function redeemSteps(info: PerkCodeInfo | null | undefined, label: string, code: string): string[] {
+  const pool = (info ?? []).find((p) => p.label === label);
+  return (pool?.steps ?? []).map((s) => s.replaceAll("{code}", code));
+}
 
 /**
  * Makes the event's code pools match what Sanity says (decided 2026-11-10: codes are entered

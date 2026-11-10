@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { syncPerkCodes, type SanityPerkCodes } from "@/lib/perk-codes";
+import { perkCodeInfo, syncPerkCodes, type SanityPerkCodes } from "@/lib/perk-codes";
 
 // A camp's private details live in their own Sanity document, "private.<event id>", which
 // anonymous reads cannot see (src/sanity/schemas/campPrivate.ts, decided 2026-11-10).
@@ -41,6 +41,7 @@ export async function refreshCampPrivate(supabase: SupabaseClient, eventId: stri
       .update({
         camp_locations: fresh.campLocations || [],
         welcome_packet_note: fresh.welcomePacketNote?.trim() || null,
+        perk_code_info: perkCodeInfo(fresh.perkCodes),
       })
       .eq("id", eventId);
     await syncPerkCodes(supabase, eventId, fresh.perkCodes ?? null);

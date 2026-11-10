@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { client as sanityClient, writeClient as sanityWriteClient } from "@/lib/sanity";
 import { createCalendarEvent, updateCalendarEvent } from "@/lib/google-calendar";
 import { CAMP_PRIVATE_FIELDS } from "@/lib/camp-private";
+import { perkCodeInfo } from "@/lib/perk-codes";
 
 export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-sanity-webhook-secret");
@@ -224,6 +225,7 @@ async function updateEventInSupabase(sanityId: string) {
         mentor_perks: event.mentorPerks || [],
         mentee_perks: event.menteePerks || [],
         welcome_packet_note: event.welcomePacketNote?.trim() || null,
+        perk_code_info: perkCodeInfo(event.perkCodes),
       })
       .eq("sanity_id", sanityId);
 

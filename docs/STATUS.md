@@ -24,7 +24,8 @@
 
 ## In progress
 
-- Deer Camp packets: note and OnX codes go in Camp Private Details, then I check, then send.
+- Deer Camp packets: John adds the note, OnX codes and perk line in Studio, I check the
+  sync, then John sends.
 
 ## Next up
 
