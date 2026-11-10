@@ -80,3 +80,4 @@ verifying.
 - 2026-11-10. The Sanity history leak (old event revisions with coordinates) is deferred by John for other work. The recommended fix is a fresh dataset that replaces this one.
 - 2026-11-10. Redeem steps for perk codes are entered in Sanity beside the codes, one step per line, with {code} for the mentee's code, and mirrored to `events.perk_code_info`.
 - 2026-11-10. The separate private Sanity document is reverted. Camp locations, the packet note and perk codes are back on the event, publicly readable on the free plan, because one place to edit a camp matters more to John for now. He will look at a paid plan with a private dataset.
+- 2026-11-10. The welcome packet puts the camp note first and the facts in two compact boxes, Camp Details and Your Perks, because John's note is long and points readers below it.

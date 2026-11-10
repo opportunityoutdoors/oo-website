@@ -1,4 +1,4 @@
-import { Hr, Link, Section, Text } from "@react-email/components";
+import { Hr, Link, Text } from "@react-email/components";
 import * as React from "react";
 import { EmailLayout } from "../Layout";
 import { BrandButton, Callout, CalloutLabel, CalloutLine, P, Signoff } from "../components";
@@ -66,8 +66,19 @@ function withLinks(text: string): React.ReactNode[] {
   );
 }
 
-function personLine(p: Person) {
-  return `${p.name} · ${p.email}${p.phone ? ` · ${formatPhone(p.phone)}` : ""}`;
+/** Name, email and phone. The phone never wraps, so "919-649-6907" stays on one line. */
+function personLine(p: Person): React.ReactNode {
+  return (
+    <>
+      {p.name} · {p.email}
+      {p.phone ? (
+        <>
+          {" · "}
+          <span style={{ whiteSpace: "nowrap" }}>{formatPhone(p.phone)}</span>
+        </>
+      ) : null}
+    </>
+  );
 }
 
 export function WelcomePacket({
@@ -105,193 +116,108 @@ export function WelcomePacket({
             ))
         : null}
 
-      {eventDateStr || location ? (
-        <Callout>
-          {eventDateStr ? (
-            <CalloutLine>
-              <strong>When:</strong> {eventDateStr}
-            </CalloutLine>
-          ) : null}
-          {location ? (
-            <CalloutLine>
-              <strong>Where:</strong> {location}
-            </CalloutLine>
-          ) : null}
-        </Callout>
-      ) : null}
-
-      {/* Match info */}
-      {isMentor && mentees.length > 0 ? (
-        <>
-          <P>
-            <strong>Your assigned mentee{mentees.length > 1 ? "s" : ""}:</strong>
-          </P>
-          <ul
-            style={{
-              color: colors.nearBlack,
-              fontFamily,
-              fontSize: "15px",
-              lineHeight: "1.8",
-              paddingLeft: "20px",
-              margin: "0 0 12px",
-            }}
-          >
-            {mentees.map((m) => (
-              <li key={m.email}>
-                <strong>{m.name}</strong>
-                {" · "}
-                {m.email}
-                {m.phone ? ` · ${formatPhone(m.phone)}` : ""}
-              </li>
-            ))}
-          </ul>
-          <Text style={muted}>
-            We encourage you to reach out to your mentee
-            {mentees.length > 1 ? "s" : ""} before camp to introduce yourself. A
-            quick text or email goes a long way.
-          </Text>
-        </>
-      ) : null}
-
-      {!isMentor && mentor ? (
-        <>
-          <P>
-            <strong>Your assigned mentor:</strong>
-          </P>
-          <Text
-            style={{
-              color: colors.nearBlack,
-              fontFamily,
-              fontSize: "15px",
-              lineHeight: "1.6",
-              paddingLeft: "20px",
-              margin: "0 0 12px",
-            }}
-          >
-            {personLine(mentor)}
-          </Text>
-          <Text style={muted}>
-            Your mentor is a volunteer who will be your buddy at camp. Feel free
-            to reach out before the event to introduce yourself.
-          </Text>
-        </>
-      ) : null}
-
-      <Hr style={divider} />
-
-      <P style={{ fontWeight: 600 }}>
-        Camp Location{campLocations.length > 1 ? "s" : ""}
-      </P>
-      <Text style={muted}>
-        Please keep these coordinates private and do not share publicly.
-      </Text>
-      {campLocations.map((loc, i) => (
-        <Section
-          key={i}
-          style={{
-            backgroundColor: colors.cream,
-            borderRadius: "4px",
-            padding: "12px 16px",
-            margin: "0 0 12px",
-          }}
-        >
-          <CalloutLabel>{loc.label || "Camp Location"}</CalloutLabel>
-          {loc.coordStr ? (
-            <Text
-              style={{
-                color: colors.muted,
-                fontFamily,
-                fontSize: "13px",
-                margin: "0 0 8px",
-              }}
-            >
-              {loc.coordStr}
-            </Text>
-          ) : null}
-          <Text style={{ fontFamily, fontSize: "13px", margin: 0 }}>
+      {/* Condensed 2026-11-10: the camp's note can run long, so the facts sit in two
+          compact boxes under it. The note's own wording points "below" to them. */}
+      <Callout>
+        <CalloutLabel>Camp Details</CalloutLabel>
+        {eventDateStr ? (
+          <CalloutLine>
+            <strong>When:</strong> {eventDateStr}
+          </CalloutLine>
+        ) : null}
+        {location ? (
+          <CalloutLine>
+            <strong>Where:</strong> {location}
+          </CalloutLine>
+        ) : null}
+        {campLocations.map((loc, i) => (
+          <CalloutLine key={i}>
+            <strong>{campLocations.length > 1 ? `${loc.label || "Camp"}:` : "Camp:"}</strong>{" "}
+            {campLocations.length > 1 ? null : `${loc.label || "Camp location"} `}
+            {loc.coordStr ? <span style={{ color: colors.muted }}>({loc.coordStr})</span> : null}
+            {loc.googleMapsUrl || loc.onxLink ? <br /> : null}
             {loc.googleMapsUrl ? (
               <Link href={loc.googleMapsUrl} style={link}>
                 Google Maps Directions
               </Link>
             ) : null}
+            {loc.googleMapsUrl && loc.onxLink ? " · " : null}
             {loc.onxLink ? (
-              <>
-                {loc.googleMapsUrl ? " · " : ""}
-                <Link href={loc.onxLink} style={link}>
-                  View on OnX
-                </Link>
-              </>
+              <Link href={loc.onxLink} style={link}>
+                View on OnX
+              </Link>
             ) : null}
+          </CalloutLine>
+        ))}
+        {!isMentor && mentor ? (
+          <CalloutLine>
+            <strong>Your mentor:</strong> {personLine(mentor)}
+          </CalloutLine>
+        ) : null}
+        {isMentor && mentees.length > 0 ? (
+          <CalloutLine>
+            <strong>Your mentee{mentees.length > 1 ? "s" : ""}:</strong>
+            {mentees.map((m) => (
+              <React.Fragment key={m.email}>
+                <br />
+                {personLine(m)}
+              </React.Fragment>
+            ))}
+          </CalloutLine>
+        ) : null}
+        {campLocations.length > 0 ? (
+          <Text style={{ ...muted, fontSize: "13px", margin: "8px 0 0" }}>
+            Please keep the camp location private.
           </Text>
-        </Section>
-      ))}
+        ) : null}
+      </Callout>
 
       {perks.length > 0 || codes.length > 0 ? (
-        <>
-          <Hr style={divider} />
-          <P style={{ fontWeight: 600 }}>Your Perks</P>
-          {perks.length > 0 ? (
-            <ul
-              style={{
-                color: colors.nearBlack,
-                fontFamily,
-                fontSize: "15px",
-                lineHeight: "1.8",
-                paddingLeft: "20px",
-                margin: "0 0 16px",
-              }}
-            >
-              {perks.map((p, i) => (
-                <li key={i}>
-                  {p.link ? (
-                    <Link href={p.link} style={link}>
-                      {p.title}
-                    </Link>
-                  ) : (
-                    p.title
-                  )}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          {/* Each code in its own box, with the steps to redeem it from Sanity. */}
+        <Callout>
+          <CalloutLabel>Your Perks</CalloutLabel>
+          {perks.map((p, i) => (
+            <CalloutLine key={i}>
+              {p.link ? (
+                <Link href={p.link} style={link}>
+                  {p.title}
+                </Link>
+              ) : (
+                p.title
+              )}
+            </CalloutLine>
+          ))}
+          {/* The person's own codes, with the steps to redeem each from Sanity. */}
           {codes.map((c) => (
-            <Callout key={c.label}>
+            <React.Fragment key={c.label}>
               <CalloutLine>
-                Your {c.label} code:{" "}
-                <strong style={{ fontSize: "16px" }}>{c.code}</strong>
+                Your {c.label} code: <strong style={{ fontSize: "16px" }}>{c.code}</strong>
               </CalloutLine>
               {c.steps?.length ? (
-                <>
-                  <CalloutLine>
-                    <strong>To redeem:</strong>
-                  </CalloutLine>
-                  <ol
-                    style={{
-                      color: colors.nearBlack,
-                      fontFamily,
-                      fontSize: "14px",
-                      lineHeight: "1.7",
-                      paddingLeft: "20px",
-                      margin: "0",
-                    }}
-                  >
-                    {c.steps.map((step, i) => (
-                      <li key={i}>{withLinks(step)}</li>
-                    ))}
-                  </ol>
-                </>
+                <ol
+                  style={{
+                    color: colors.nearBlack,
+                    fontFamily,
+                    fontSize: "14px",
+                    lineHeight: "1.6",
+                    paddingLeft: "20px",
+                    margin: "4px 0 0",
+                  }}
+                >
+                  {c.steps.map((step, i) => (
+                    <li key={i}>{withLinks(step)}</li>
+                  ))}
+                </ol>
               ) : null}
-            </Callout>
+            </React.Fragment>
           ))}
           {codes.length > 0 ? (
-            <Text style={muted}>
+            <Text style={{ ...muted, fontSize: "13px", margin: "8px 0 0" }}>
               {codes.length === 1
                 ? "This code is yours alone and works once. Please don't share it."
                 : "These codes are yours alone and work once. Please don't share them."}
             </Text>
           ) : null}
-        </>
+        </Callout>
       ) : null}
 
       <Hr style={divider} />

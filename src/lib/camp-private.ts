@@ -9,6 +9,8 @@ import { perkCodeInfo, syncPerkCodes, type SanityPerkCodes } from "@/lib/perk-co
 export const CAMP_PRIVATE_FIELDS = `campLocations, welcomePacketNote, perkCodes`;
 
 export type CampPrivate = {
+  mentorPerks?: unknown[] | null;
+  menteePerks?: unknown[] | null;
   campLocations: unknown[] | null;
   welcomePacketNote: string | null;
   perkCodes: SanityPerkCodes;
@@ -25,7 +27,7 @@ export async function refreshCampPrivate(supabase: SupabaseClient, eventId: stri
     if (!row?.sanity_id) return;
     const { client } = await import("@/lib/sanity");
     const fresh = await client.fetch<CampPrivate | null>(
-      `*[_type == "event" && _id == $id][0]{ ${CAMP_PRIVATE_FIELDS} }`,
+      `*[_type == "event" && _id == $id][0]{ mentorPerks, menteePerks, ${CAMP_PRIVATE_FIELDS} }`,
       { id: row.sanity_id },
       { useCdn: false }
     );
@@ -33,6 +35,8 @@ export async function refreshCampPrivate(supabase: SupabaseClient, eventId: stri
     await supabase
       .from("events")
       .update({
+        mentor_perks: fresh.mentorPerks || [],
+        mentee_perks: fresh.menteePerks || [],
         camp_locations: fresh.campLocations || [],
         welcome_packet_note: fresh.welcomePacketNote?.trim() || null,
         perk_code_info: perkCodeInfo(fresh.perkCodes),

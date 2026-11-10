@@ -247,6 +247,11 @@ Sources this was assembled from, which stay as the detailed reference:
       day with OnX's wording. Entered in Sanity next to the codes (How to Redeem), prefilled
       for OnX, with {code} replaced by the mentee's code. Migration 045. Proven on the fixture:
       the sent packet showed the code, 3 numbered steps, and a working redeem link.
+- [x] Condense the welcome packet so a long camp note reads well. Done 2026-11-10, asked for
+      the same day. The note comes first, then two boxes: Camp Details (when, where, campsite
+      with map links, the match) and Your Perks (perk, code, redeem steps). Phones never wrap.
+      Perks now refresh from Sanity before each send too. Proven on the fixture for a mentee
+      and a mentor packet.
 
 ## Phase 6 — Camp admin board
 
