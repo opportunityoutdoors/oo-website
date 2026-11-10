@@ -1,18 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { perkCodeInfo, syncPerkCodes, type SanityPerkCodes } from "@/lib/perk-codes";
 
-// A camp's private details live in their own Sanity document, "private.<event id>", which
-// anonymous reads cannot see (src/sanity/schemas/campPrivate.ts, decided 2026-11-10).
+// A camp's private details: locations, the welcome packet note, and mentee perk codes. They
+// sit on the Sanity event document, which the free plan leaves publicly readable (docs/SPEC.md,
+// Phase 5). A separate private document was tried on 2026-11-10 and reverted the same day.
 
-/**
- * GROQ fields that pull the private details into an event projection. Use inside a query on
- * `_type == "event"`. The event's own old fields are the fallback, so nothing goes missing
- * while the data moves.
- */
-export const CAMP_PRIVATE_FIELDS = `
-  "campLocations": coalesce(*[_id == "private." + ^._id][0].campLocations, campLocations),
-  "welcomePacketNote": coalesce(*[_id == "private." + ^._id][0].welcomePacketNote, welcomePacketNote),
-  "perkCodes": coalesce(*[_id == "private." + ^._id][0].perkCodes, perkCodes)`;
+/** GROQ fields for a camp's private details, inside a query on `_type == "event"`. */
+export const CAMP_PRIVATE_FIELDS = `campLocations, welcomePacketNote, perkCodes`;
 
 export type CampPrivate = {
   campLocations: unknown[] | null;

@@ -83,14 +83,6 @@ export async function POST(req: NextRequest) {
         );
       }
       break;
-    // A camp's private details document, "private.<event id>". Sync the camp it belongs to.
-    case "campPrivate":
-      if (_id.startsWith("private.")) {
-        updateEventInSupabase(_id.slice("private.".length)).catch((err) =>
-          console.error("Event sync error:", err)
-        );
-      }
-      break;
     case "blogPost":
       revalidatePath("/blog");
       if (slug?.current) revalidatePath(`/blog/${slug.current}`);
