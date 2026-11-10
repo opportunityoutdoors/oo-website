@@ -40,6 +40,7 @@ interface SanityEvent {
   campLocations: CampLocation[] | null;
   mentorPerks: Array<{ title: string; link?: string }> | null;
   menteePerks: Array<{ title: string; link?: string }> | null;
+  welcomePacketNote: string | null;
 }
 
 export async function GET() {
@@ -115,6 +116,7 @@ export async function GET() {
         camp_locations: se.campLocations || [],
         mentor_perks: se.mentorPerks || [],
         mentee_perks: se.menteePerks || [],
+        welcome_packet_note: se.welcomePacketNote?.trim() || null,
       },
       { onConflict: "sanity_id" }
     );

@@ -65,6 +65,8 @@ export async function POST(request: NextRequest) {
     // predate the field, so registration is the second chance to collect it rather than
     // making 592 people redo a waitlist form.
     date_of_birth,
+    // Only sent when a mentor has no phone on file. Mentees see it in the welcome packet.
+    phone,
     // Minor fields
     minor_tshirt_size,
     minor_dietary_medical,
@@ -94,7 +96,7 @@ export async function POST(request: NextRequest) {
   // Verify token and status
   const { data: registration } = await supabase
     .from("registrations")
-    .select("id, contact_id, event_id, role, status, guardian_registration_id, events(event_type), contacts(date_of_birth)")
+    .select("id, contact_id, event_id, role, status, guardian_registration_id, events(event_type), contacts(date_of_birth, phone)")
     .eq("token", token)
     .single();
 
@@ -109,11 +111,21 @@ export async function POST(request: NextRequest) {
   // The person holding this token registers as the adult, so they must be one. The birth date
   // on file wins over the one typed here: a minor changing it on this form is the case this
   // stops. A minor's own registration is done by their guardian, never with their own token.
-  const contactRel = registration.contacts as { date_of_birth: string | null } | { date_of_birth: string | null }[] | null;
-  const dobOnFile = (Array.isArray(contactRel) ? contactRel[0] : contactRel)?.date_of_birth ?? null;
+  type ContactRel = { date_of_birth: string | null; phone: string | null };
+  const contactRel = registration.contacts as ContactRel | ContactRel[] | null;
+  const contactOnFile = Array.isArray(contactRel) ? contactRel[0] : contactRel;
+  const dobOnFile = contactOnFile?.date_of_birth ?? null;
+  const phoneOnFile = contactOnFile?.phone?.trim() || null;
   const registrantAge = ageOn(dobOnFile ?? (typeof date_of_birth === "string" ? date_of_birth : ""), new Date());
   if (registration.guardian_registration_id || (registrantAge !== null && registrantAge < ADULT_AGE)) {
     return NextResponse.json({ error: UNDER_18_MESSAGE }, { status: 403 });
+  }
+
+  // Mentees see their mentor's phone in the welcome packet, so a mentor cannot register
+  // without one (decided 2026-11-10). Asked only when none is on file.
+  const typedPhone = typeof phone === "string" ? phone.trim() : "";
+  if (registration.role === "Mentor" && !phoneOnFile && !typedPhone) {
+    return NextResponse.json({ error: "Add a phone number so your mentees can reach you." }, { status: 400 });
   }
 
   const eventRel = registration.events as { event_type: string } | { event_type: string }[] | null;
@@ -183,6 +195,7 @@ export async function POST(request: NextRequest) {
   const contactPatch: Record<string, unknown> = {};
   if (tshirt_size) contactPatch.tshirt_size = tshirt_size;
   if (date_of_birth && !dobOnFile) contactPatch.date_of_birth = date_of_birth;
+  if (typedPhone && !phoneOnFile) contactPatch.phone = typedPhone;
   if (Object.keys(contactPatch).length > 0) {
     await supabase
       .from("contacts")

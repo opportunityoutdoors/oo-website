@@ -71,3 +71,5 @@ verifying.
 - 2026-10-29. The registration reminder carries "I Can't Make It". It confirms on a page before acting, then moves the person to Dropped out ("Told us they cannot make it") and emails info@.
 - 2026-11-10. Unique perk codes live in Supabase (`perk_codes`), not Sanity, because the codes are worth money and Sanity content is public. Each adult mentee gets one per pool at packet send and keeps it on a re-send. Linked minors get none until a camp has one.
 - 2026-11-10. The welcome packet send refuses to run while a code pool has fewer free codes than mentees need, so no mentee gets a packet without their code.
+- 2026-11-10. Mentors must have a phone on file, because mentees see it in the welcome packet. Enforced on the admin Add Participant form and at registration for a mentor with none on file. Mentees and Staff stay optional.
+- 2026-11-10. The welcome packet carries one optional note from Sanity (Welcome Packet Note), the same for mentors, mentees and Staff, shown under the opening line.

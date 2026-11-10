@@ -27,6 +27,11 @@ interface EventInfo {
   registration_fee: number | null;
 }
 
+/** A mentor with no phone on file is asked for one on this form. */
+function needsPhone(r: { role: string | null; contacts: { phone: string | null } }) {
+  return r.role === "Mentor" && !r.contacts.phone?.trim();
+}
+
 interface ContactInfo {
   /** Null for contacts created before the field existed. Prompted for when missing. */
   date_of_birth: string | null;
@@ -36,6 +41,8 @@ interface ContactInfo {
   first_name: string | null;
   last_name: string | null;
   email: string;
+  /** A mentor with none on file is asked for one. */
+  phone: string | null;
   tshirt_size: string | null;
 }
 
@@ -152,6 +159,7 @@ export default function RegisterForm({
   // Only collected when absent. See the note by the field below.
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [minorDateOfBirth, setMinorDateOfBirth] = useState("");
+  const [phone, setPhone] = useState("");
   const [emergencyName, setEmergencyName] = useState("");
   const [emergencyPhone, setEmergencyPhone] = useState("");
   const [transportation, setTransportation] = useState("");
@@ -226,6 +234,7 @@ export default function RegisterForm({
         tshirt_size: tshirtSize,
         date_of_birth: dateOfBirth || null,
         minor_date_of_birth: minorDateOfBirth || null,
+        phone: phone.trim() || null,
         emergency_contact_name: emergencyName,
         emergency_contact_phone: emergencyPhone,
         transportation,
@@ -275,6 +284,7 @@ export default function RegisterForm({
     if (n === 1) {
       if (!tshirtSize) return "Choose a t-shirt size.";
       if (!r.contacts.date_of_birth && !dateOfBirth) return "Enter your date of birth.";
+      if (needsPhone(r) && !phone.trim()) return "Add a phone number so your mentees can reach you.";
       if (!emergencyName.trim() || !emergencyPhone.trim())
         return "Add an emergency contact name and phone number.";
       if (r.role !== "Mentor" && !transportation) return "Choose a transportation option.";
@@ -462,6 +472,26 @@ export default function RegisterForm({
           <h2 className="mb-5 font-heading text-xl font-[900] uppercase tracking-tight text-near-black">
             {minor ? "Your Details" : "Camp Details"}
           </h2>
+          {/* Phone, for a mentor with none on file. Mentees see it in the welcome packet
+              (decided 2026-11-10). */}
+          {needsPhone(registration!) && (
+            <div className="mb-4">
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-[1px] text-near-black/70">
+                Phone <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="tel"
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full rounded border border-near-black/15 px-3 py-2.5 text-[15px] text-near-black outline-none focus:border-dark-green"
+              />
+              <p className="mt-1 text-xs text-near-black/50">
+                Your mentees get it in their welcome packet, so they can reach you before camp.
+              </p>
+            </div>
+          )}
+
           {/* Date of birth, shown ONLY when we do not already have it. Most contacts predate
               the field, so registration is the second chance to collect it rather than
               making people redo a waitlist form. Adult vs minor decides whether a

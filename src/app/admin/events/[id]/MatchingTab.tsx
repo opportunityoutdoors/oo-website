@@ -384,11 +384,14 @@ function AddParticipantForm({
             placeholder="Email"
             className="rounded border border-near-black/15 px-3 py-2 text-xs text-near-black placeholder:text-near-black/30 focus:border-dark-green focus:outline-none"
           />
+          {/* Mentees see their mentor's phone in the welcome packet, so a mentor must give one
+              (decided 2026-11-10). */}
           <input
             type="tel"
+            required={role === "Mentor"}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="Phone (optional)"
+            placeholder={role === "Mentor" ? "Phone" : "Phone (optional)"}
             className="rounded border border-near-black/15 px-3 py-2 text-xs text-near-black placeholder:text-near-black/30 focus:border-dark-green focus:outline-none"
           />
         </div>

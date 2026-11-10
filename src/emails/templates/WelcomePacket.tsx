@@ -29,6 +29,8 @@ export interface WelcomePacketProps {
   perks?: Array<{ title: string; link?: string }>;
   /** Codes unique to this person, such as an OnX promo code (lib/perk-codes.ts). */
   codes?: Array<{ label: string; code: string }>;
+  /** The camp's note from Sanity (Welcome Packet Note). Blank lines split paragraphs. */
+  note?: string | null;
   eventUrl: string;
 }
 
@@ -60,6 +62,7 @@ export function WelcomePacket({
   campLocations,
   perks = [],
   codes = [],
+  note,
   eventUrl,
 }: WelcomePacketProps) {
   return (
@@ -69,6 +72,19 @@ export function WelcomePacket({
         We&apos;re counting down to <strong>{eventTitle}</strong>! Here&apos;s
         everything you need to know.
       </P>
+
+      {/* The camp's own note, written in Sanity. Plain text: blank lines split paragraphs,
+          single line breaks stay inside one. */}
+      {note?.trim()
+        ? note
+            .trim()
+            .split(/\n\s*\n/)
+            .map((para, i) => (
+              <P key={i} style={{ whiteSpace: "pre-line" }}>
+                {para.trim()}
+              </P>
+            ))
+        : null}
 
       {eventDateStr || location ? (
         <Callout>

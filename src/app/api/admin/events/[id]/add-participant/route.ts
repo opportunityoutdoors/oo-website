@@ -20,6 +20,10 @@ export async function POST(
   if (!email || !role) {
     return NextResponse.json({ error: "Email and role are required" }, { status: 400 });
   }
+  // Mentees see their mentor's phone in the welcome packet (decided 2026-11-10).
+  if (role === "Mentor" && !String(phone ?? "").trim()) {
+    return NextResponse.json({ error: "A mentor needs a phone number" }, { status: 400 });
+  }
 
   // Find existing contact or create new
   let contact: { id: string } | null = null;
@@ -33,10 +37,11 @@ export async function POST(
   if (existing_contact) {
     const { data: updated, error: updateError } = await supabase
       .from("contacts")
+      // Only what was typed. A blank box used to overwrite a phone or name already on file.
       .update({
-        first_name: first_name || null,
-        last_name: last_name || null,
-        phone: phone || null,
+        ...(first_name ? { first_name } : {}),
+        ...(last_name ? { last_name } : {}),
+        ...(phone ? { phone } : {}),
         source: is_board_member ? "Board Member" : "Admin Added",
         updated_at: new Date().toISOString(),
       })

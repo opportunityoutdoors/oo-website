@@ -117,7 +117,7 @@ async function updateEventInSupabase(sanityId: string) {
       `*[_type == "event" && _id == $id][0] {
         _id, title, slug, eventType, status, date, endDate, location, cost,
         registrationFee, registrationCloses, spotsTotal, meetingSlots, campLocations,
-        mentorPerks, menteePerks
+        mentorPerks, menteePerks, welcomePacketNote
       }`,
       { id: sanityId }
     );
@@ -214,6 +214,7 @@ async function updateEventInSupabase(sanityId: string) {
         camp_locations: event.campLocations || [],
         mentor_perks: event.mentorPerks || [],
         mentee_perks: event.menteePerks || [],
+        welcome_packet_note: event.welcomePacketNote?.trim() || null,
       })
       .eq("sanity_id", sanityId);
 

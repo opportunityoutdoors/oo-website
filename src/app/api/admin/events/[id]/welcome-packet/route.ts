@@ -367,6 +367,7 @@ export async function POST(
         campLocations: campLocationViews,
         perks,
         codes,
+        note: event.welcome_packet_note ?? null,
         eventUrl: `${baseUrl}/events/${event.slug}`,
       }),
     });

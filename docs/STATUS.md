@@ -5,6 +5,8 @@
 
 ## Done recently
 
+- 2026-11-10, pushed: a Welcome Packet Note field in Sanity, and mentors must give a phone.
+  John's own contact has no phone, so mentees will not see one for him at Deer Camp.
 - 2026-11-10, pushed: a unique OnX code for each mentee in the welcome packet. Paste the
   batch on the camp page before sending. Deer Camp needs 8. Registration reminders ran:
   7 first on Oct 30, 5 final on Nov 4.
@@ -25,7 +27,8 @@
 
 ## In progress
 
-- Deer Camp welcome packets: load 8 OnX codes and a Mentee Perk line, then send.
+- Deer Camp welcome packets: add John's phone, write the note in Sanity, load 8 OnX codes
+  and a Mentee Perk line, then send. Check that the note reached Supabase first.
 
 ## Next up
 

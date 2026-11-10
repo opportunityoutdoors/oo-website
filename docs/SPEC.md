@@ -223,6 +223,15 @@ Sources this was assembled from, which stay as the detailed reference:
       re-send, and the send refuses while a pool is short. Migration 043. Proven on the
       fixture: a short pool refused the send with 0 packets out, then Ada's packet carried
       her code and Bo's carried none.
+- [x] A note from the camp at the top of every welcome packet, written in Sanity (Welcome
+      Packet Note, Camp tab). Done 2026-11-10, asked for the same day. Migration 044 mirrors
+      it to Supabase. Proven on the fixture: blank lines split paragraphs in the sent mail.
+      The Sanity to Supabase mirror is first seen live when the Deer Camp note is published.
+- [x] Mentors must give a phone, because mentees see it in the packet. Done 2026-11-10,
+      asked for the same day. The public forms already required one. The admin Add
+      Participant form and the register form, for a mentor with none on file, now do too.
+      The admin form no longer blanks a phone on file when its box is left empty. Proven on
+      the fixture: both refusals fired, and the register form showed the phone field.
 
 ## Phase 6 — Camp admin board
 

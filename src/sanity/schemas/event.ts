@@ -360,6 +360,15 @@ export default {
       ],
     },
     {
+      name: "welcomePacketNote",
+      title: "Welcome Packet Note",
+      type: "text",
+      rows: 4,
+      group: "camp",
+      description:
+        "A short note at the top of every welcome packet email, for mentors, mentees and staff. Leave blank for none. Blank lines start a new paragraph.",
+    },
+    {
       name: "mentorPerks",
       title: "Mentor Perks",
       type: "array",
