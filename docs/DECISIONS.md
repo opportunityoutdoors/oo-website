@@ -75,3 +75,5 @@ verifying.
 - 2026-11-10. The welcome packet carries one optional note from Sanity (Welcome Packet Note), the same for mentors, mentees and Staff, shown under the opening line.
 - 2026-11-10. The Sanity dataset becomes private. It holds camp locations and perk codes, and a public dataset let anyone read them. The site reads Sanity with a server-only token (`SANITY_API_READ_TOKEN`, falling back to `SANITY_API_TOKEN`). Supersedes the 2026-10-14 workaround of keeping private data out of Sanity.
 - 2026-11-10. Mentee perk codes are entered in Sanity with the rest of the camp, replacing the admin paste box. Supabase still records who holds which code.
+- 2026-11-10. Private datasets need a paid Sanity plan, so private camp details live in a `campPrivate` document with ID `private.<event id>`. Sanity hides dotted IDs, and their history, from anonymous reads. Studio opens it from the Camp Private Details list. Supersedes the plan to make the dataset private.
+- 2026-11-10. The site's Sanity client reads the published perspective only. A token also sees drafts, and API version 2024-01-01 returns them by default.

@@ -213,10 +213,12 @@ Sources this was assembled from, which stay as the detailed reference:
 
 ## Phase 5 — Matching and welcome
 
-- [ ] Make the Sanity dataset private. Found 2026-11-10: dataset "production" is public, so
-      anyone could read the Camp Locations field with no login. The site now reads with a
-      server token (pushed 2026-11-10). Left: John switches the dataset to Private in
-      sanity.io/manage, then the anonymous query must fail and the public pages still load.
+- [ ] Close the Sanity history leak. Found 2026-11-10: dataset "production" is public, and
+      private datasets need a paid plan. Done the same day: locations, the packet note and
+      perk codes moved to "private.<event id>" documents, which anonymous reads and their
+      history cannot see. Anonymous query, CDN and export now return no locations. Left: the
+      anonymous history API still returns OLD revisions of the 3 event documents, with
+      coordinates. Fix by a paid plan, or a fresh dataset that replaces this one.
       Placed first: it must land before the Deer Camp packets go out.
 - [x] Auto-match on interest overlap, max 3 mentees per mentor, guardian pairs kept together
 - [x] Manual match and unmatch in the admin

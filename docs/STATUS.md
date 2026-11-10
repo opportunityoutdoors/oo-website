@@ -24,9 +24,9 @@
 
 ## In progress
 
-- Sanity dataset is public, so camp locations were readable by anyone. Site now reads with
-  a token (pushed). Waiting on John to switch the dataset to Private, then I make sure.
-- Deer Camp packets: note and OnX codes in Sanity, then I check the sync, then send.
+- Sanity leak: locations now sit in private documents, and anonymous reads and exports show
+  none. The history API still serves old event revisions with coordinates. John decides.
+- Deer Camp packets: note and OnX codes go in Camp Private Details, then I check, then send.
 
 ## Next up
 
