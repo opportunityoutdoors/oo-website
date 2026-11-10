@@ -18,6 +18,9 @@ export const client = createClient({
   apiVersion: "2024-01-01",
   useCdn: true,
   token: process.env.SANITY_API_READ_TOKEN || process.env.SANITY_API_TOKEN,
+  // A token also sees drafts, and API version 2024-01-01 returns them unless told not to.
+  // Without this, an unpublished edit shows on the public site as a second copy.
+  perspective: "published",
 });
 
 // Write-capable client for server-side mutations (uses API token)
