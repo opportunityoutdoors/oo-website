@@ -47,8 +47,14 @@ const muted: React.CSSProperties = {
   margin: "0 0 16px",
 };
 
+/** "9196496907" reads as "919-649-6907". Anything that is not 10 digits prints as stored. */
+export function formatPhone(phone: string): string {
+  const d = phone.replace(/\D/g, "").replace(/^1(?=\d{10}$)/, "");
+  return d.length === 10 ? `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}` : phone;
+}
+
 function personLine(p: Person) {
-  return `${p.name} · ${p.email}${p.phone ? ` · ${p.phone}` : ""}`;
+  return `${p.name} · ${p.email}${p.phone ? ` · ${formatPhone(p.phone)}` : ""}`;
 }
 
 export function WelcomePacket({
@@ -122,7 +128,7 @@ export function WelcomePacket({
                 <strong>{m.name}</strong>
                 {" · "}
                 {m.email}
-                {m.phone ? ` · ${m.phone}` : ""}
+                {m.phone ? ` · ${formatPhone(m.phone)}` : ""}
               </li>
             ))}
           </ul>
