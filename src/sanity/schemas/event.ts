@@ -7,7 +7,6 @@ export default {
     { name: "dates", title: "Dates" },
     { name: "content", title: "Content" },
     { name: "camp", title: "Camp Settings" },
-    { name: "private", title: "Private / Internal" },
   ],
   fields: [
     // ═══════════════════════════════════
@@ -360,15 +359,6 @@ export default {
       ],
     },
     {
-      name: "welcomePacketNote",
-      title: "Welcome Packet Note",
-      type: "text",
-      rows: 4,
-      group: "camp",
-      description:
-        "A short note at the top of every welcome packet email, for mentors, mentees and staff. Leave blank for none. Blank lines start a new paragraph.",
-    },
-    {
       name: "mentorPerks",
       title: "Mentor Perks",
       type: "array",
@@ -382,43 +372,6 @@ export default {
             { name: "link", title: "Link (optional)", type: "url" },
           ],
           preview: { select: { title: "title" } },
-        },
-      ],
-    },
-    {
-      name: "perkCodes",
-      title: "Mentee Perk Codes (Private)",
-      type: "array",
-      group: "camp",
-      description:
-        "Single-use codes, a different one for each mentee, such as OnX promo codes. Each adult mentee gets one from each list in their welcome packet, and keeps it if the packet is sent again. Removing a code here takes it back only if nobody has it yet.",
-      of: [
-        {
-          type: "object",
-          fields: [
-            {
-              name: "label",
-              title: "Name",
-              type: "string",
-              initialValue: "OnX",
-              description: "Shows in the packet as 'Your OnX code'.",
-              validation: (rule: { required: () => unknown }) => rule.required(),
-            },
-            {
-              name: "codes",
-              title: "Codes",
-              type: "text",
-              rows: 10,
-              description: "One code per line.",
-            },
-          ],
-          preview: {
-            select: { title: "label", codes: "codes" },
-            prepare({ title, codes }: { title?: string; codes?: string }) {
-              const n = (codes || "").split(/[\s,;]+/).filter(Boolean).length;
-              return { title: title || "Codes", subtitle: `${n} code${n === 1 ? "" : "s"}` };
-            },
-          },
         },
       ],
     },
@@ -440,32 +393,8 @@ export default {
       ],
     },
 
-    // ═══════════════════════════════════
-    // PRIVATE / INTERNAL
-    // ═══════════════════════════════════
-    {
-      name: "campLocations",
-      title: "Camp Locations (Private)",
-      type: "array",
-      group: "private",
-      description: "NEVER shown publicly. Shared only in the welcome packet email after registration.",
-      of: [
-        {
-          type: "object",
-          fields: [
-            { name: "label", title: "Label", type: "string", description: "Example: 'Base Camp', 'Hunt Area A'" },
-            { name: "coordinates", title: "Coordinates", type: "string", description: "Paste from OnX. Example: '35.4215, -83.94966'" },
-            { name: "onxLink", title: "OnX Map Link", type: "url", description: "Link to this pin on OnX Maps." },
-          ],
-          preview: {
-            select: { title: "label", coordinates: "coordinates" },
-            prepare({ title, coordinates }: { title: string; coordinates: string }) {
-              return { title: title || "Unnamed", subtitle: coordinates || "No coordinates" };
-            },
-          },
-        },
-      ],
-    },
+    // Camp locations, the welcome packet note, and mentee perk codes are NOT here. This
+    // document is publicly readable, so they live in campPrivate.ts (decided 2026-11-10).
   ],
   preview: {
     select: { title: "title", subtitle: "eventType", media: "image" },

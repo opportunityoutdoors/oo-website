@@ -160,26 +160,3 @@ export async function syncPerkCodes(
   }
   return { added, removed: stale.length };
 }
-
-/**
- * Reads the event's codes from Sanity now and syncs them, so codes published a minute ago
- * count. If Sanity cannot be read, the codes already held here stay as they are.
- */
-export async function refreshPerkCodes(
-  supabase: SupabaseClient,
-  eventId: string,
-  sanityId: string | null | undefined
-): Promise<void> {
-  if (!sanityId) return;
-  try {
-    const { client } = await import("@/lib/sanity");
-    const fresh = await client.fetch<{ perkCodes: SanityPerkCodes } | null>(
-      `*[_type == "event" && _id == $id][0]{ perkCodes }`,
-      { id: sanityId },
-      { useCdn: false }
-    );
-    if (fresh) await syncPerkCodes(supabase, eventId, fresh.perkCodes ?? null);
-  } catch (err) {
-    console.error("Could not refresh perk codes from Sanity:", err);
-  }
-}

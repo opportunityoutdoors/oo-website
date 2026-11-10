@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { apiRequireMember } from "@/lib/admin/auth";
-import { getsPerkCode, perkPools, refreshPerkCodes } from "@/lib/perk-codes";
+import { getsPerkCode, perkPools } from "@/lib/perk-codes";
+import { refreshCampPrivate } from "@/lib/camp-private";
 
 // The camp's unique perk codes (lib/perk-codes.ts), for PerkCodesPanel. Read only: codes are
 // entered in Sanity (Mentee Perk Codes) and synced from there.
@@ -16,8 +17,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const { id: eventId } = await params;
   const supabase = createServiceClient();
 
-  const { data: event } = await supabase.from("events").select("sanity_id").eq("id", eventId).single();
-  await refreshPerkCodes(supabase, eventId, event?.sanity_id);
+  await refreshCampPrivate(supabase, eventId);
   const pools = await perkPools(supabase, eventId);
 
   const { data: held } = await supabase

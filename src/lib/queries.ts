@@ -1,3 +1,5 @@
+import { CAMP_PRIVATE_FIELDS } from "@/lib/camp-private";
+
 // ─── Events ───
 export const allEventsQuery = `*[_type == "event" && status != "draft" && status != "archived"] | order(date asc) {
   _id,
@@ -99,11 +101,9 @@ export const adminAllEventsQuery = `*[_type == "event"] | order(date desc) {
   waitlistOpens,
   waitlistCloses,
   meetingSlots,
-  campLocations,
   mentorPerks,
   menteePerks,
-  welcomePacketNote,
-  perkCodes
+  ${CAMP_PRIVATE_FIELDS}
 }`;
 
 // ─── Team Members ───

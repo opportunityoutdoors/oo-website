@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { client as sanityClient, writeClient as sanityWriteClient } from "@/lib/sanity";
 import { createCalendarEvent, updateCalendarEvent } from "@/lib/google-calendar";
+import { CAMP_PRIVATE_FIELDS } from "@/lib/camp-private";
 
 export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-sanity-webhook-secret");
@@ -81,6 +82,14 @@ export async function POST(req: NextRequest) {
         );
       }
       break;
+    // A camp's private details document, "private.<event id>". Sync the camp it belongs to.
+    case "campPrivate":
+      if (_id.startsWith("private.")) {
+        updateEventInSupabase(_id.slice("private.".length)).catch((err) =>
+          console.error("Event sync error:", err)
+        );
+      }
+      break;
     case "blogPost":
       revalidatePath("/blog");
       if (slug?.current) revalidatePath(`/blog/${slug.current}`);
@@ -116,8 +125,8 @@ async function updateEventInSupabase(sanityId: string) {
     const event = await sanityClient.fetch(
       `*[_type == "event" && _id == $id][0] {
         _id, title, slug, eventType, status, date, endDate, location, cost,
-        registrationFee, registrationCloses, spotsTotal, meetingSlots, campLocations,
-        mentorPerks, menteePerks, welcomePacketNote, perkCodes
+        registrationFee, registrationCloses, spotsTotal, meetingSlots,
+        mentorPerks, menteePerks, ${CAMP_PRIVATE_FIELDS}
       }`,
       { id: sanityId }
     );

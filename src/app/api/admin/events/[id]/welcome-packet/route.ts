@@ -12,8 +12,8 @@ import {
   getsPerkCode,
   perkPools,
   perkShortfall,
-  refreshPerkCodes,
 } from "@/lib/perk-codes";
+import { refreshCampPrivate } from "@/lib/camp-private";
 
 /**
  * Why someone was held back, in words an admin can act on.
@@ -97,6 +97,10 @@ export async function POST(
   const supabase = createServiceClient();
   const body = await request.json();
   const specificIds: string[] | undefined = body.registration_ids;
+
+  // Locations, the note and the codes are read fresh from Sanity first, so an edit published a
+  // minute ago is in this send.
+  await refreshCampPrivate(supabase, eventId);
 
   // Fetch event
   const { data: event } = await supabase
@@ -212,8 +216,6 @@ export async function POST(
 
   // Unique perk codes (lib/perk-codes.ts). Refuse the whole send when a pool is short, so no
   // mentee gets a packet without their code and the admin adds codes before anyone is sent.
-  // Codes are entered in Sanity. Read them fresh, so codes published a minute ago count.
-  await refreshPerkCodes(supabase, eventId, event.sanity_id);
   const pools = await perkPools(supabase, eventId);
   const codeTakers = registrations.filter(getsPerkCode).map((r) => r.id);
   const short = await perkShortfall(supabase, eventId, pools, codeTakers);
